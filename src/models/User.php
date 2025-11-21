@@ -183,7 +183,7 @@ class User
         }
     }
 
-    public static function authenticate($username = null, $email = null, $password): ?self
+    public static function authenticate(string $password, $username = null, $email = null): ?self
     {
         $pdo = Database::getConnection();
 
@@ -230,7 +230,7 @@ class User
 
     public static function login(string $usernameOrEmail, string $password): array
     {
-        $user = self::authenticate($usernameOrEmail, $usernameOrEmail, $password);
+        $user = self::authenticate($password, $usernameOrEmail, $usernameOrEmail);
         if (!$user) {
             return ['success' => false, 'message' => 'Ongeldige gebruikersnaam of wachtwoord.', 'user' => null];
         }
