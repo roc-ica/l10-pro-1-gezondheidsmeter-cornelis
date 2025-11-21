@@ -1,10 +1,22 @@
 <?php
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login') {
+// Initialize variables
+$message = null;
+$errors = null;
+
+// Handle POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/../../controllers/authcontroller.php';
     $ctrl = new AuthController();
     $res = $ctrl->login($_POST);
+
+    // Redirect on success
+    if (!empty($res['success']) && $res['success'] === true) {
+        header('Location: ../../../pages/home.php');
+        exit;
+    }
+
+    // Handle errors
     $message = $res['message'] ?? null;
-    // controller returns structured result; errors key is optional
     $errors = $res['errors'] ?? null;
 }
 ?>
@@ -31,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login
             <input id="password" name="password" type="password" required />
         </div>
         <div>
-            <button type="submit" name="action" value="login">Inloggen</button>
+            <button type="submit">Inloggen</button>
         </div>
     </form>
 

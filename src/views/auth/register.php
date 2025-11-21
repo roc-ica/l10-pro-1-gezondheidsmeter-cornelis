@@ -1,57 +1,71 @@
 <?php
+// Initialize variables
+$message = null;
+$fieldErrors = [];
 
-?>
-<?php
-// Simple register form. If the form is POSTed directly to this view,
-// handle the registration here so the view can show messages immediately.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'register') {
+// Handle POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/../../controllers/authcontroller.php';
     $ctrl = new AuthController();
+    $res = $ctrl->register($_POST);
 
-    // basic password confirmation check before calling controller
-    if (isset($_POST['password'], $_POST['password_confirm']) && $_POST['password'] !== $_POST['password_confirm']) {
-        $errors = ['Wachtwoorden komen niet overeen.'];
-        $message = null;
-    } else {
-        $res = $ctrl->register($_POST);
-        $message = $res['message'] ?? null;
-        $errors = $res['errors'] ?? null;
+    // Redirect on success
+    if (!empty($res['success']) && $res['success'] === true) {
+        header('Location: login.php');
+        exit;
+    }
+
+    // Handle errors
+    $message = $res['message'] ?? null;
+    if (!empty($res['errors'])) {
+        if (!empty($res['errors']['username_exists'])) {
+            $fieldErrors['username'] = 'Gebruikersnaam bestaat al.';
+        }
+        if (!empty($res['errors']['email_exists'])) {
+            $fieldErrors['email'] = 'E-mail bestaat al.';
+        }
+        if (!empty($res['errors']['password_confirm'])) {
+            $fieldErrors['password_confirm'] = 'Wachtwoorden komen niet overeen.';
+        }
     }
 }
-// If $message or $errors are set by the caller they will be used below.
 ?>
 <div class="auth-form register-form">
     <h2>Registreren</h2>
     <?php if (!empty($message)): ?>
         <div class="message"><?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
-    <?php if (!empty($errors) && is_array($errors)): ?>
-        <ul class="errors">
-            <?php foreach ($errors as $e): ?>
-                <li><?= htmlspecialchars($e) ?></li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
 
     <form method="post" action="" novalidate>
         <div>
+            <?php if (!empty($fieldErrors['username'])): ?>
+                <div class="field-error"><?= htmlspecialchars($fieldErrors['username']) ?></div>
+            <?php endif; ?>
             <label for="username">Gebruikersnaam</label>
-            <input id="username" name="username" type="text" required maxlength="100" />
+            <input id="username" name="username" type="text" required maxlength="100" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" />
         </div>
         <div>
+            <?php if (!empty($fieldErrors['email'])): ?>
+                <div class="field-error"><?= htmlspecialchars($fieldErrors['email']) ?></div>
+            <?php endif; ?>
             <label for="email">E-mail</label>
-            <input id="email" name="email" type="email" required maxlength="255" />
+            <input id="email" name="email" type="email" required maxlength="255" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" />
         </div>
         <div>
             <label for="password">Wachtwoord</label>
             <input id="password" name="password" type="password" required />
         </div>
         <div>
+            <?php if (!empty($fieldErrors['password_confirm'])): ?>
+                <div class="field-error"><?= htmlspecialchars($fieldErrors['password_confirm']) ?></div>
+            <?php endif; ?>
             <label for="password_confirm">Bevestig wachtwoord</label>
             <input id="password_confirm" name="password_confirm" type="password" required />
         </div>
         <div>
-            <button type="submit" name="action" value="register">Registreren</button>
+            <button type="submit">Registreren</button>
         </div>
     </form>
+
+    <p>Al een account? <a href="login.php">Log hier in</a></p>
 </div>
