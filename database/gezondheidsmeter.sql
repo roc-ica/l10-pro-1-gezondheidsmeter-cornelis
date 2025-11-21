@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Gegenereerd op: 18 nov 2025 om 08:53
+-- Gegenereerd op: 19 nov 2025 om 13:19
 -- Serverversie: 10.4.32-MariaDB
 -- PHP-versie: 8.0.30
 
@@ -98,6 +98,47 @@ CREATE TABLE `devices` (
 -- --------------------------------------------------------
 
 --
+-- Tabelstructuur voor tabel `device_metrics`
+--
+
+CREATE TABLE `device_metrics` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `device_id` bigint(20) UNSIGNED NOT NULL,
+  `metric_type` varchar(50) NOT NULL,
+  `metric_value` float NOT NULL,
+  `captured_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `global_statistics`
+--
+
+CREATE TABLE `global_statistics` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `calculated_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `stats` longtext DEFAULT NULL CHECK (json_valid(`stats`))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `monthly_analysis`
+--
+
+CREATE TABLE `monthly_analysis` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `month_start` date NOT NULL,
+  `month_end` date NOT NULL,
+  `summary` longtext DEFAULT NULL CHECK (json_valid(`summary`)),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tabelstructuur voor tabel `notifications`
 --
 
@@ -177,28 +218,9 @@ CREATE TABLE `resets` (
   `performed_by` bigint(20) UNSIGNED DEFAULT NULL,
   `reset_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `scope` enum('user','all') DEFAULT 'user',
-  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`details`))
+  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`details`)),
+  `reset_type` enum('daily_entries','answers','full') DEFAULT 'full'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Tabelstructuur voor tabel `roles`
---
-
-CREATE TABLE `roles` (
-  `id` tinyint(3) UNSIGNED NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `description` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Gegevens worden geëxporteerd voor tabel `roles`
---
-
-INSERT INTO `roles` (`id`, `name`, `description`) VALUES
-(1, 'user', 'Eindgebruiker'),
-(2, 'admin', 'Beheerder');
 
 -- --------------------------------------------------------
 
@@ -208,16 +230,17 @@ INSERT INTO `roles` (`id`, `name`, `description`) VALUES
 
 CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
-  `role_id` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
   `username` varchar(100) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `is_admin` tinyint(1) NOT NULL DEFAULT 0,
   `display_name` varchar(150) DEFAULT NULL,
   `birthdate` date DEFAULT NULL,
   `gender` enum('male','female','other') DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_login` timestamp NULL DEFAULT NULL,
-  `is_active` tinyint(1) DEFAULT 1
+  `is_active` tinyint(1) DEFAULT 1,
+  `block_reason` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -232,6 +255,17 @@ CREATE TABLE `user_challenges` (
   `challenge_id` bigint(20) UNSIGNED NOT NULL,
   `joined_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `progress` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`progress`))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `user_meta_admin_view`
+--
+
+CREATE TABLE `user_meta_admin_view` (
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `display_id` char(12) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -289,6 +323,26 @@ ALTER TABLE `devices`
   ADD KEY `user_id` (`user_id`);
 
 --
+-- Indexen voor tabel `device_metrics`
+--
+ALTER TABLE `device_metrics`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `device_id` (`device_id`);
+
+--
+-- Indexen voor tabel `global_statistics`
+--
+ALTER TABLE `global_statistics`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexen voor tabel `monthly_analysis`
+--
+ALTER TABLE `monthly_analysis`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_month` (`user_id`,`month_start`);
+
+--
 -- Indexen voor tabel `notifications`
 --
 ALTER TABLE `notifications`
@@ -317,20 +371,12 @@ ALTER TABLE `resets`
   ADD KEY `performed_by` (`performed_by`);
 
 --
--- Indexen voor tabel `roles`
---
-ALTER TABLE `roles`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `name` (`name`);
-
---
 -- Indexen voor tabel `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `role_id` (`role_id`);
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexen voor tabel `user_challenges`
@@ -339,6 +385,12 @@ ALTER TABLE `user_challenges`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
   ADD KEY `challenge_id` (`challenge_id`);
+
+--
+-- Indexen voor tabel `user_meta_admin_view`
+--
+ALTER TABLE `user_meta_admin_view`
+  ADD PRIMARY KEY (`user_id`);
 
 --
 -- Indexen voor tabel `weekly_analysis`
@@ -382,6 +434,24 @@ ALTER TABLE `devices`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT voor een tabel `device_metrics`
+--
+ALTER TABLE `device_metrics`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT voor een tabel `global_statistics`
+--
+ALTER TABLE `global_statistics`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT voor een tabel `monthly_analysis`
+--
+ALTER TABLE `monthly_analysis`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT voor een tabel `notifications`
 --
 ALTER TABLE `notifications`
@@ -404,12 +474,6 @@ ALTER TABLE `questions`
 --
 ALTER TABLE `resets`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT voor een tabel `roles`
---
-ALTER TABLE `roles`
-  MODIFY `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT voor een tabel `users`
@@ -459,6 +523,18 @@ ALTER TABLE `devices`
   ADD CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
+-- Beperkingen voor tabel `device_metrics`
+--
+ALTER TABLE `device_metrics`
+  ADD CONSTRAINT `device_metrics_ibfk_1` FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE;
+
+--
+-- Beperkingen voor tabel `monthly_analysis`
+--
+ALTER TABLE `monthly_analysis`
+  ADD CONSTRAINT `monthly_analysis_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Beperkingen voor tabel `notifications`
 --
 ALTER TABLE `notifications`
@@ -478,17 +554,17 @@ ALTER TABLE `resets`
   ADD CONSTRAINT `resets_ibfk_2` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
--- Beperkingen voor tabel `users`
---
-ALTER TABLE `users`
-  ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
-
---
 -- Beperkingen voor tabel `user_challenges`
 --
 ALTER TABLE `user_challenges`
   ADD CONSTRAINT `user_challenges_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_challenges_ibfk_2` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE CASCADE;
+
+--
+-- Beperkingen voor tabel `user_meta_admin_view`
+--
+ALTER TABLE `user_meta_admin_view`
+  ADD CONSTRAINT `user_meta_admin_view_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Beperkingen voor tabel `weekly_analysis`
