@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form method="post" action="" novalidate>
                 <div>
-                    <label for="username">Gebruikersnaam of e-mail</label>
+                    <label for="username">Gebruikersnaam of E-mail</label>
                     <input id="username" name="username" type="text" required maxlength="255" />
                 </div>
                 <div>
