@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="post" action="" novalidate>
         <div>
-            <label for="username">Gebruikersnaam of e-mail</label>
+            <label for="username">Gebruikersnaam of E-mail</label>
             <input id="username" name="username" type="text" required maxlength="255" />
         </div>
         <div>
@@ -69,6 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p>Geen account? <a href="register.php">Registreer hier</a></p>
         </div>
     </div>
-    <div class="footer">Gezondheidsmeter project © 2025 - ROC Midden Nederland</div>
+    <div class="footer">Gezondheidsmeter © 2025 - ROC Midden Nederland</div>
 </body>
 </html>
