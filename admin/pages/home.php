@@ -78,28 +78,28 @@ $username = $_SESSION['username'] ?? 'Admin';
                         </div>
                         <div class="bars-container">
                             <div class="day-bars">
-                                <div class="bar green" style="height: 60px;"></div>
-                                <div class="bar pink" style="height: 45px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 75px;"></div>
-                                <div class="bar pink" style="height: 55px;"></div>
-                            </div>
-                            <div class="day-bars">
                                 <div class="bar green" style="height: 80px;"></div>
-                                <div class="bar pink" style="height: 70px;"></div>
+                                <div class="bar pink" style="height: 60px;"></div>
                             </div>
                             <div class="day-bars">
-                                <div class="bar green" style="height: 50px;"></div>
-                                <div class="bar pink" style="height: 40px;"></div>
+                                <div class="bar green" style="height: 100px;"></div>
+                                <div class="bar pink" style="height: 73px;"></div>
                             </div>
                             <div class="day-bars">
-                                <div class="bar green" style="height: 90px;"></div>
-                                <div class="bar pink" style="height: 65px;"></div>
+                                <div class="bar green" style="height: 107px;"></div>
+                                <div class="bar pink" style="height: 93px;"></div>
                             </div>
                             <div class="day-bars">
-                                <div class="bar green" style="height: 70px;"></div>
-                                <div class="bar pink" style="height: 50px;"></div>
+                                <div class="bar green" style="height: 67px;"></div>
+                                <div class="bar pink" style="height: 53px;"></div>
+                            </div>
+                            <div class="day-bars">
+                                <div class="bar green" style="height: 120px;"></div>
+                                <div class="bar pink" style="height: 87px;"></div>
+                            </div>
+                            <div class="day-bars">
+                                <div class="bar green" style="height: 93px;"></div>
+                                <div class="bar pink" style="height: 67px;"></div>
                             </div>
                         </div>
                     </div>
