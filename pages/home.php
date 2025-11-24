@@ -15,13 +15,14 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - Gezondheidsmeter</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body>
+<body class="auth-page">
+    <?php include __DIR__ . '/../components/navbar.php'; ?>
     <div class="container">
         <h1>Welkom, <?= htmlspecialchars($username) ?>!</h1>
         <p class="welcome-message">Je bent succesvol ingelogd.</p>
-        
-        <a href="logout.php" class="logout-btn">Uitloggen</a>
     </div>
+    <?php include __DIR__ . '/../components/footer.php'; ?>
 </body>
 </html>

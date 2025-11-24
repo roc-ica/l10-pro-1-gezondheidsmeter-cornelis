@@ -25,14 +25,14 @@ $username = $_SESSION['username'] ?? 'Admin';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Home - Gezondheidsmeter</title>
-
+    <link rel="stylesheet" href="../../assets/css/style.css">
 </head>
-<body>
+<body class="auth-page">
+    <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
     <div class="container">
         <h1>Welkom, <?= htmlspecialchars($username) ?>! <span class="admin-badge">ADMIN</span></h1>
         <p class="welcome-message">Je bent succesvol ingelogd als beheerder.</p>
-        
-        <a href="../../pages/logout.php" class="logout-btn">Uitloggen</a>
     </div>
+    <?php include __DIR__ . '/../../components/footer.php'; ?>
 </body>
 </html>
