@@ -104,12 +104,12 @@ $username = $_SESSION['username'] ?? 'Admin';
                         </div>
                     </div>
                     <div class="x-axis">
-                        <div class="x-axis-label">Maa</div>
-                        <div class="x-axis-label">Din</div>
-                        <div class="x-axis-label">Woe</div>
-                        <div class="x-axis-label">Don</div>
-                        <div class="x-axis-label">Vri</div>
-                        <div class="x-axis-label">Zat</div>
+                        <div class="x-axis-label">Maandag</div>
+                        <div class="x-axis-label">Dinsdag</div>
+                        <div class="x-axis-label">Woensdag</div>
+                        <div class="x-axis-label">Donderdag</div>
+                        <div class="x-axis-label">Vrijdag</div>
+                        <div class="x-axis-label">Zaterdag</div>
                     </div>
                     <div class="chart-legend">
                         <div class="legend-item">
