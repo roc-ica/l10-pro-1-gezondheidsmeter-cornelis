@@ -78,28 +78,28 @@ $username = $_SESSION['username'] ?? 'Admin';
                         </div>
                         <div class="bars-container">
                             <div class="day-bars">
-                                <div class="bar green" style="height: 80px;"></div>
-                                <div class="bar pink" style="height: 60px;"></div>
+                                <div class="bar green" style="height: 60px;"></div>
+                                <div class="bar pink" style="height: 80px;"></div>
                             </div>
                             <div class="day-bars">
-                                <div class="bar green" style="height: 100px;"></div>
-                                <div class="bar pink" style="height: 73px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 107px;"></div>
-                                <div class="bar pink" style="height: 93px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 67px;"></div>
-                                <div class="bar pink" style="height: 53px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 120px;"></div>
-                                <div class="bar pink" style="height: 87px;"></div>
+                                <div class="bar green" style="height: 73px;"></div>
+                                <div class="bar pink" style="height: 100px;"></div>
                             </div>
                             <div class="day-bars">
                                 <div class="bar green" style="height: 93px;"></div>
+                                <div class="bar pink" style="height: 107px;"></div>
+                            </div>
+                            <div class="day-bars">
+                                <div class="bar green" style="height: 53px;"></div>
                                 <div class="bar pink" style="height: 67px;"></div>
+                            </div>
+                            <div class="day-bars">
+                                <div class="bar green" style="height: 87px;"></div>
+                                <div class="bar pink" style="height: 120px;"></div>
+                            </div>
+                            <div class="day-bars">
+                                <div class="bar green" style="height: 67px;"></div>
+                                <div class="bar pink" style="height: 93px;"></div>
                             </div>
                         </div>
                     </div>
@@ -125,7 +125,7 @@ $username = $_SESSION['username'] ?? 'Admin';
             </div>
 
             <!-- Recent Activity -->
-            <div class="chart-block">
+            <div class="chart-block recent-activity-block">
                 <h3 class="chart-title">Recente activiteit</h3>
                 <p class="activity-subtitle">Admin logboek en systeemmeldingen</p>
                 <div class="activity-log">
@@ -153,6 +153,41 @@ $username = $_SESSION['username'] ?? 'Admin';
                         </div>
                         <div class="activity-time">1 uur geleden</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend Row -->
+        <div class="trend-row">
+            <div class="chart-block trend-block">
+                <h3 class="chart-title">Gemiddelde Score Trend</h3>
+                <div class="trend-chart">
+                    <svg class="trend-svg" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet">
+                        <!-- Axes -->
+                        <line x1="10" y1="10" x2="10" y2="100" stroke="#000" stroke-width="1"/>
+                        <line x1="10" y1="100" x2="290" y2="100" stroke="#000" stroke-width="1"/>
+                        
+                        <!-- Trend line with points -->
+                        <polyline 
+                            points="10,85 40,75 70,60 100,65 130,50 160,45 190,55 220,40 250,35"
+                            fill="none"
+                            stroke="#008000"
+                            stroke-width="0.5"
+                        />
+                        
+                        <!-- Data points -->
+                        <circle cx="40" cy="75" r="1" fill="#008000"/>
+                        <circle cx="70" cy="60" r="1" fill="#008000"/>
+                        <circle cx="100" cy="65" r="1" fill="#008000"/>
+                        <circle cx="130" cy="50" r="1" fill="#008000"/>
+                        <circle cx="160" cy="45" r="1" fill="#008000"/>
+                        <circle cx="190" cy="55" r="1" fill="#008000"/>
+                        <circle cx="220" cy="40" r="1" fill="#008000"/>
+                        <circle cx="250" cy="35" r="1" fill="#008000"/>
+                    </svg>
+                </div>
+                <div class="trend-legend">
+                    <span class="trend-label">Gemiddelde Score</span>
                 </div>
             </div>
         </div>
