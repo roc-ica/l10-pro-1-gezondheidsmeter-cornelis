@@ -28,7 +28,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $errors = $res['errors'] ?? null;
 }
 ?>
-<div class="auth-form login-form">
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gezondheidsmeter - Inloggen</title>
+    <link rel="stylesheet" href="../../../assets/css/style.css">
+</head>
+<body class="auth-page">
+    <div class="header"></div>
+    <div class="center-container">
+        <div class="auth-form login-form">
     <h2>Inloggen</h2>
     <?php if (!empty($message)): ?>
         <div class="message"><?= htmlspecialchars($message) ?></div>
@@ -56,4 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 
     <p>Geen account? <a href="register.php">Registreer hier</a></p>
-</div>
+        </div>
+    </div>
+    <div class="footer">Gezondheidsmeter project © 2025 - ROC Midden Nederland</div>
+</body>
+</html>
