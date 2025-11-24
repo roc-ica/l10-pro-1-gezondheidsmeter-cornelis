@@ -1,6 +1,6 @@
 /* Auth Pages Styling */
 .auth-page {
-    background: #F2F0EF;
+    background: #F6F9F6;
     min-height: 100vh;
     margin: 0;
     padding: 0;
@@ -552,7 +552,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
     min-height: 150px;
 }
 
@@ -565,7 +565,7 @@
 .trend-legend {
     display: flex;
     justify-content: center;
-    margin-top: 16px;
+    margin-top: 0px;
 }
 
 .trend-label {
