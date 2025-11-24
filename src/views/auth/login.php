@@ -28,32 +28,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $errors = $res['errors'] ?? null;
 }
 ?>
-<div class="auth-form login-form">
-    <h2>Inloggen</h2>
-    <?php if (!empty($message)): ?>
-        <div class="message"><?= htmlspecialchars($message) ?></div>
-    <?php endif; ?>
-    <?php if (!empty($errors) && is_array($errors)): ?>
-        <ul class="errors">
-            <?php foreach ($errors as $e): ?>
-                <li><?= htmlspecialchars($e) ?></li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gezondheidsmeter - Inloggen</title>
+    <link rel="stylesheet" href="../../../assets/css/style.css">
+</head>
+<body class="auth-page">
+    <?php include __DIR__ . '/../../../components/navbar.php'; ?>
+    <div class="center-container">
+        <div class="auth-form login-form">
+            <h2>Inloggen</h2>
+            <?php if (!empty($message)): ?>
+                <div class="message"><?= htmlspecialchars($message) ?></div>
+            <?php endif; ?>
+            <?php if (!empty($errors) && is_array($errors)): ?>
+                <ul class="errors">
+                    <?php foreach ($errors as $e): ?>
+                        <li><?= htmlspecialchars($e) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
 
-    <form method="post" action="" novalidate>
-        <div>
-            <label for="username">Gebruikersnaam of e-mail</label>
-            <input id="username" name="username" type="text" required maxlength="255" />
-        </div>
-        <div>
-            <label for="password">Wachtwoord</label>
-            <input id="password" name="password" type="password" required />
-        </div>
-        <div>
-            <button type="submit">Inloggen</button>
-        </div>
-    </form>
+            <form method="post" action="" novalidate>
+                <div>
+                    <label for="username">Gebruikersnaam of e-mail</label>
+                    <input id="username" name="username" type="text" required maxlength="255" />
+                </div>
+                <div>
+                    <label for="password">Wachtwoord</label>
+                    <input id="password" name="password" type="password" required />
+                </div>
+                <div>
+                    <button type="submit">Inloggen</button>
+                </div>
+            </form>
 
-    <p>Geen account? <a href="register.php">Registreer hier</a></p>
-</div>
+            <p>Geen account? <a href="register.php">Registreer hier</a></p>
+        </div>
+    </div>
+    <?php include __DIR__ . '/../../../components/footer.php'; ?>
+</body>
+</html>
+
