@@ -11,7 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Redirect on success
     if (!empty($res['success']) && $res['success'] === true) {
-        header('Location: ../../../pages/home.php');
+        // Check if user is admin
+        $user = $res['user'] ?? null;
+        if ($user && !empty($user->is_admin)) {
+            // Admin redirect
+            header('Location: ../../../admin/pages/home.php');
+        } else {
+            // Normal user redirect
+            header('Location: ../../../pages/home.php');
+        }
         exit;
     }
 
