@@ -1,6 +1,6 @@
 /* Auth Pages Styling */
 .auth-page {
-    background: #16A34A;
+    background: #fff;
     min-height: 100vh;
     margin: 0;
     padding: 0;
@@ -35,7 +35,7 @@
 }
 
 .auth-form {
-    background: #fff;
+    background: #16A34A;
     padding: 40px 30px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -44,7 +44,7 @@
 }
 
 .auth-form h2 {
-    color: #16A34A;
+    color: #fff;
     margin-bottom: 30px;
     font-size: 24px;
     text-align: center;
@@ -58,7 +58,7 @@
 .auth-form label {
     display: block;
     margin-bottom: 8px;
-    color: #333;
+    color: #fff;
     font-weight: 500;
     font-size: 14px;
 }
@@ -66,23 +66,25 @@
 .auth-form input {
     width: 100%;
     padding: 12px;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
     font-size: 14px;
     transition: border-color 0.3s, box-shadow 0.3s;
     box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
 }
 
 .auth-form input:focus {
     outline: none;
-    border-color: #16A34A;
-    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
 }
 
 .auth-form button {
     width: 100%;
-    background: #16A34A;
-    color: #fff;
+    background: #fff;
+    color: #16A34A;
     border: none;
     padding: 12px;
     border-radius: 6px;
@@ -94,19 +96,19 @@
 }
 
 .auth-form button:hover {
-    background: #128039;
+    background: #f0f0f0;
 }
 
 .auth-form p {
     text-align: center;
     margin-top: 20px;
-    color: #666;
+    color: #fff;
     font-size: 14px;
     margin-bottom: 0;
 }
 
 .auth-form a {
-    color: #16A34A;
+    color: #fff;
     text-decoration: none;
     font-weight: 600;
 }
