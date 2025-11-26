@@ -17,7 +17,7 @@ function isActive($page, $current) {
         </div>
         <?php if ($isLoggedIn): ?>
         <div class="navbar-links">
-            <a href="dashboard.php" class="nav-link <?= isActive('dashboard.php', $currentPage) ?>">Dashboard</a>
+            <a href="home.php" class="nav-link <?= isActive('home.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
             <a href="geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
             <a href="instellingen.php" class="nav-link <?= isActive('instellingen.php', $currentPage) ?>">Instellingen</a>
