@@ -1,13 +1,13 @@
 {
   "name": "Mijn Gezondheids App",
-  "short_name": "Gezondheid",
-  "start_url": "/",
+  "short_name": "Gezond!",
+  "start_url": "/pages/home.php",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "icons": [
     {
-      "src": "images/icons/icon-192x192.png",
+      "src": "assets/images/icons/gm192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     }
