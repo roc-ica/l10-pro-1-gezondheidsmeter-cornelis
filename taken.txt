@@ -1,0 +1,19 @@
+Taken:
+
+Kaj:
+Admin vragen.php frontend/backend
+
+Colin:
+Frontend gebruikers vragen.php 
+
+Khalil:
+Account.php backend/frontend
+gebruikers.php backend
+
+Gijs:
+Home page
+
+Moamen:
+Admin dashboard
+
+Micheal:
