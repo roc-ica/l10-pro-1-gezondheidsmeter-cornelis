@@ -1,0 +1,8 @@
+{
+    "name": "Gezondheidsmeter Cornelis",
+    "version": "1.0.0",
+    "description": "Gezondheidsmeter Cornelis",
+    "author": "Cornelis",
+    "license": "MIT",
+    "main": "index.php"
+}
