@@ -14,7 +14,6 @@ $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['user']);
             <a href="#" class="nav-link">Geschiedenis</a>
             <a href="#" class="nav-link">Instellingen</a>
             <a href="#" class="nav-link">Account</a>
-            <a href="logout.php" class="nav-link">Uitloggen</a>
         </div>
         <?php endif; ?>
     </div>
