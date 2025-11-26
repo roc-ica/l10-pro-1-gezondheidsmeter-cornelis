@@ -20,7 +20,6 @@ function isActive($page, $current) {
             <a href="home.php" class="nav-link <?= isActive('home.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
             <a href="geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
-            <a href="instellingen.php" class="nav-link <?= isActive('instellingen.php', $currentPage) ?>">Instellingen</a>
             <a href="account.php" class="nav-link <?= isActive('account.php', $currentPage) ?>">Account</a>
         </div>
         <?php endif; ?>
