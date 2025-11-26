@@ -9,3 +9,23 @@ if (!isset($_SESSION['user_id'])) {
 
 $username = $_SESSION['username'] ?? 'Gebruiker';
 ?>
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account - Gezondheidsmeter</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body class="auth-page">
+    <?php include __DIR__ . '../../components/navbar.php'; ?>
+    
+    <div class="dashboard-container">
+
+
+    </div>
+
+    <?php include __DIR__ . '../../components/footer.php'; ?>
+</body>
+</html>
