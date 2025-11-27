@@ -40,7 +40,7 @@ if ($currentQuestionData && isset($_SESSION['answered_questions'][$currentQuesti
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
     
-    <div class="questions-container">
+    <div class="dashboard-container">
         <div class="questions-header">
             <h1>Vandaag's vragen</h1>
             <p>Beantwoord de vragen om je gezondheid beter te kunnen volgen.</p>
