@@ -9,23 +9,25 @@ if (!isset($_SESSION['user_id'])) {
 
 $username = $_SESSION['username'] ?? 'Gebruiker';
 ?>
-
 <!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geschiedenis - Gezondheidsmeter</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 </head>
 <body class="auth-page">
-    <?php include __DIR__ . '../../components/navbar.php'; ?>
+    <?php include __DIR__ . '/../components/navbar.php'; ?>
     
     <div class="dashboard-container">
 
 
     </div>
 
-    <?php include __DIR__ . '../../components/footer.php'; ?>
+    <?php include __DIR__ . '/../components/footer.php'; ?>
+    <script src="/js/pwa.js"></script>
 </body>
 </html>

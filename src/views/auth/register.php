@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gezondheidsmeter - Registreren</title>
     <link rel="stylesheet" href="../../../assets/css/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../../components/navbar.php'; ?>
@@ -82,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <?php include __DIR__ . '/../../../components/footer.php'; ?>
+    <script src="/js/pwa.js"></script>
 </body>
 </html>
 

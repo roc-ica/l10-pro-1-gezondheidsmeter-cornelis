@@ -22,7 +22,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
     <link rel="manifest" href="/manifest.json">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 
     <!-- Apple Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,6 +38,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
         <p class="welcome-message">Je bent succesvol ingelogd.</p>
     </div>
     <?php include __DIR__ . '/../components/footer.php'; ?>
+    <script src="/js/pwa.js"></script>
 </body>
 
 </html>
