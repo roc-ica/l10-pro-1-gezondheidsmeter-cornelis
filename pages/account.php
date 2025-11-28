@@ -21,11 +21,15 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
-    
+        
     <div class="dashboard-container">
-
-
-    </div>
+        <div class="dashboard-header">
+            <div class="dashboard-header-left">
+                <h1>Mijn Account</h1>
+                <p>Welkom, <?= htmlspecialchars($username) ?>!</p>
+            </div>
+        </div>
+    </div>    
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
     <script src="/js/pwa.js"></script>
