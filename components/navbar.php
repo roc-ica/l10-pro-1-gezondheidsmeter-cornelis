@@ -6,8 +6,10 @@ $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['user']);
 $currentPage = basename($_SERVER['PHP_SELF']);
 
 // Function to add active class
-function isActive($page, $current) {
-    return $page === $current ? 'active' : '';
+if (!function_exists('isActive')) {
+    function isActive($page, $current) {
+        return $page === $current ? 'active' : '';
+    }
 }
 ?>
 <nav class="navbar">
