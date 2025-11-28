@@ -16,6 +16,7 @@ Gijs:
 Home page
 
 Moamen:
-Admin dashboard
+admin analytics
 
 Micheal:
+Admin dashboard
