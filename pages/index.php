@@ -1,3 +1,32 @@
+<?php
+session_start();
+
+require_once __DIR__ . '/../classes/DashboardStats.php';
+require_once __DIR__ . '/../classes/Question.php';
+
+$userId = $_SESSION['user_id'] ?? null;
+$statsModel = new DashboardStats();
+$dashboardData = $statsModel->getOverview($userId);
+
+$questionModel = new Question();
+$highlightQuestion = $questionModel->getHighlightQuestion();
+
+$isLoggedIn = isset($_SESSION['user_id']);
+$questionsData = $dashboardData['hero']['questions'];
+$remainingLabel = $isLoggedIn
+    ? ($questionsData['remaining'] > 0
+        ? 'Nog ' . $questionsData['remaining'] . ' vragen te gaan'
+        : 'Alle vragen zijn beantwoord')
+    : 'Log in om jouw vragen te vervolgen';
+$scoreBtnLabel = $isLoggedIn
+    ? ($questionsData['remaining'] > 0
+        ? 'Beantwoord ' . $questionsData['remaining'] . ' vragen'
+        : 'Bekijk vragen')
+    : 'Log in';
+$scoreBtnLink = $isLoggedIn ? 'vragen.php' : '../src/views/auth/login.php';
+
+$miniChartPalette = ['bar-green', 'bar-blue', 'bar-orange'];
+?>
 <!DOCTYPE html>
 <html lang="nl">
   <head>
@@ -27,19 +56,26 @@
         <div class="score-card">
           <div class="score-card-left">
             <p class="score-label">Je Gezondheidsscore</p>
-            <div class="score-value">79</div>
+            <div class="score-value"><?= $dashboardData['hero']['score']; ?></div>
             <p class="score-range">van 100</p>
             <div class="score-scale">
-              <div class="score-scale-fill" style="width: 79%"></div>
+              <div
+                class="score-scale-fill"
+                style="width: <?= $dashboardData['hero']['score']; ?>%"
+              ></div>
             </div>
-            <p class="score-caption">Goed bezig! Blijf zo door gaan.</p>
+            <p class="score-caption">
+              <?= htmlspecialchars($dashboardData['hero']['message']); ?>
+            </p>
           </div>
 
           <div class="score-card-right">
             <p class="score-label">Vragen vandaag</p>
-            <div class="score-questions">12</div>
-            <p class="score-caption">Nog 3 vragen te gaan</p>
-            <a class="score-btn" href="/pages/questions.php">Maak 7 vragen</a>
+            <div class="score-questions"><?= $questionsData['answered']; ?></div>
+            <p class="score-caption"><?= htmlspecialchars($remainingLabel); ?></p>
+            <a class="score-btn" href="<?= htmlspecialchars($scoreBtnLink); ?>">
+              <?= htmlspecialchars($scoreBtnLabel); ?>
+            </a>
           </div>
         </div>
       </section>
@@ -47,79 +83,71 @@
       <section class="pillars-section">
         <h2>Je Gezondheid Pijlers</h2>
         <div class="pillars-grid">
-          <article class="pillar-card">
-            <div class="pillar-icon">
-              <span class="pillar-percentage">75%</span>
-            </div>
-            <h3>Slaap</h3>
-          </article>
-          <article class="pillar-card">
-            <div class="pillar-icon">
-              <span class="pillar-percentage">90%</span>
-            </div>
-            <h3>Voeding</h3>
-          </article>
-          <article class="pillar-card">
-            <div class="pillar-icon">
-              <span class="pillar-percentage">55%</span>
-            </div>
-            <h3>Beweging</h3>
-          </article>
-          <article class="pillar-card">
-            <div class="pillar-icon">
-              <span class="pillar-percentage">40%</span>
-            </div>
-            <h3>Stress</h3>
-          </article>
-          <article class="pillar-card">
-            <div class="pillar-icon">
-              <span class="pillar-percentage">75%</span>
-            </div>
-            <h3>Hydratatie</h3>
-          </article>
-          <article class="pillar-card">
-            <div class="pillar-icon">
-              <span class="pillar-percentage">70%</span>
-            </div>
-            <h3>Mentaal</h3>
-          </article>
+          <?php if (!empty($dashboardData['pillars'])): ?>
+            <?php foreach ($dashboardData['pillars'] as $pillar): ?>
+              <article class="pillar-card">
+                <div
+                  class="pillar-icon"
+                  style="border-color: <?= htmlspecialchars($pillar['color'] ?? '#dcfce7'); ?>;"
+                >
+                  <span class="pillar-percentage"><?= $pillar['percentage']; ?>%</span>
+                </div>
+                <h3><?= htmlspecialchars($pillar['name']); ?></h3>
+              </article>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p class="no-questions">Nog geen pijlerdata beschikbaar.</p>
+          <?php endif; ?>
         </div>
       </section>
 
       <section class="insights-row">
         <article class="question-card">
-          <div class="question-badge">Vragen van vandaag</div>
-          <h3 class="question-text">Heb je vandaag genoeg water gedronken?</h3>
-          <p class="answer-label">Selecteer je antwoord</p>
-          <div class="answer-grid">
-            <button class="answer-btn selected">Niet genoeg</button>
-            <button class="answer-btn">Meestal</button>
-            <button class="answer-btn">Normaal</button>
-            <button class="answer-btn">Zeer goed</button>
-          </div>
-          <div class="question-nav">
-            <a href="#" class="nav-btn prev-btn">Vorige</a>
-            <a href="#" class="nav-btn next-btn">Volgende</a>
-          </div>
+          <?php if ($highlightQuestion): ?>
+            <div class="question-badge">
+              <?= htmlspecialchars($highlightQuestion['pillar_name'] ?? 'Vraag'); ?>
+            </div>
+            <h3 class="question-text">
+              <?= htmlspecialchars($highlightQuestion['question_text']); ?>
+            </h3>
+            <p class="answer-label">Voorbeeld antwoorden</p>
+            <div class="answer-grid">
+              <?php foreach (array_slice($highlightQuestion['parsed_choices'], 0, 4) as $choice): ?>
+                <button class="answer-btn">
+                  <?= htmlspecialchars($choice); ?>
+                </button>
+              <?php endforeach; ?>
+            </div>
+            <div class="question-nav">
+              <a href="<?= htmlspecialchars($scoreBtnLink); ?>" class="nav-btn next-btn">
+                Start vragen
+              </a>
+            </div>
+          <?php else: ?>
+            <div class="question-badge">Vragen</div>
+            <p class="no-questions">Er zijn momenteel geen vragen beschikbaar.</p>
+          <?php endif; ?>
         </article>
 
         <article class="progress-card mini-progress-card">
           <p class="progress-label">Deze week</p>
           <p class="progress-count">Voortgang</p>
-          <div class="mini-chart">
-            <div class="chart-bar">
-              <span class="bar bar-green" style="height: 65%"></span>
-              <p>Slaap</p>
+          <?php if (!empty($dashboardData['mini_chart'])): ?>
+            <div class="mini-chart">
+              <?php foreach ($dashboardData['mini_chart'] as $index => $bar): ?>
+                <?php $barClass = $miniChartPalette[$index] ?? 'bar-green'; ?>
+                <div class="chart-bar">
+                  <span
+                    class="bar <?= $barClass; ?>"
+                    style="height: <?= max(5, $bar['percentage']); ?>%"
+                  ></span>
+                  <p><?= htmlspecialchars($bar['name']); ?></p>
+                </div>
+              <?php endforeach; ?>
             </div>
-            <div class="chart-bar">
-              <span class="bar bar-blue" style="height: 80%"></span>
-              <p>Voeding</p>
-            </div>
-            <div class="chart-bar">
-              <span class="bar bar-orange" style="height: 50%"></span>
-              <p>Stress</p>
-            </div>
-          </div>
+          <?php else: ?>
+            <p class="no-questions">Nog geen voortgangsdata.</p>
+          <?php endif; ?>
         </article>
       </section>
     </main>

@@ -15,12 +15,17 @@ function isActive($page, $current) {
         <div class="navbar-brand">
             <span class="brand-text">Gezondheids<span class="brand-meter">Meter</span></span>
         </div>
-        <?php if ($isLoggedIn): ?>
+
         <div class="navbar-links">
             <a href="home.php" class="nav-link <?= isActive('home.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
             <a href="geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
-            <a href="account.php" class="nav-link <?= isActive('account.php', $currentPage) ?>">Account</a>
+            <a href="instellingen.php" class="nav-link <?= isActive('instellingen.php', $currentPage) ?>">Instellingen</a>
+        </div>
+
+        <?php if ($isLoggedIn): ?>
+        <div class="navbar-actions">
+                <a href="account.php" class="nav-link nav-link-cta <?= isActive('account.php', $currentPage) ?>">Account</a>
         </div>
         <?php endif; ?>
     </div>
