@@ -4,6 +4,15 @@ session_start();
 require_once __DIR__ . '/../classes/DashboardStats.php';
 require_once __DIR__ . '/../classes/Question.php';
 
+$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+$basePath = preg_replace('#/pages$#', '', $scriptDir);
+if ($basePath === '/' || $basePath === '\\' || $basePath === false) {
+    $basePath = '';
+}
+if (!defined('APP_BASE_PATH')) {
+    define('APP_BASE_PATH', $basePath);
+}
+
 $userId = $_SESSION['user_id'] ?? null;
 $statsModel = new DashboardStats();
 $dashboardData = $statsModel->getOverview($userId);
@@ -32,7 +41,7 @@ $miniChartPalette = ['bar-green', 'bar-blue', 'bar-orange'];
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../assets/css/style.css" />
+    <link rel="stylesheet" href="<?= htmlspecialchars(APP_BASE_PATH); ?>/assets/css/style.css" />
     <title>Gezondheidsmeter</title>
   </head>
   <body class="home-body">
