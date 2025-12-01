@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gezondheidsmeter-v3';
+const CACHE_NAME = 'gezondheidsmeter-v4';
 const urlsToCache = [
     '/',
     '/index.php',
@@ -23,9 +23,9 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
-    
+
     // Network-first strategy for admin pages and PHP files
-    if (url.pathname.includes('/admin/') || 
+    if (url.pathname.includes('/admin/') ||
         url.pathname.endsWith('.php') ||
         url.pathname.includes('/pages/') ||
         url.pathname.includes('/src/')) {
