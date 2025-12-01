@@ -607,3 +607,72 @@
 }
 
 /* ADMIN ANALYSTICS PAGE STYLE */
+
+/* Analytics Row - Full width chart blocks */
+.dashboard-container1 {
+  max-width: 1200px;
+  margin: 0 20%;
+  padding: 40px 30px;
+}
+
+.analytics-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.analytics-chart-block {
+  background: #ffffff;
+  box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.2),
+    0px 2px 4px 0px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.area-chart-container {
+  width: 100%;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+}
+
+.area-chart-svg {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.line-chart-container {
+  width: 100%;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.line-chart-svg {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .analytics-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .area-chart-container,
+  .line-chart-container {
+    min-height: 200px;
+  }
+  
+  .chart-area {
+    height: 180px;
+  }
+}
