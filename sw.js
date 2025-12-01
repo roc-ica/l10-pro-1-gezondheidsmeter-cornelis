@@ -1,18 +1,13 @@
-const CACHE_NAME = 'gezondheidsmeter-v2';
+const CACHE_NAME = 'gezondheidsmeter-v3';
 const urlsToCache = [
     '/',
     '/index.php',
     '/manifest.json',
     '/assets/css/style.css',
+    '/assets/css/admin.css',
     '/assets/images/icons/gm192x192.png',
     '/assets/images/icons/gm512x512.png',
-    '/js/pwa.js',
-    '/pages/home.php',
-    '/pages/account.php',
-    '/pages/geschiedenis.php',
-    '/pages/vragen.php',
-    '/src/views/auth/login.php',
-    '/src/views/auth/register.php'
+    '/js/pwa.js'
 ];
 
 self.addEventListener('install', event => {
@@ -27,16 +22,41 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Cache hit - return response
-                if (response) {
+    const url = new URL(event.request.url);
+    
+    // Network-first strategy for admin pages and PHP files
+    if (url.pathname.includes('/admin/') || 
+        url.pathname.endsWith('.php') ||
+        url.pathname.includes('/pages/') ||
+        url.pathname.includes('/src/')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // Clone the response before caching
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME)
+                        .then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
                     return response;
-                }
-                return fetch(event.request);
-            })
-    );
+                })
+                .catch(() => {
+                    // If network fails, try cache
+                    return caches.match(event.request);
+                })
+        );
+    } else {
+        // Cache-first strategy for static assets
+        event.respondWith(
+            caches.match(event.request)
+                .then(response => {
+                    if (response) {
+                        return response;
+                    }
+                    return fetch(event.request);
+                })
+        );
+    }
 });
 
 self.addEventListener('activate', event => {

@@ -109,4 +109,29 @@ class Question
     {
         return isset($_SESSION['answered_questions']) ? count($_SESSION['answered_questions']) : 0;
     }
+
+    /**
+     * Get a highlighted active question (latest active)
+     */
+    public function getHighlightQuestion(): ?array
+    {
+        $stmt = $this->pdo->query(
+            "SELECT q.*, p.name as pillar_name 
+             FROM questions q 
+             LEFT JOIN pillars p ON q.pillar_id = p.id 
+             WHERE q.active = 1 
+             ORDER BY q.created_at DESC, q.id DESC 
+             LIMIT 1"
+        );
+
+        $question = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$question) {
+            return null;
+        }
+
+        $question['parsed_choices'] = $this->parseChoices($question['choices']);
+
+        return $question;
+    }
 }
