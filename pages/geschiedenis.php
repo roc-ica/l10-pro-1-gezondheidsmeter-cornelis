@@ -7,7 +7,31 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+require_once __DIR__ . '/../classes/History.php';
+
 $username = $_SESSION['username'] ?? 'Gebruiker';
+$userId = $_SESSION['user_id'];
+
+$history = new History();
+$weeklyStats = $history->getWeeklyStats($userId);
+$summaryStats = $history->getSummaryStats($userId);
+
+// Prepare data for Chart.js
+$chartLabels = array_column($weeklyStats, 'day_name');
+$chartData = [
+    'Voeding' => [],
+    'Beweging' => [],
+    'Slaap' => [],
+    'Stress' => [] // Mapped from Mentaal/Stress
+];
+
+foreach ($weeklyStats as $dayStat) {
+    $chartData['Voeding'][] = $dayStat['scores']['Voeding'] ?? 0;
+    $chartData['Beweging'][] = $dayStat['scores']['Beweging'] ?? 0;
+    $chartData['Slaap'][] = $dayStat['scores']['Slaap'] ?? 0;
+    $chartData['Stress'][] = $dayStat['scores']['Stress'] ?? 0;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -33,19 +57,19 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
         <div class="stats-row">
             <div class="stat-block">
                 <div class="stat-label">Gemiddelde Score</div>
-                <div class="stat-number green-text">72</div>
+                <div class="stat-number green-text"><?php echo $summaryStats['average_score']; ?></div>
             </div>
             <div class="stat-block">
                 <div class="stat-label">Beste Dag</div>
-                <div class="stat-number green-text">Zaterdag</div>
+                <div class="stat-number green-text"><?php echo htmlspecialchars($summaryStats['best_day']); ?></div>
             </div>
             <div class="stat-block">
                 <div class="stat-label">Trend</div>
-                <div class="stat-number green-text">↗ +5%</div>
+                <div class="stat-number green-text"><?php echo htmlspecialchars($summaryStats['trend']); ?></div>
             </div>
             <div class="stat-block">
                 <div class="stat-label">Streak</div>
-                <div class="stat-number green-text">7 Dagen</div>
+                <div class="stat-number green-text"><?php echo $summaryStats['streak']; ?> Dagen</div>
             </div>
         </div>
 
@@ -99,75 +123,20 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                                 <th>Voeding</th>
                                 <th>Beweging</th>
                                 <th>Stress</th>
-                                <th>Hydratatie</th>
-                                <th>Mentaal</th>
+                                <!-- <th>Hydratatie</th> --> <!-- Not in main chart, maybe add later if needed -->
+                                <!-- <th>Mentaal</th> --> <!-- Mapped to Stress -->
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Current Week -->
+                            <?php foreach ($weeklyStats as $stat): ?>
                             <tr>
-                                <td>Ma</td>
-                                <td>65</td>
-                                <td>80</td>
-                                <td>45</td>
-                                <td>60</td>
-                                <td>75</td>
-                                <td>70</td>
+                                <td><?php echo htmlspecialchars($stat['day_name']); ?></td>
+                                <td><?php echo $stat['scores']['Slaap'] ?? '-'; ?></td>
+                                <td><?php echo $stat['scores']['Voeding'] ?? '-'; ?></td>
+                                <td><?php echo $stat['scores']['Beweging'] ?? '-'; ?></td>
+                                <td><?php echo $stat['scores']['Stress'] ?? '-'; ?></td>
                             </tr>
-                            <tr>
-                                <td>Di</td>
-                                <td>72</td>
-                                <td>78</td>
-                                <td>52</td>
-                                <td>58</td>
-                                <td>78</td>
-                                <td>72</td>
-                            </tr>
-                            <tr>
-                                <td>Wo</td>
-                                <td>68</td>
-                                <td>82</td>
-                                <td>48</td>
-                                <td>62</td>
-                                <td>76</td>
-                                <td>71</td>
-                            </tr>
-                            <tr>
-                                <td>Do</td>
-                                <td>75</td>
-                                <td>85</td>
-                                <td>55</td>
-                                <td>55</td>
-                                <td>80</td>
-                                <td>75</td>
-                            </tr>
-                            <tr>
-                                <td>Vr</td>
-                                <td>70</td>
-                                <td>80</td>
-                                <td>50</td>
-                                <td>60</td>
-                                <td>77</td>
-                                <td>73</td>
-                            </tr>
-                            <tr>
-                                <td>Za</td>
-                                <td>80</td>
-                                <td>75</td>
-                                <td>65</td>
-                                <td>50</td>
-                                <td>82</td>
-                                <td>78</td>
-                            </tr>
-                            <tr>
-                                <td>Zo</td>
-                                <td>78</td>
-                                <td>79</td>
-                                <td>60</td>
-                                <td>52</td>
-                                <td>81</td>
-                                <td>76</td>
-                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -184,11 +153,11 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
         const weeklyChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'],
+                labels: <?php echo json_encode($chartLabels); ?>,
                 datasets: [
                     {
                         label: 'Beweging',
-                        data: [45, 52, 48, 55, 50, 65, 60],
+                        data: <?php echo json_encode($chartData['Beweging']); ?>,
                         borderColor: '#22c55e',
                         backgroundColor: '#22c55e',
                         pointBackgroundColor: '#ffffff',
@@ -199,7 +168,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                     },
                     {
                         label: 'Slaap',
-                        data: [65, 72, 68, 75, 70, 80, 78],
+                        data: <?php echo json_encode($chartData['Slaap']); ?>,
                         borderColor: '#3b82f6',
                         backgroundColor: '#3b82f6',
                         pointBackgroundColor: '#ffffff',
@@ -210,7 +179,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                     },
                     {
                         label: 'Stress',
-                        data: [60, 58, 62, 55, 60, 50, 52],
+                        data: <?php echo json_encode($chartData['Stress']); ?>,
                         borderColor: '#eab308',
                         backgroundColor: '#eab308',
                         pointBackgroundColor: '#ffffff',
@@ -221,7 +190,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                     },
                     {
                         label: 'Voeding',
-                        data: [80, 78, 82, 85, 80, 75, 79],
+                        data: <?php echo json_encode($chartData['Voeding']); ?>,
                         borderColor: '#f97316',
                         backgroundColor: '#f97316',
                         pointBackgroundColor: '#ffffff',
