@@ -10,10 +10,10 @@ class Database
             return self::$pdo;
         }
 
-        $host = getenv('DB_HOST') ?: 'localhost';
+        $host = getenv('DB_HOST') ?: 'db';
         $db   = getenv('DB_NAME') ?: 'gezondheidsmeter';
-        $user = getenv('DB_USER') ?: 'root';
-        $pass = getenv('DB_PASSWORD') ?: '';
+        $user = getenv('DB_USER') ?: 'gezond_user';
+        $pass = getenv('DB_PASSWORD') ?: 'gezond_pass';
         $charset = 'utf8mb4';
 
         $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

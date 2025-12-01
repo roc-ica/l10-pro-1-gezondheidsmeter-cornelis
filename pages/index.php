@@ -1,4 +1,4 @@
-<?php
+<!-- <?php
 session_start();
 
 require_once __DIR__ . '/../classes/DashboardStats.php';
@@ -41,7 +41,7 @@ $miniChartPalette = ['bar-green', 'bar-blue', 'bar-orange'];
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="<?= htmlspecialchars(APP_BASE_PATH); ?>/assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/style.css" />
     <title>Gezondheidsmeter</title>
   </head>
   <body class="home-body">
@@ -163,4 +163,4 @@ $miniChartPalette = ['bar-green', 'bar-blue', 'bar-orange'];
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
   </body>
-</html>
+</html> -->
