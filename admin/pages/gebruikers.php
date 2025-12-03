@@ -31,8 +31,15 @@ $username = $_SESSION['username'] ?? 'Admin';
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
     
     <div class="dashboard-container">
-
-
+        <div class="dashboard-header">
+            <div class="dashboard-header-left">
+                <h1>Gebruikers Beheer</h1>
+                <p>Totaal: 5 gebruikers</p>
+            </div>
+            <div class="dashboard-header-right">
+                <a href="../pages/home.php" class="btn-naar-app">Naar App</a>
+            </div>
+        </div>
     </div>
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
