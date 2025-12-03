@@ -1251,6 +1251,13 @@
   align-items: flex-start;
   width: 100%;
   justify-content: space-between;
+  .identity-button button{
+    color:var(--color-white);
+    background-color: var(--color-chart-green);
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+  }
 }
 .identity-details {
   display: flex;
