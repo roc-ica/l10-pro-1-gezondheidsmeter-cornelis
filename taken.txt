@@ -5,7 +5,6 @@ Admin vragen.php frontend/backend
 
 Colin:
 Frontend gebruikers vragen.php
-Analytics admin 
 geschiedenis
 
 Khalil:
@@ -17,6 +16,7 @@ Home page
 
 Moamen:
 admin analytics
+gebruikers.php Frontend
 
 Micheal:
 Admin dashboard
