@@ -65,16 +65,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($_POST['action'] === 'edit_question') {
             $question_id = $_POST['question_id'] ?? null;
             $question_text = trim($_POST['question_text'] ?? '');
-            if ($question_id && $question_text) {
-                if (Question::update((int) $question_id, $question_text)) {
+            $pillar_id = $_POST['pillar_id'] ?? null;
+            if ($question_id && $question_text && $pillar_id) {
+                if (Question::update((int) $question_id, $question_text, (int) $pillar_id)) {
                     $message = "Vraag bijgewerkt.";
                     // Log the action
                     $logger->logQuestionUpdate($adminUserId, (int) $question_id, [
-                        'question_text' => $question_text
+                        'question_text' => $question_text,
+                        'pillar_id' => $pillar_id
                     ]);
                 } else {
                     $error = "Fout bij bijwerken.";
                 }
+            } else {
+                $error = "Vul alle velden in.";
             }
         }
     }
@@ -147,7 +151,7 @@ $questions = Question::getAllWithPillars();
                         </div>
                         <div class="action-buttons">
                             <button class="btn-icon"
-                                onclick="openEditModal(<?php echo $q->id; ?>, '<?php echo addslashes(htmlspecialchars($q->question_text)); ?>')">
+                                onclick="openEditModal(<?php echo $q->id; ?>, '<?php echo addslashes(htmlspecialchars($q->question_text)); ?>', <?php echo $q->pillar_id; ?>)">
                                 <!-- Edit Icon (Pencil) -->
                                 <svg class="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -184,6 +188,15 @@ $questions = Question::getAllWithPillars();
                 <input type="hidden" name="action" value="edit_question">
                 <input type="hidden" name="question_id" id="edit_question_id">
                 <div style="margin-bottom: 15px;">
+                    <label for="edit_pillar_id" style="display:block; margin-bottom:5px;">Categorie:</label>
+                    <select name="pillar_id" id="edit_pillar_id" class="form-select" style="width: 100%; box-sizing: border-box;" required>
+                        <option value="" disabled>Selecteer categorie</option>
+                        <?php foreach ($pillars as $pillar): ?>
+                            <option value="<?php echo $pillar->id; ?>"><?php echo htmlspecialchars($pillar->name); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div style="margin-bottom: 15px;">
                     <label for="edit_question_text" style="display:block; margin-bottom:5px;">Vraag:</label>
                     <input type="text" name="question_text" id="edit_question_text" class="form-input"
                         style="width: 100%; box-sizing: border-box;" required>
@@ -212,10 +225,11 @@ $questions = Question::getAllWithPillars();
     </div>
 
     <script>
-        function openEditModal(id, text) {
+        function openEditModal(id, text, pillarId) {
             document.getElementById('editModal').style.display = "block";
             document.getElementById('edit_question_id').value = id;
             document.getElementById('edit_question_text').value = text;
+            document.getElementById('edit_pillar_id').value = pillarId;
         }
 
         function closeEditModal() {
