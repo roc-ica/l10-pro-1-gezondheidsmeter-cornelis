@@ -5,6 +5,9 @@ $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['user']);
 // Get current page
 $currentPage = basename($_SERVER['PHP_SELF']);
 
+// Check if we're on an auth page (login or register)
+$isAuthPage = $currentPage === 'login.php' || $currentPage === 'register.php';
+
 // Determine base path for links
 if (defined('APP_BASE_PATH')) {
     $navBasePath = APP_BASE_PATH;
@@ -32,6 +35,7 @@ if (!function_exists('isActive')) {
         <div class="navbar-brand">
             <span class="brand-text">Gezondheids<span class="brand-meter">Meter</span></span>
         </div>
+        <?php if (!$isAuthPage): ?>
                 <div class="navbar-links">
             <a href="index.php" class="nav-link <?= isActive('index.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
@@ -40,5 +44,6 @@ if (!function_exists('isActive')) {
             <a href="account.php" class="nav-link <?= isActive('account.php', $currentPage) ?>">Account</a>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
     </div>
 </nav>
