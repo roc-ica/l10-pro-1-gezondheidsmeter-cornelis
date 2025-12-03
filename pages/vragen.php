@@ -1,6 +1,5 @@
 <?php
 session_start();
-
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../src/views/auth/login.php');
@@ -135,5 +134,6 @@ if ($currentQuestionData && isset($_SESSION['answered_questions'][$currentQuesti
     });
     </script>
     <script src="/js/pwa.js"></script>
+    <script src="/js/session-guard.js"></script>
 </body>
 </html>

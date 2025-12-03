@@ -39,6 +39,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
     </div>
     <?php include __DIR__ . '/../components/footer.php'; ?>
     <script src="/js/pwa.js"></script>
+    <script src="/js/session-guard.js"></script>
 </body>
 
 </html>
