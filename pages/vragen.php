@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once __DIR__ . '/../classes/Question.php';
 
+$isLoggedIn = isset($_SESSION['user_id']);
 $username = $_SESSION['username'] ?? 'Gebruiker';
 
 // Use Question class

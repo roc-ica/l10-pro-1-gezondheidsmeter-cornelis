@@ -9,6 +9,8 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once __DIR__ . '/../classes/History.php';
 
+$isLoggedIn = isset($_SESSION['user_id']);
+
 $username = $_SESSION['username'] ?? 'Gebruiker';
 $userId = $_SESSION['user_id'];
 
