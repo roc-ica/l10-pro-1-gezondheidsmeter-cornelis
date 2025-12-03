@@ -17,6 +17,8 @@
   --color-chart-green: #008000;
   --color-chart-pink: #ff6c6c;
   --color-primary-opacity: rgba(10, 159, 28, 0.15);
+  --color-primary-lightgreen: rgba(22, 163, 74, 0.5);
+
 }
 
 /* Navbar Styling */
@@ -1237,7 +1239,7 @@
   margin-bottom: 2.5%;
 }
 .identity-card {
-  background-color: green;
+  background-color: var(--color-primary-lightgreen);
   border-radius: 25px;
   padding: 20px;
   width: 45%;
