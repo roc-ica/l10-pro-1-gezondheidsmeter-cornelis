@@ -32,11 +32,11 @@ if (!function_exists('isActive')) {
         <div class="navbar-brand">
             <span class="brand-text">Gezondheids<span class="brand-meter">Meter</span></span>
         </div>
-
-        <div class="navbar-links">
-            <a href="<?= htmlspecialchars($navBasePath); ?>/pages/index.php" class="nav-link <?= isActive('index.php', $currentPage) ?>">Dashboard</a>
-            <a href="<?= htmlspecialchars($navBasePath); ?>/pages/vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
-            <a href="<?= htmlspecialchars($navBasePath); ?>/pages/geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
+                <div class="navbar-links">
+            <a href="home.php" class="nav-link <?= isActive('home.php', $currentPage) ?>">Dashboard</a>
+            <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
+            <a href="geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
+            <a href="account.php" class="nav-link <?= isActive('account.php', $currentPage) ?>">Account</a>
         </div>
     </div>
 </nav>
