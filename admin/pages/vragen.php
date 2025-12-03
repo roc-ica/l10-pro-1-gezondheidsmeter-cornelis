@@ -29,6 +29,15 @@ $username = $_SESSION['username'] ?? 'Admin';
 $message = '';
 $error = '';
 
+// Check for success redirect
+if (isset($_GET['success']) && $_GET['success'] == '1') {
+    $message = "Vraag succesvol toegevoegd!";
+} elseif (isset($_GET['deleted']) && $_GET['deleted'] == '1') {
+    $message = "Vraag verwijderd.";
+} elseif (isset($_GET['updated']) && $_GET['updated'] == '1') {
+    $message = "Vraag bijgewerkt.";
+}
+
 // Handle Form Submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
@@ -39,12 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($pillar_id && $question_text) {
                 $result = Question::add((int) $pillar_id, $question_text);
                 if ($result) {
-                    $message = "Vraag succesvol toegevoegd!";
                     // Log the action
                     $logger->logQuestionCreate($adminUserId, $result, [
                         'pillar_id' => $pillar_id,
                         'question_text' => $question_text
                     ]);
+                    // Redirect to prevent duplicate submission on refresh
+                    header('Location: vragen.php?success=1');
+                    exit;
                 } else {
                     $error = "Fout bij toevoegen vraag.";
                 }
@@ -55,9 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $question_id = $_POST['question_id'] ?? null;
             if ($question_id) {
                 if (Question::delete((int) $question_id)) {
-                    $message = "Vraag verwijderd.";
                     // Log the action
                     $logger->logQuestionDelete($adminUserId, (int) $question_id);
+                    // Redirect to prevent duplicate submission on refresh
+                    header('Location: vragen.php?deleted=1');
+                    exit;
                 } else {
                     $error = "Fout bij verwijderen.";
                 }
@@ -68,12 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pillar_id = $_POST['pillar_id'] ?? null;
             if ($question_id && $question_text && $pillar_id) {
                 if (Question::update((int) $question_id, $question_text, (int) $pillar_id)) {
-                    $message = "Vraag bijgewerkt.";
                     // Log the action
                     $logger->logQuestionUpdate($adminUserId, (int) $question_id, [
                         'question_text' => $question_text,
                         'pillar_id' => $pillar_id
                     ]);
+                    // Redirect to prevent duplicate submission on refresh
+                    header('Location: vragen.php?updated=1');
+                    exit;
                 } else {
                     $error = "Fout bij bijwerken.";
                 }
