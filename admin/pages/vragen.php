@@ -11,6 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 require_once __DIR__ . '/../../src/models/User.php';
 require_once __DIR__ . '/../../src/models/Question.php';
 require_once __DIR__ . '/../../src/models/Pillar.php';
+require_once __DIR__ . '/../../classes/AdminActionLogger.php';
 
 $user = \User::findByIdStatic($_SESSION['user_id']);
 
@@ -19,6 +20,10 @@ if (!$user || !$user->is_admin) {
     header('Location: ../../pages/home.php');
     exit;
 }
+
+// Initialize action logger
+$logger = new AdminActionLogger();
+$adminUserId = $_SESSION['user_id'];
 
 $username = $_SESSION['username'] ?? 'Admin';
 $message = '';
@@ -32,8 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $question_text = trim($_POST['question_text'] ?? '');
 
             if ($pillar_id && $question_text) {
-                if (Question::add((int) $pillar_id, $question_text)) {
+                $result = Question::add((int) $pillar_id, $question_text);
+                if ($result) {
                     $message = "Vraag succesvol toegevoegd!";
+                    // Log the action
+                    $logger->logQuestionCreate($adminUserId, $result, [
+                        'pillar_id' => $pillar_id,
+                        'question_text' => $question_text
+                    ]);
                 } else {
                     $error = "Fout bij toevoegen vraag.";
                 }
@@ -45,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($question_id) {
                 if (Question::delete((int) $question_id)) {
                     $message = "Vraag verwijderd.";
+                    // Log the action
+                    $logger->logQuestionDelete($adminUserId, (int) $question_id);
                 } else {
                     $error = "Fout bij verwijderen.";
                 }
@@ -55,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($question_id && $question_text) {
                 if (Question::update((int) $question_id, $question_text)) {
                     $message = "Vraag bijgewerkt.";
+                    // Log the action
+                    $logger->logQuestionUpdate($adminUserId, (int) $question_id, [
+                        'question_text' => $question_text
+                    ]);
                 } else {
                     $error = "Fout bij bijwerken.";
                 }
