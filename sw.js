@@ -28,16 +28,39 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Cache hit - return response
-                if (response) {
+    // Check if the request is for an HTML page (navigation)
+    if (event.request.mode === 'navigate' || event.request.headers.get('accept').includes('text/html')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // Return the network response and cache it
+                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                        return response;
+                    }
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME)
+                        .then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
                     return response;
-                }
-                return fetch(event.request);
-            })
-    );
+                })
+                .catch(() => {
+                    // If network fails, try to serve from cache
+                    return caches.match(event.request);
+                })
+        );
+    } else {
+        // For other assets (CSS, JS, Images), use Cache First strategy
+        event.respondWith(
+            caches.match(event.request)
+                .then(response => {
+                    if (response) {
+                        return response;
+                    }
+                    return fetch(event.request);
+                })
+        );
+    }
 });
 
 self.addEventListener('activate', event => {
