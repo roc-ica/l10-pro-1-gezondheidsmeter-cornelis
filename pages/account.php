@@ -113,12 +113,12 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                     </div>
                 </div>
             </div>
-
         </div>
+
+        <button class="account-logout" onclick="window.location.href='../src/views/auth/logout.php'">Afmelden?</button>
     </div>
     <?php include __DIR__ . '/../components/footer.php'; ?>
     <script src="/js/pwa.js"></script>
 </body>
 
 </html>
-
