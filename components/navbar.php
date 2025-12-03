@@ -30,9 +30,7 @@ if (!function_exists('isActive')) {
 <nav class="navbar">
     <div class="navbar-container">
         <div class="navbar-brand">
-            <a href="<?= htmlspecialchars($navBasePath); ?>/index.php" class="brand-link">
-                <span class="brand-text">Gezondheids<span class="brand-meter">Meter</span></span>
-            </a>
+            <span class="brand-text">Gezondheids<span class="brand-meter">Meter</span></span>
         </div>
 
         <div class="navbar-links">
@@ -40,11 +38,5 @@ if (!function_exists('isActive')) {
             <a href="<?= htmlspecialchars($navBasePath); ?>/pages/vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
             <a href="<?= htmlspecialchars($navBasePath); ?>/pages/geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
         </div>
-
-        <?php if ($isLoggedIn): ?>
-        <div class="navbar-actions">
-                <a href="<?= htmlspecialchars($navBasePath); ?>/account.php" class="nav-link nav-link-cta <?= isActive('account.php', $currentPage) ?>">Account</a>
-        </div>
-        <?php endif; ?>
     </div>
 </nav>

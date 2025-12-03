@@ -11,23 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Redirect on success
     if (!empty($res['success']) && $res['success'] === true) {
+        // Check if user is admin
         $user = $res['user'] ?? null;
-
-        // Determine project base path dynamically (handles subfolders in XAMPP)
-        $basePath = dirname($_SERVER['SCRIPT_NAME'], 3);
-        if ($basePath === DIRECTORY_SEPARATOR || $basePath === '.') {
-            $basePath = '';
-        }
-        $basePath = rtrim($basePath, '/\\');
-
-        if (str_ends_with($basePath, '/src')) {
-            $basePath = substr($basePath, 0, -4);
-        }
-
         if ($user && !empty($user->is_admin)) {
-            header('Location: ' . ($basePath ?: '') . '/admin/pages/home.php');
+            // Admin redirect
+            header('Location: ../../../admin/pages/home.php');
         } else {
-            header('Location: ' . ($basePath ?: '') . '/pages/index.php');
+            // Normal user redirect
+            header('Location: ../../../pages/home.php');
         }
         exit;
     }
