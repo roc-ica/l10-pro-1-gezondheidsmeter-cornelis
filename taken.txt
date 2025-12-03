@@ -1,10 +1,10 @@
 Taken:
 
-Kaj:
+Kaj: (good boy)
 Admin vragen.php frontend/backend
 
 Colin:
-Frontend gebruikers vragen.php 
+Frontend gebruikers vragen.php
 Analytics admin 
 geschiedenis
 
