@@ -1,4 +1,4 @@
-<?php
+<!-- <?php
 session_start();
 
 require_once __DIR__ . '/../classes/DashboardStats.php';
@@ -163,4 +163,4 @@ $miniChartPalette = ['bar-green', 'bar-blue', 'bar-orange'];
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
   </body>
-</html>
+</html> -->

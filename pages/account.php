@@ -115,10 +115,12 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
             </div>
         </div>
 
-        <button class="account-logout" onclick="window.location.href='../src/views/auth/logout.php'">Afmelden?</button>
+        <button class="account-logout" onclick="window.location.href='logout.php'">Afmelden?</button>
+        <!-- <a class="account-logout" href="../../pages/logout.php" class="nav-link">Afmelden?</a> -->
     </div>
     <?php include __DIR__ . '/../components/footer.php'; ?>
     <script src="/js/pwa.js"></script>
+    <script src="/js/session-guard.js"></script>
 </body>
 
 </html>

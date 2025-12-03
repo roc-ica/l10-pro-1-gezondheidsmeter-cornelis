@@ -18,7 +18,6 @@
   --color-chart-pink: #ff6c6c;
   --color-primary-opacity: rgba(10, 159, 28, 0.15);
   --color-primary-lightgreen: rgba(22, 163, 74, 0.5);
-
 }
 
 /* Navbar Styling */
@@ -1251,8 +1250,8 @@
   align-items: flex-start;
   width: 100%;
   justify-content: space-between;
-  .identity-button button{
-    color:var(--color-white);
+  .identity-button button {
+    color: var(--color-white);
     background-color: var(--color-chart-green);
     border: none;
     padding: 5px 10px;
@@ -1271,4 +1270,73 @@
 }
 .identity-info2 {
   margin-left: 5%;
+}
+.account-summary,
+.account-inst {
+  background-color: var(--color-white);
+  border-radius: 15px;
+  padding: 20px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.summary-content {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 15px;
+  flex-direction: row;
+  gap: 8%;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--color-primary-opacity);
+  border: 1px solid var(--color-primary-lightgreen);
+  border-radius: 10px;
+  padding: 15px 25px;
+  width: 150px;
+
+  .score-value {
+    font-weight: bold;
+  }
+}
+
+.inst-content {
+  display: flex;
+  width: 100%;
+  margin-top: 15px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inst-item {
+  display: flex;
+  padding: 10px 20px;
+  flex-direction: row;
+  background-color: #d9d9d9;
+  border-radius: 8px;
+  justify-content: space-between;
+  align-items: center;
+
+  .score-value {
+    color: var(--color-text-light);
+  }
+}
+
+.account-logout {
+  font-size: large;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px 20px;
+  color: var(--color-error);
+  border: solid 3px var(--color-error);
+  border-radius: 50px;
+  cursor: pointer;
 }
