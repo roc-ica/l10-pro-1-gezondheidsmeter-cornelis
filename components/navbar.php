@@ -2,6 +2,9 @@
 // Check if user is logged in by checking session
 $isLoggedIn = isset($_SESSION['user_id']) || isset($_SESSION['user']);
 
+// Check if user is admin
+$isAdmin = isset($_SESSION['user']) && !empty($_SESSION['user']->is_admin);
+
 // Get current page
 $currentPage = basename($_SERVER['PHP_SELF']);
 
@@ -37,7 +40,7 @@ if (!function_exists('isActive')) {
         </div>
         <?php if (!$isAuthPage): ?>
                 <div class="navbar-links">
-            <a href="index.php" class="nav-link <?= isActive('index.php', $currentPage) ?>">Dashboard</a>
+            <a href="<?= $isAdmin ? 'index.php' : 'home.php' ?>" class="nav-link <?= isActive($isAdmin ? 'index.php' : 'home.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
             <a href="geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
             <?php if ($isLoggedIn): ?>
