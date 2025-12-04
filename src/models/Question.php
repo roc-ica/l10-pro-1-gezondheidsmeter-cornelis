@@ -47,12 +47,15 @@ class Question
         return $results;
     }
 
-    public static function add(int $pillar_id, string $text): bool
+    public static function add(int $pillar_id, string $text): int|bool
     {
         $pdo = Database::getConnection();
         try {
             $stmt = $pdo->prepare("INSERT INTO questions (pillar_id, question_text, input_type, active) VALUES (?, ?, 'number', 1)");
-            return $stmt->execute([$pillar_id, $text]);
+            if ($stmt->execute([$pillar_id, $text])) {
+                return (int) $pdo->lastInsertId();
+            }
+            return false;
         } catch (\PDOException $e) {
             return false;
         }
@@ -69,12 +72,17 @@ class Question
         }
     }
 
-    public static function update(int $id, string $text): bool
+    public static function update(int $id, string $text, int $pillar_id = null): bool
     {
         $pdo = Database::getConnection();
         try {
-            $stmt = $pdo->prepare("UPDATE questions SET question_text = ? WHERE id = ?");
-            return $stmt->execute([$text, $id]);
+            if ($pillar_id !== null) {
+                $stmt = $pdo->prepare("UPDATE questions SET question_text = ?, pillar_id = ? WHERE id = ?");
+                return $stmt->execute([$text, $pillar_id, $id]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE questions SET question_text = ? WHERE id = ?");
+                return $stmt->execute([$text, $id]);
+            }
         } catch (\PDOException $e) {
             return false;
         }

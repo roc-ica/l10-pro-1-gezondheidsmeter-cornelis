@@ -9,6 +9,8 @@ if (!isset($_SESSION['user_id'])) {
 
 // Check if user is admin
 require_once __DIR__ . '/../../src/models/User.php';
+require_once __DIR__ . '/../../classes/AdminActionLogger.php';
+
 $user = \User::findByIdStatic($_SESSION['user_id']);
 
 if (!$user || !$user->is_admin) {
@@ -16,6 +18,10 @@ if (!$user || !$user->is_admin) {
     header('Location: ../admin/pages/home.php');
     exit;
 }
+
+// Log analytics view
+$logger = new AdminActionLogger();
+$logger->logAnalyticsView($_SESSION['user_id']);
 
 $username = $_SESSION['username'] ?? 'Admin';
 ?>

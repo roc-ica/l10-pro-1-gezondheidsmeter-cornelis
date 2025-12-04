@@ -17,6 +17,19 @@ if (!$user || !$user->is_admin) {
     exit;
 }
 
+// Load dashboard stats
+require_once __DIR__ . '/../../classes/AdminDashboardStats.php';
+$stats = new AdminDashboardStats();
+
+// Get all data
+$totalUsers = $stats->getTotalUsers();
+$totalAnswers = $stats->getTotalAnswers();
+$averageScore = $stats->getAverageScore();
+$activeThisWeek = $stats->getActiveThisWeek();
+$weeklyActivityData = $stats->getWeeklyActivityWithHeights();
+$trendDataWithCoords = $stats->getTrendDataWithCoordinates();
+$recentAdminActions = $stats->getRecentAdminActions();
+
 $username = $_SESSION['username'] ?? 'Admin';
 ?>
 <!DOCTYPE html>
@@ -46,19 +59,19 @@ $username = $_SESSION['username'] ?? 'Admin';
         <div class="stats-row">
             <div class="stat-block">
                 <div class="stat-label">Totaal gebruikers</div>
-                <div class="stat-number">1,234</div>
+                <div class="stat-number"><?= number_format($totalUsers) ?></div>
             </div>
             <div class="stat-block">
                 <div class="stat-label">Vragen beantwoord</div>
-                <div class="stat-number">8,973</div>
+                <div class="stat-number"><?= number_format($totalAnswers) ?></div>
             </div>
             <div class="stat-block">
                 <div class="stat-label">Gemiddelde Score</div>
-                <div class="stat-number">76</div>
+                <div class="stat-number"><?= $averageScore ?></div>
             </div>
             <div class="stat-block">
                 <div class="stat-label">Actief Deze Week</div>
-                <div class="stat-number">856</div>
+                <div class="stat-number"><?= number_format($activeThisWeek) ?></div>
             </div>
         </div>
 
@@ -77,39 +90,18 @@ $username = $_SESSION['username'] ?? 'Admin';
                             <div class="y-axis-label">0</div>
                         </div>
                         <div class="bars-container">
+                            <?php foreach ($weeklyActivityData as $dayData): ?>
                             <div class="day-bars">
-                                <div class="bar green" style="height: 60px;"></div>
-                                <div class="bar pink" style="height: 80px;"></div>
+                                <div class="bar green" style="height: <?= $dayData['submitted_height'] ?>px;"></div>
+                                <div class="bar pink" style="height: <?= $dayData['incomplete_height'] ?>px;"></div>
                             </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 73px;"></div>
-                                <div class="bar pink" style="height: 100px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 93px;"></div>
-                                <div class="bar pink" style="height: 107px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 53px;"></div>
-                                <div class="bar pink" style="height: 67px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 87px;"></div>
-                                <div class="bar pink" style="height: 120px;"></div>
-                            </div>
-                            <div class="day-bars">
-                                <div class="bar green" style="height: 67px;"></div>
-                                <div class="bar pink" style="height: 93px;"></div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                     <div class="x-axis">
-                        <div class="x-axis-label">Maandag</div>
-                        <div class="x-axis-label">Dinsdag</div>
-                        <div class="x-axis-label">Woensdag</div>
-                        <div class="x-axis-label">Donderdag</div>
-                        <div class="x-axis-label">Vrijdag</div>
-                        <div class="x-axis-label">Zaterdag</div>
+                        <?php foreach ($weeklyActivityData as $dayData): ?>
+                        <div class="x-axis-label"><?= $dayData['day'] ?></div>
+                        <?php endforeach; ?>
                     </div>
                     <div class="chart-legend">
                         <div class="legend-item">
@@ -129,30 +121,32 @@ $username = $_SESSION['username'] ?? 'Admin';
                 <h3 class="chart-title">Recente activiteit</h3>
                 <p class="activity-subtitle">Admin logboek en systeemmeldingen</p>
                 <div class="activity-log">
+                    <?php if (empty($recentAdminActions)): ?>
                     <div class="activity-item">
-                        <div class="activity-avatar">JD</div>
                         <div class="activity-content">
-                            <div class="activity-name">Jan de Vries (Admin)</div>
-                            <div class="activity-action">Heeft gebruiker #88291</div>
+                            <div class="activity-name" style="color: #999;">Geen activiteit in de afgelopen 7 dagen</div>
                         </div>
-                        <div class="activity-time">10 min geleden</div>
                     </div>
+                    <?php else: ?>
+                    <?php foreach ($recentAdminActions as $action): 
+                        // Generate avatar initials from admin name
+                        $nameParts = explode(' ', trim($action['admin_name']));
+                        $initials = '';
+                        foreach ($nameParts as $part) {
+                            $initials .= strtoupper(substr($part, 0, 1));
+                        }
+                        $initials = substr($initials, 0, 2) ?: 'A';
+                    ?>
                     <div class="activity-item">
-                        <div class="activity-avatar">PL</div>
+                        <div class="activity-avatar"><?= htmlspecialchars($initials) ?></div>
                         <div class="activity-content">
-                            <div class="activity-name">Peter Lodewijks (Admin)</div>
-                            <div class="activity-action">Heeft vragen bijgewerkt</div>
+                            <div class="activity-name"><?= htmlspecialchars($action['admin_name']) ?> (Admin)</div>
+                            <div class="activity-action"><?= htmlspecialchars($action['action_text']) ?></div>
                         </div>
-                        <div class="activity-time">25 min geleden</div>
+                        <div class="activity-time"><?= htmlspecialchars($action['time_ago']) ?></div>
                     </div>
-                    <div class="activity-item">
-                        <div class="activity-avatar">MB</div>
-                        <div class="activity-content">
-                            <div class="activity-name">Maria Bos (Admin)</div>
-                            <div class="activity-action">Heeft nieuwe categorie aangemaakt</div>
-                        </div>
-                        <div class="activity-time">1 uur geleden</div>
-                    </div>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -167,23 +161,22 @@ $username = $_SESSION['username'] ?? 'Admin';
                         <line x1="10" y1="10" x2="10" y2="100" stroke="#000" stroke-width="1"/>
                         <line x1="10" y1="100" x2="290" y2="100" stroke="#000" stroke-width="1"/>
                         
-                        <!-- Trend line with points -->
+                        <!-- Trend line -->
+                        <?php if (!empty($trendDataWithCoords['points'])): ?>
                         <polyline 
-                            points="10,85 40,75 70,60 100,65 130,50 160,45 190,55 220,40 250,35"
+                            points="<?= $trendDataWithCoords['points'] ?>"
                             fill="none"
                             stroke="#008000"
                             stroke-width="0.5"
                         />
                         
                         <!-- Data points -->
-                        <circle cx="40" cy="75" r="1" fill="#008000"/>
-                        <circle cx="70" cy="60" r="1" fill="#008000"/>
-                        <circle cx="100" cy="65" r="1" fill="#008000"/>
-                        <circle cx="130" cy="50" r="1" fill="#008000"/>
-                        <circle cx="160" cy="45" r="1" fill="#008000"/>
-                        <circle cx="190" cy="55" r="1" fill="#008000"/>
-                        <circle cx="220" cy="40" r="1" fill="#008000"/>
-                        <circle cx="250" cy="35" r="1" fill="#008000"/>
+                        <?php foreach ($trendDataWithCoords['coordinates'] as $coord): ?>
+                        <circle cx="<?= $coord['x'] ?>" cy="<?= $coord['y'] ?>" r="1" fill="#008000"/>
+                        <?php endforeach; ?>
+                        <?php else: ?>
+                        <text x="150" y="50" text-anchor="middle" fill="#999">Geen gegevens beschikbaar</text>
+                        <?php endif; ?>
                     </svg>
                 </div>
                 <div class="trend-legend">
@@ -194,5 +187,6 @@ $username = $_SESSION['username'] ?? 'Admin';
     </div>
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
+    <script src="../../assets/js/script.js"></script>
 </body>
 </html>

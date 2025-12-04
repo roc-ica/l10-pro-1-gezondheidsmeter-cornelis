@@ -18,7 +18,6 @@
   --color-chart-pink: #ff6c6c;
   --color-primary-opacity: rgba(10, 159, 28, 0.15);
   --color-primary-lightgreen: rgba(22, 163, 74, 0.5);
-
 }
 
 /* Navbar Styling */
@@ -1223,52 +1222,286 @@
   background-color: #f9fafb;
 }
 
-/* ACCPUNT PAGE STYLE */
+/* ACCOUNT PAGE STYLE */
 .identity-bar {
-  color: black;
-  padding: 15px 20px;
+  color: #000;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* margin-top: 2.5%; */
+  width: 100%;
 }
 
 .identity-bar h2 {
-  margin: 0;
-  font-size: 24px;
-  margin-bottom: 2.5%;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 32px 0;
+  align-self: flex-start;
 }
+
 .identity-card {
-  background-color: var(--color-primary-lightgreen);
-  border-radius: 25px;
-  padding: 20px;
-  width: 45%;
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(22, 163, 74, 0.25) 100%);
+  border: 2px solid rgba(22, 163, 74, 0.3);
+  border-radius: 20px;
+  padding: 32px;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.1);
+  transition: all 0.3s ease;
 }
+
+.identity-card:hover {
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.2);
+  transform: translateY(-2px);
+}
+
 .identity-info1 {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   justify-content: space-between;
-  .identity-button button{
-    color:var(--color-white);
-    background-color: var(--color-chart-green);
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-  }
 }
+
 .identity-details {
   display: flex;
-  align-items: flex-start;
-  .identity-icon {
-    padding-right: 20%;
-  }
-  .identity-username {
-    display: flex;
-  }
+  align-items: center;
+  gap: 20px;
 }
+
+.identity-icon {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.identity-icon svg {
+  color: #fff;
+  width: 48px;
+  height: 48px;
+}
+
+.identity-username {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+}
+
+.identity-button button {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  color: #fff;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  border: none;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.identity-button button:hover {
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.4);
+  transform: translateY(-2px);
+}
+
 .identity-info2 {
-  margin-left: 5%;
+  margin-left: 68px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.identity-info2 p {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  font-size: 14px;
+  color: #374151;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Account Summary & Settings Sections */
+.account-summary,
+.account-inst {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.account-summary:hover,
+.account-inst:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.summary-header h3,
+.inst-header h3 {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 24px 0;
+}
+
+.summary-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.08) 0%, rgba(22, 163, 74, 0.15) 100%);
+  border: 2px solid rgba(22, 163, 74, 0.2);
+  border-radius: 16px;
+  padding: 24px 20px;
+  transition: all 0.3s ease;
+}
+
+.summary-item:hover {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(22, 163, 74, 0.25) 100%);
+  border-color: rgba(22, 163, 74, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.2);
+}
+
+.score-label,
+.streak-label {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+}
+
+.score-value,
+.streak-value {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  font-size: 28px;
+  font-weight: 700;
+  color: #16a34a;
+  text-align: center;
+}
+
+/* Settings Content */
+.inst-content {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inst-item {
+  display: flex;
+  padding: 20px 24px;
+  flex-direction: row;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.inst-item:hover {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.inst-item .score-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.inst-item .score-value {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+  text-align: left;
+}
+
+/* Custom Checkbox Styling */
+.inst-item input[type="checkbox"] {
+  width: 48px;
+  height: 24px;
+  appearance: none;
+  background: #d1d5db;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.inst-item input[type="checkbox"]:checked {
+  background: #16a34a;
+}
+
+.inst-item input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.inst-item input[type="checkbox"]:checked::before {
+  left: 26px;
+}
+
+/* Logout Button */
+.account-logout {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 32px;
+  padding: 16px 24px;
+  color: #dc2626;
+  background: #fff;
+  border: 2px solid #dc2626;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+}
+
+.account-logout:hover {
+  background: #dc2626;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+  transform: translateY(-2px);
 }
