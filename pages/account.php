@@ -33,14 +33,15 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                 <div class="identity-info1">
                     <div class="identity-details">
                         <div class="identity-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </div>
                         <div class="identity-username">
                             <?= htmlspecialchars($username) ?>
-                            eddasda
                         </div>
                     </div>
                     <div class="identity-button">
@@ -105,7 +106,8 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                 <div class="inst-item">
                     <div>
                         <div class="score-label"><strong>Gezondheids gegevens wissen?</strong></div>
-                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden</div>
+                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden
+                        </div>
                     </div>
                     <div>
                         <label for="notifications"></label>
