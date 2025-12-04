@@ -24,18 +24,14 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
 
-
     <div class="dashboard-container">
         <div class="identity-bar">
             <h2>Mijn Account</h2>
             <div class="identity-card">
-
                 <div class="identity-info1">
                     <div class="identity-details">
                         <div class="identity-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -49,12 +45,10 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                     </div>
                 </div>
                 <div class="identity-info2">
-                    <p>email:<php></php>
-                    </p>
+                    <p>email:<php></php></p>
                     <p>+31 212133321</p>
                     <p>Straatnaam 12, Amsterdam</p>
                 </div>
-
             </div>
         </div>
 
@@ -80,7 +74,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
 
         <div class="account-inst">
             <div class="inst-header">
-                <h3>INstellingen</h3>
+                <h3>Instellingen</h3>
             </div>
             <div class="inst-content">
                 <div class="inst-item">
@@ -99,30 +93,71 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                         <div class="score-value">Ontvang wekelijkse gezondheids rapportages</div>
                     </div>
                     <div>
-                        <label for="notifications"></label>
-                        <input type="checkbox" id="notifications" name="notifications" checked>
+                        <label for="email-reports"></label>
+                        <input type="checkbox" id="email-reports" name="email-reports" checked>
                     </div>
                 </div>
-                <div class="inst-item">
+                <div class="inst-item inst-item-danger">
                     <div>
                         <div class="score-label"><strong>Gezondheids gegevens wissen?</strong></div>
-                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden
-                        </div>
+                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden</div>
                     </div>
                     <div>
-                        <label for="notifications"></label>
-                        <input type="checkbox" id="notifications" name="notifications" checked>
+                        <button class="btn-delete-data" id="deleteHealthDataBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Wissen
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
         <button class="account-logout" onclick="window.location.href='logout.php'">Afmelden?</button>
-        <!-- <a class="account-logout" href="../../pages/logout.php" class="nav-link">Afmelden?</a> -->
     </div>
+    
     <?php include __DIR__ . '/../components/footer.php'; ?>
+    
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
+    <script>
+        // Delete health data handler
+        document.getElementById('deleteHealthDataBtn').addEventListener('click', async function() {
+            const confirmed = confirm('Weet je zeker dat je al je gezondheidsgegevens wilt wissen?\n\nDit omvat:\n- Alle ingevulde vragenlijsten\n- Je antwoorden\n- Je voortgang en streak\n\nDeze actie kan NIET ongedaan worden gemaakt!');
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Double confirmation for safety
+            const doubleConfirm = confirm('LAATSTE WAARSCHUWING!\n\nAlle data wordt permanent verwijderd.\n\nKlik OK om definitief te wissen.');
+            
+            if (!doubleConfirm) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../api/delete-health-data.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Je gezondheidsgegevens zijn succesvol gewist.');
+                    window.location.reload();
+                } else {
+                    alert('Er is een fout opgetreden: ' + (data.message || 'Onbekende fout'));
+                }
+            } catch (error) {
+                console.error('Error deleting health data:', error);
+                alert('Er is een fout opgetreden bij het wissen van je gegevens.');
+            }
+        });
+    </script>
 </body>
 
 </html>

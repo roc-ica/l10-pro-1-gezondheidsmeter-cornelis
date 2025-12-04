@@ -40,8 +40,6 @@ if ($currentQuestionData && isset($_SESSION['answered_questions'][$currentQuesti
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
     
-
-    
     <div class="dashboard-container">
         <div class="dashboard-header">
             <div class="dashboard-header-left">
@@ -97,8 +95,6 @@ if ($currentQuestionData && isset($_SESSION['answered_questions'][$currentQuesti
         <?php endif; ?>
     </div>
 
-
-
     <?php include __DIR__ . '/../components/footer.php'; ?>
 
     <script>
@@ -132,6 +128,31 @@ if ($currentQuestionData && isset($_SESSION['answered_questions'][$currentQuesti
             }
         });
     });
+    
+    // Handle submit button
+    const submitBtn = document.querySelector('.submit-btn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('../api/submit-questionnaire.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Redirect to results page
+                    window.location.href = 'results.php';
+                } else {
+                    alert(data.message || 'Er is een fout opgetreden bij het voltooien van de vragenlijst.');
+                }
+            } catch (error) {
+                console.error('Error submitting questionnaire:', error);
+                alert('Er is een fout opgetreden. Probeer het opnieuw.');
+            }
+        });
+    }
     </script>
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
