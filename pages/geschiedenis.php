@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../src/views/auth/login.php');
@@ -11,7 +10,6 @@ if (!isset($_SESSION['user_id'])) {
 require_once __DIR__ . '/../classes/History.php';
 
 $isLoggedIn = isset($_SESSION['user_id']);
-
 $username = $_SESSION['username'] ?? 'Gebruiker';
 $userId = $_SESSION['user_id'];
 
@@ -34,7 +32,6 @@ foreach ($weeklyStats as $dayStat) {
     $chartData['Slaap'][] = $dayStat['scores']['Slaap'] ?? 0;
     $chartData['Stress'][] = $dayStat['scores']['Stress'] ?? 0;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -43,6 +40,7 @@ foreach ($weeklyStats as $dayStat) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geschiedenis - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -51,97 +49,97 @@ foreach ($weeklyStats as $dayStat) {
     <?php include __DIR__ . '/../components/navbar.php'; ?>
     
     <div class="dashboard-container">
-        <div class="history-header">
-            <h1>Jouw Gezondheidsgeschiedenis</h1>
-            <p>Bekijk je voortgang en trends van de afgelopen week.</p>
+        <div class="dashboard-header">
+            <div class="dashboard-header-left">
+                <h1>Jouw Gezondheidsgeschiedenis</h1>
+                <p>Bekijk je voortgang en trends van de afgelopen week.</p>
+            </div>
         </div>
 
         <!-- Summary Cards -->
         <div class="stats-row">
-            <div class="stat-block">
-                <div class="stat-label">Gemiddelde Score</div>
-                <div class="stat-number green-text"><?php echo $summaryStats['average_score']; ?></div>
+            <div class="stat-card stat-card-primary">
+                <div class="stat-content">
+                    <div class="stat-label">Gemiddelde Score</div>
+                    <div class="stat-number"><?php echo $summaryStats['average_score']; ?></div>
+                </div>
             </div>
-            <div class="stat-block">
-                <div class="stat-label">Beste Dag</div>
-                <div class="stat-number green-text"><?php echo htmlspecialchars($summaryStats['best_day']); ?></div>
+            <div class="stat-card stat-card-success">
+                <div class="stat-content">
+                    <div class="stat-label">Beste Dag</div>
+                    <div class="stat-number"><?php echo htmlspecialchars($summaryStats['best_day']); ?></div>
+                </div>
             </div>
-            <div class="stat-block">
-                <div class="stat-label">Trend</div>
-                <div class="stat-number green-text"><?php echo htmlspecialchars($summaryStats['trend']); ?></div>
+            <div class="stat-card stat-card-warning">
+                <div class="stat-content">
+                    <div class="stat-label">Trend</div>
+                    <div class="stat-number"><?php echo htmlspecialchars($summaryStats['trend']); ?></div>
+                </div>
             </div>
-            <div class="stat-block">
-                <div class="stat-label">Streak</div>
-                <div class="stat-number green-text"><?php echo $summaryStats['streak']; ?> Dagen</div>
+            <div class="stat-card stat-card-info">
+                <div class="stat-content">
+                    <div class="stat-label">Streak</div>
+                    <div class="stat-number"><?php echo $summaryStats['streak']; ?> Dagen</div>
+                </div>
             </div>
         </div>
 
         <!-- Weekly Progress Chart -->
-        <div class="chart-section">
-            <div class="chart-block">
-                <h2 class="chart-title">Wekelijkse Voortgang</h2>
+        <div class="dashboard-card dashboard-card-full">
+            <div class="card-header">
+                <h3>Wekelijkse Voortgang</h3>
                 <div class="chart-legend">
                     <div class="legend-item">
-                        <span class="legend-icon" style="color: #22c55e;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        </span>
-                        <span class="legend-text" style="color: #22c55e;">Beweging</span>
+                        <div class="legend-dot" style="background: #22c55e;"></div>
+                        <span>Beweging</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-icon" style="color: #3b82f6;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20M2 12l5-5m0 10l-5-5m20 0l-5-5m0 10l5-5"/></svg>
-                        </span>
-                        <span class="legend-text" style="color: #3b82f6;">Slaap</span>
+                        <div class="legend-dot" style="background: #3b82f6;"></div>
+                        <span>Slaap</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-icon" style="color: #eab308;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                        </span>
-                        <span class="legend-text" style="color: #eab308;">Stress</span>
+                        <div class="legend-dot" style="background: #eab308;"></div>
+                        <span>Stress</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-icon" style="color: #f97316;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-                        </span>
-                        <span class="legend-text" style="color: #f97316;">Voeding</span>
+                        <div class="legend-dot" style="background: #f97316;"></div>
+                        <span>Voeding</span>
                     </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="weeklyChart"></canvas>
-                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="weeklyChart"></canvas>
             </div>
         </div>
 
         <!-- Detailed Statistics Table -->
-        <div class="table-section">
-            <div class="table-block">
-                <h2 class="table-title">Gedetailleerde Statistieken</h2>
-                <div class="table-responsive">
-                    <table class="stats-table">
-                        <thead>
-                            <tr>
-                                <th>Dag</th>
-                                <th>Slaap</th>
-                                <th>Voeding</th>
-                                <th>Beweging</th>
-                                <th>Stress</th>
-                                <!-- <th>Hydratatie</th> --> <!-- Not in main chart, maybe add later if needed -->
-                                <!-- <th>Mentaal</th> --> <!-- Mapped to Stress -->
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($weeklyStats as $stat): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($stat['day_name']); ?></td>
-                                <td><?php echo $stat['scores']['Slaap'] ?? '-'; ?></td>
-                                <td><?php echo $stat['scores']['Voeding'] ?? '-'; ?></td>
-                                <td><?php echo $stat['scores']['Beweging'] ?? '-'; ?></td>
-                                <td><?php echo $stat['scores']['Stress'] ?? '-'; ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+        <div class="dashboard-card dashboard-card-full">
+            <div class="card-header">
+                <h3>Gedetailleerde Statistieken</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Dag</th>
+                            <th>Slaap</th>
+                            <th>Voeding</th>
+                            <th>Beweging</th>
+                            <th>Stress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($weeklyStats as $stat): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($stat['day_name']); ?></td>
+                            <td><?php echo $stat['scores']['Slaap'] ?? '-'; ?></td>
+                            <td><?php echo $stat['scores']['Voeding'] ?? '-'; ?></td>
+                            <td><?php echo $stat['scores']['Beweging'] ?? '-'; ?></td>
+                            <td><?php echo $stat['scores']['Stress'] ?? '-'; ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -161,45 +159,49 @@ foreach ($weeklyStats as $dayStat) {
                         label: 'Beweging',
                         data: <?php echo json_encode($chartData['Beweging']); ?>,
                         borderColor: '#22c55e',
-                        backgroundColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
                         pointBackgroundColor: '#ffffff',
                         pointBorderColor: '#22c55e',
                         pointBorderWidth: 2,
                         borderWidth: 2,
-                        tension: 0.4
+                        tension: 0.4,
+                        fill: true
                     },
                     {
                         label: 'Slaap',
                         data: <?php echo json_encode($chartData['Slaap']); ?>,
                         borderColor: '#3b82f6',
-                        backgroundColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         pointBackgroundColor: '#ffffff',
                         pointBorderColor: '#3b82f6',
                         pointBorderWidth: 2,
                         borderWidth: 2,
-                        tension: 0.4
+                        tension: 0.4,
+                        fill: true
                     },
                     {
                         label: 'Stress',
                         data: <?php echo json_encode($chartData['Stress']); ?>,
                         borderColor: '#eab308',
-                        backgroundColor: '#eab308',
+                        backgroundColor: 'rgba(234, 179, 8, 0.1)',
                         pointBackgroundColor: '#ffffff',
                         pointBorderColor: '#eab308',
                         pointBorderWidth: 2,
                         borderWidth: 2,
-                        tension: 0.4
+                        tension: 0.4,
+                        fill: true
                     },
                     {
                         label: 'Voeding',
                         data: <?php echo json_encode($chartData['Voeding']); ?>,
                         borderColor: '#f97316',
-                        backgroundColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
                         pointBackgroundColor: '#ffffff',
                         pointBorderColor: '#f97316',
                         pointBorderWidth: 2,
                         borderWidth: 2,
-                        tension: 0.4
+                        tension: 0.4,
+                        fill: true
                     }
                 ]
             },
