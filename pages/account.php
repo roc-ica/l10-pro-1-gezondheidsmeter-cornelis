@@ -1,13 +1,25 @@
 <?php
 session_start();
 
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../src/views/auth/login.php');
     exit;
 }
 
-$username = $_SESSION['username'] ?? 'Gebruiker';
+// Get user data from database
+require_once __DIR__ . '/../src/models/User.php';
+$user = User::findByIdStatic($_SESSION['user_id']);
+
+if (!$user) {
+    // User not found, redirect to login
+    header('Location: ../src/views/auth/login.php');
+    exit;
+}
+
+$email = htmlspecialchars($user->email);
+$username = htmlspecialchars($user->username);
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -45,7 +57,7 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                     </div>
                 </div>
                 <div class="identity-info2">
-                    <p>email:<php></php></p>
+                    <p><?= htmlspecialchars($email) ?></p>
                     <p>+31 212133321</p>
                     <p>Straatnaam 12, Amsterdam</p>
                 </div>

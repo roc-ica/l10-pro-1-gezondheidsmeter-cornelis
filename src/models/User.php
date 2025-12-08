@@ -241,6 +241,7 @@ class User
 
         $_SESSION['user_id'] = $user->id;
         $_SESSION['username'] = $user->username;
+        $_SESSION['email'] = $user->email;
 
         return ['success' => true, 'message' => 'Inloggen gelukt.', 'user' => $user];
     }
