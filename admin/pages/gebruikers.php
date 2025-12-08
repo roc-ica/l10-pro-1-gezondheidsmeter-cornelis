@@ -359,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="user-actions-wrapper">
             <div class="score-display">82</div>
-            <button class="btn-action btn-edit">
+            <button class="btn-action btn-edit" onclick="openEditUserModal(1, 'khalil@gmail.com', '1999-09-16', 'Male')">
                 <i data-lucide="pencil"></i> Bewerken
             </button>
             <button class="btn-action btn-delete">
@@ -438,7 +438,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gebruiker Bewerken</h2>
+                <span class="close" onclick="closeEditUserModal()">&times;</span>
+            </div>
+            <form id="editUserForm" method="POST">
+                <input type="hidden" id="edit_user_id" name="user_id">
+                <div class="form-group">
+                    <label for="edit_user_email">E-mailadres</label>
+                    <input type="email" id="edit_user_email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_user_birthdate">Geboortedatum</label>
+                    <input type="date" id="edit_user_birthdate" name="birthdate">
+                </div>
+                <div class="form-group">
+                    <label for="edit_user_gender">Geslacht</label>
+                    <select id="edit_user_gender" name="gender">
+                        <option value="">-- Selecteer --</option>
+                        <option value="Male">Man</option>
+                        <option value="Female">Vrouw</option>
+                        <option value="Other">Anders</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-save">Opslaan</button>
+                    <button type="button" class="btn-cancel" onclick="closeEditUserModal()">Annuleren</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>lucide.createIcons();</script>
+    <script src="/js/session-guard.js"></script>
+    <script>
+        function openEditUserModal(userId, email, birthdate, gender) {
+            document.getElementById('edit_user_id').value = userId;
+            document.getElementById('edit_user_email').value = email;
+            document.getElementById('edit_user_birthdate').value = birthdate;
+            document.getElementById('edit_user_gender').value = gender;
+            document.getElementById('editUserModal').style.display = 'block';
+        }
+
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editUserModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const userId = document.getElementById('edit_user_id').value;
+            const formData = new FormData(document.getElementById('editUserForm'));
+            const data = {
+                user_id: userId,
+                email: formData.get('email'),
+                birthdate: formData.get('birthdate'),
+                gender: formData.get('gender')
+            };
+
+            try {
+                const response = await fetch('/api/admin-update-user.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Gebruiker succesvol bijgewerkt!');
+                    closeEditUserModal();
+                    location.reload();
+                } else {
+                    alert('Fout: ' + (result.message || 'Onbekende fout'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Er is een fout opgetreden.');
+            }
+        });
+    </script>
 </body>
 </html>
