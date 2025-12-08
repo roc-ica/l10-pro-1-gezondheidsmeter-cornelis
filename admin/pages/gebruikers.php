@@ -29,6 +29,10 @@ $username = $_SESSION['username'] ?? 'Admin';
 $message = '';
 $error = '';
 
+// Get all users from database using User model
+$users = User::getAllUsers('created_at DESC');
+$totalUsers = count($users);
+
 // Handle Form Submissions - Automatically log all user management actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
@@ -184,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="dashboard-header">
             <div class="dashboard-header-left">
                 <h1>Gebruikers Beheer</h1>
-                <p>Totaal: 5 gebruikers</p>
+                <p>Totaal: <?php echo $totalUsers; ?> gebruiker<?php echo $totalUsers !== 1 ? 's' : ''; ?></p>
             </div>
             <div class="dashboard-header-right">
                 <a href="./home.php" class="btn-naar-app">Naar App</a>
@@ -205,104 +209,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 <div class="user-list-container">
 
-    <!-- User Card 1 -->
+    <?php foreach ($users as $user): ?>
+    <!-- User Card for <?php echo htmlspecialchars($user['username']); ?> -->
     <div class="user-card">
         <div class="user-info-wrapper">
             <div class="user-details">
-                <h2 class="user-name">Jan de Vries</h2>
+                <h2 class="user-name"><?php echo htmlspecialchars($user['display_name'] ?? $user['username']); ?></h2>
                 <div class="user-contact-info">
                     <div class="contact-item">
                         <i data-lucide="mail" class="contact-icon"></i>
-                        <span>jan@example.com</span>
+                        <span><?php echo htmlspecialchars($user['email']); ?></span>
                     </div>
                     <div class="contact-item">
-                        <i data-lucide="phone" class="contact-icon"></i>
-                        <span>+31 6 12345678</span>
+                        <i data-lucide="user" class="contact-icon"></i>
+                        <span>@<?php echo htmlspecialchars($user['username']); ?></span>
                     </div>
                     <div class="contact-item">
-                        <i data-lucide="map-pin" class="contact-icon"></i>
-                        <span>Amsterdam</span>
+                        <i data-lucide="calendar" class="contact-icon"></i>
+                        <span><?php echo $user['birthdate'] ? htmlspecialchars(date('d-m-Y', strtotime($user['birthdate']))) : 'Niet ingevuld'; ?></span>
                     </div>
                 </div>
             </div>
         </div>
         <div class="user-actions-wrapper">
-            <div class="score-display">82</div>
-            <button class="btn-action btn-edit" onclick="openEditUserModal(1, 'khalil@gmail.com', '1999-09-16', 'Male')">
+            <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER'); ?></div>
+            <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['gender'] ?? ''); ?>')">
                 <i data-lucide="pencil"></i> Bewerken
             </button>
-            <button class="btn-action btn-delete">
+            <button class="btn-action btn-delete" onclick="if(confirm('Weet je zeker dat je deze gebruiker wilt verwijderen?')) { deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>'); }">
                 <i data-lucide="trash-2"></i> Verwijderen
             </button>
-            <button class="btn-action reset-btn">Reset Activity</button>
+            <button class="btn-action reset-btn" onclick="if(confirm('Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?')) { resetUserActivity(<?php echo $user['id']; ?>); }">Reset Activity</button>
         </div>
     </div>
-
-    <!-- User Card 2 -->
-    <div class="user-card">
-        <div class="user-info-wrapper">
-            <div class="user-details">
-                <h2 class="user-name">Sarah Jansen</h2>
-                <div class="user-contact-info">
-                    <div class="contact-item">
-                        <i data-lucide="mail" class="contact-icon"></i>
-                        <span>sarah.jansen@mail.nl</span>
-                    </div>
-                    <div class="contact-item">
-                        <i data-lucide="phone" class="contact-icon"></i>
-                        <span>+31 6 98765432</span>
-                    </div>
-                    <div class="contact-item">
-                        <i data-lucide="map-pin" class="contact-icon"></i>
-                        <span>Utrecht</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="user-actions-wrapper">
-            <div class="score-display">91</div>
-            <button class="btn-action btn-edit">
-                <i data-lucide="pencil"></i> Bewerken
-            </button>
-            <button class="btn-action btn-delete">
-                <i data-lucide="trash-2"></i> Verwijderen
-            </button>
-            <button class="btn-action reset-btn">Reset Activity</button>
-        </div>
-    </div>
-
-    <!-- User Card 3 -->
-    <div class="user-card">
-        <div class="user-info-wrapper">
-            <div class="user-details">
-                <h2 class="user-name">Mohamed Ali</h2>
-                <div class="user-contact-info">
-                    <div class="contact-item">
-                        <i data-lucide="mail" class="contact-icon"></i>
-                        <span>mohamed.ali@mail.com</span>
-                    </div>
-                    <div class="contact-item">
-                        <i data-lucide="phone" class="contact-icon"></i>
-                        <span>+31 6 11223344</span>
-                    </div>
-                    <div class="contact-item">
-                        <i data-lucide="map-pin" class="contact-icon"></i>
-                        <span>Rotterdam</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="user-actions-wrapper">
-            <div class="score-display">76</div>
-            <button class="btn-action btn-edit">
-                <i data-lucide="pencil"></i> Bewerken
-            </button>
-            <button class="btn-action btn-delete">
-                <i data-lucide="trash-2"></i> Verwijderen
-            </button>
-            <button class="btn-action reset-btn">Reset Activity</button>
-        </div>
-    </div>
+    <?php endforeach; ?>
 
 </div>
 
@@ -402,6 +342,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 alert('Er is een fout opgetreden.');
             }
         });
+
+        // Delete user function
+        async function deleteUser(userId, username) {
+            const formData = new FormData();
+            formData.append('action', 'delete_user');
+            formData.append('user_id', userId);
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Reload page after successful deletion
+                setTimeout(() => location.reload(), 500);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Er is een fout opgetreden bij het verwijderen.');
+            }
+        }
+
+        // Reset user activity function
+        async function resetUserActivity(userId) {
+            const formData = new FormData();
+            formData.append('action', 'reset_activity');
+            formData.append('user_id', userId);
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Reload page after successful reset
+                setTimeout(() => location.reload(), 500);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Er is een fout opgetreden bij het resetten.');
+            }
+        }
     </script>
 </body>
 </html>
