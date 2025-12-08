@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.2.2
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Gegenereerd op: 19 nov 2025 om 13:19
--- Serverversie: 10.4.32-MariaDB
--- PHP-versie: 8.0.30
+-- Host: db
+-- Generation Time: Dec 08, 2025 at 08:37 AM
+-- Server version: 10.11.15-MariaDB-ubu2204
+-- PHP Version: 8.2.27
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,7 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `admin_actions`
+-- Table structure for table `admin_actions`
 --
 
 CREATE TABLE `admin_actions` (
@@ -37,10 +37,21 @@ CREATE TABLE `admin_actions` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `admin_actions`
+--
+
+INSERT INTO `admin_actions` (`id`, `admin_user_id`, `action_type`, `target_table`, `target_id`, `details`, `created_at`) VALUES
+(1, 1, 'view', NULL, NULL, '{\"page\":\"analytics\"}', '2025-12-04 08:47:53'),
+(2, 1, 'view', NULL, NULL, '{\"page\":\"analytics\"}', '2025-12-04 08:47:58'),
+(3, 1, 'view', NULL, NULL, '{\"page\":\"analytics\"}', '2025-12-04 08:48:03'),
+(4, 1, 'view', NULL, NULL, '{\"page\":\"analytics\"}', '2025-12-04 08:48:41'),
+(5, 1, 'view', NULL, NULL, '{\"page\":\"analytics\"}', '2025-12-04 08:48:43');
+
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `answers`
+-- Table structure for table `answers`
 --
 
 CREATE TABLE `answers` (
@@ -52,10 +63,22 @@ CREATE TABLE `answers` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `answers`
+--
+
+INSERT INTO `answers` (`id`, `entry_id`, `question_id`, `answer_text`, `score`, `created_at`) VALUES
+(7, 2, 1, 'Nee / Laag', NULL, '2025-12-04 09:06:55'),
+(8, 2, 2, 'Een beetje', NULL, '2025-12-04 09:06:56'),
+(9, 2, 3, 'Neutraal', NULL, '2025-12-04 09:06:57'),
+(10, 2, 4, 'Nee / Laag', NULL, '2025-12-04 09:06:59'),
+(11, 2, 5, 'Neutraal', NULL, '2025-12-04 09:07:00'),
+(12, 2, 6, 'Meerdere keren', NULL, '2025-12-04 09:07:01');
+
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `challenges`
+-- Table structure for table `challenges`
 --
 
 CREATE TABLE `challenges` (
@@ -69,7 +92,7 @@ CREATE TABLE `challenges` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `daily_entries`
+-- Table structure for table `daily_entries`
 --
 
 CREATE TABLE `daily_entries` (
@@ -80,10 +103,17 @@ CREATE TABLE `daily_entries` (
   `notes` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `daily_entries`
+--
+
+INSERT INTO `daily_entries` (`id`, `user_id`, `entry_date`, `submitted_at`, `notes`) VALUES
+(2, 3, '2025-12-04', '2025-12-04 09:07:02', NULL);
+
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `devices`
+-- Table structure for table `devices`
 --
 
 CREATE TABLE `devices` (
@@ -98,7 +128,7 @@ CREATE TABLE `devices` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `device_metrics`
+-- Table structure for table `device_metrics`
 --
 
 CREATE TABLE `device_metrics` (
@@ -112,7 +142,7 @@ CREATE TABLE `device_metrics` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `global_statistics`
+-- Table structure for table `global_statistics`
 --
 
 CREATE TABLE `global_statistics` (
@@ -124,7 +154,7 @@ CREATE TABLE `global_statistics` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `monthly_analysis`
+-- Table structure for table `monthly_analysis`
 --
 
 CREATE TABLE `monthly_analysis` (
@@ -139,7 +169,7 @@ CREATE TABLE `monthly_analysis` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `notifications`
+-- Table structure for table `notifications`
 --
 
 CREATE TABLE `notifications` (
@@ -156,7 +186,7 @@ CREATE TABLE `notifications` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `pillars`
+-- Table structure for table `pillars`
 --
 
 CREATE TABLE `pillars` (
@@ -167,7 +197,7 @@ CREATE TABLE `pillars` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Gegevens worden geëxporteerd voor tabel `pillars`
+-- Dumping data for table `pillars`
 --
 
 INSERT INTO `pillars` (`id`, `name`, `description`, `color`) VALUES
@@ -181,7 +211,7 @@ INSERT INTO `pillars` (`id`, `name`, `description`, `color`) VALUES
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `questions`
+-- Table structure for table `questions`
 --
 
 CREATE TABLE `questions` (
@@ -195,7 +225,7 @@ CREATE TABLE `questions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Gegevens worden geëxporteerd voor tabel `questions`
+-- Dumping data for table `questions`
 --
 
 INSERT INTO `questions` (`id`, `pillar_id`, `question_text`, `input_type`, `choices`, `active`, `created_at`) VALUES
@@ -204,12 +234,12 @@ INSERT INTO `questions` (`id`, `pillar_id`, `question_text`, `input_type`, `choi
 (3, 2, 'Hoeveel minuten heb je vandaag bewogen?', 'number', NULL, 1, '2025-11-17 10:34:03'),
 (4, 3, 'Hoeveel uur heb je geslapen?', 'number', NULL, 1, '2025-11-17 10:34:03'),
 (5, 6, 'Heb je meer dan 2 uur extra schermtijd gehad vandaag?', 'boolean', NULL, 1, '2025-11-17 10:34:03'),
-(6, 4, 'Heb je alcohol of cannabis gebruikt vandaag?', 'choice', '[\"Nee\",\"1 keer\",\"Meerdere keren\"]', 1, '2025-11-17 10:34:03');
+(6, 4, 'Heb je alcohol of wiet gebruikt vandaag?', 'choice', '[\"Nee\",\"1 keer\",\"Meerdere keren\"]', 1, '2025-11-17 10:34:03');
 
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `resets`
+-- Table structure for table `resets`
 --
 
 CREATE TABLE `resets` (
@@ -225,7 +255,7 @@ CREATE TABLE `resets` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `users`
+-- Table structure for table `users`
 --
 
 CREATE TABLE `users` (
@@ -243,10 +273,19 @@ CREATE TABLE `users` (
   `block_reason` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `is_admin`, `display_name`, `birthdate`, `gender`, `created_at`, `last_login`, `is_active`, `block_reason`) VALUES
+(1, 'Hoi', 'admin@example.com', '$2y$10$ZRRZN1Yf4Z0EhT58n3By/ezt/dHF4cJukvHSlQ59E7FouZCgbUQ3i', 1, NULL, NULL, NULL, '2025-11-26 08:15:55', '2025-12-04 08:47:41', 1, NULL),
+(2, 'testuser123', 'testuser123@example.com', '$2y$10$WOlRqRBqz/CShsxWeoy8SuX3tkXTAfvU.WBU0ImdaAcL0AisSHoJe', 0, NULL, NULL, NULL, '2025-11-28 11:30:54', '2025-12-04 09:06:34', 1, NULL),
+(3, 'test', 'test@email.com', '$2y$10$WyN2vQdQSPQs.Y6QcldlIucaot9T4BSZmSgw4Xa5P0KbHpI5qJ70u', 0, NULL, NULL, NULL, '2025-12-01 08:48:44', '2025-12-08 08:34:49', 1, NULL);
+
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `user_challenges`
+-- Table structure for table `user_challenges`
 --
 
 CREATE TABLE `user_challenges` (
@@ -260,7 +299,7 @@ CREATE TABLE `user_challenges` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `user_meta_admin_view`
+-- Table structure for table `user_meta_admin_view`
 --
 
 CREATE TABLE `user_meta_admin_view` (
@@ -271,7 +310,7 @@ CREATE TABLE `user_meta_admin_view` (
 -- --------------------------------------------------------
 
 --
--- Tabelstructuur voor tabel `weekly_analysis`
+-- Table structure for table `weekly_analysis`
 --
 
 CREATE TABLE `weekly_analysis` (
@@ -284,18 +323,18 @@ CREATE TABLE `weekly_analysis` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Indexen voor geëxporteerde tabellen
+-- Indexes for dumped tables
 --
 
 --
--- Indexen voor tabel `admin_actions`
+-- Indexes for table `admin_actions`
 --
 ALTER TABLE `admin_actions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `admin_user_id` (`admin_user_id`);
 
 --
--- Indexen voor tabel `answers`
+-- Indexes for table `answers`
 --
 ALTER TABLE `answers`
   ADD PRIMARY KEY (`id`),
@@ -303,67 +342,67 @@ ALTER TABLE `answers`
   ADD KEY `entry_id` (`entry_id`,`question_id`);
 
 --
--- Indexen voor tabel `challenges`
+-- Indexes for table `challenges`
 --
 ALTER TABLE `challenges`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexen voor tabel `daily_entries`
+-- Indexes for table `daily_entries`
 --
 ALTER TABLE `daily_entries`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `user_id` (`user_id`,`entry_date`);
 
 --
--- Indexen voor tabel `devices`
+-- Indexes for table `devices`
 --
 ALTER TABLE `devices`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
 
 --
--- Indexen voor tabel `device_metrics`
+-- Indexes for table `device_metrics`
 --
 ALTER TABLE `device_metrics`
   ADD PRIMARY KEY (`id`),
   ADD KEY `device_id` (`device_id`);
 
 --
--- Indexen voor tabel `global_statistics`
+-- Indexes for table `global_statistics`
 --
 ALTER TABLE `global_statistics`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexen voor tabel `monthly_analysis`
+-- Indexes for table `monthly_analysis`
 --
 ALTER TABLE `monthly_analysis`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `user_month` (`user_id`,`month_start`);
 
 --
--- Indexen voor tabel `notifications`
+-- Indexes for table `notifications`
 --
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
 
 --
--- Indexen voor tabel `pillars`
+-- Indexes for table `pillars`
 --
 ALTER TABLE `pillars`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexen voor tabel `questions`
+-- Indexes for table `questions`
 --
 ALTER TABLE `questions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `pillar_id` (`pillar_id`);
 
 --
--- Indexen voor tabel `resets`
+-- Indexes for table `resets`
 --
 ALTER TABLE `resets`
   ADD PRIMARY KEY (`id`),
@@ -371,7 +410,7 @@ ALTER TABLE `resets`
   ADD KEY `performed_by` (`performed_by`);
 
 --
--- Indexen voor tabel `users`
+-- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
@@ -379,7 +418,7 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
--- Indexen voor tabel `user_challenges`
+-- Indexes for table `user_challenges`
 --
 ALTER TABLE `user_challenges`
   ADD PRIMARY KEY (`id`),
@@ -387,187 +426,187 @@ ALTER TABLE `user_challenges`
   ADD KEY `challenge_id` (`challenge_id`);
 
 --
--- Indexen voor tabel `user_meta_admin_view`
+-- Indexes for table `user_meta_admin_view`
 --
 ALTER TABLE `user_meta_admin_view`
   ADD PRIMARY KEY (`user_id`);
 
 --
--- Indexen voor tabel `weekly_analysis`
+-- Indexes for table `weekly_analysis`
 --
 ALTER TABLE `weekly_analysis`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `user_id` (`user_id`,`week_start`);
 
 --
--- AUTO_INCREMENT voor geëxporteerde tabellen
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT voor een tabel `admin_actions`
+-- AUTO_INCREMENT for table `admin_actions`
 --
 ALTER TABLE `admin_actions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT voor een tabel `answers`
+-- AUTO_INCREMENT for table `answers`
 --
 ALTER TABLE `answers`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
--- AUTO_INCREMENT voor een tabel `challenges`
+-- AUTO_INCREMENT for table `challenges`
 --
 ALTER TABLE `challenges`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `daily_entries`
+-- AUTO_INCREMENT for table `daily_entries`
 --
 ALTER TABLE `daily_entries`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT voor een tabel `devices`
+-- AUTO_INCREMENT for table `devices`
 --
 ALTER TABLE `devices`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `device_metrics`
+-- AUTO_INCREMENT for table `device_metrics`
 --
 ALTER TABLE `device_metrics`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `global_statistics`
+-- AUTO_INCREMENT for table `global_statistics`
 --
 ALTER TABLE `global_statistics`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `monthly_analysis`
+-- AUTO_INCREMENT for table `monthly_analysis`
 --
 ALTER TABLE `monthly_analysis`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `notifications`
+-- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `pillars`
+-- AUTO_INCREMENT for table `pillars`
 --
 ALTER TABLE `pillars`
   MODIFY `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- AUTO_INCREMENT voor een tabel `questions`
+-- AUTO_INCREMENT for table `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT voor een tabel `resets`
+-- AUTO_INCREMENT for table `resets`
 --
 ALTER TABLE `resets`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `users`
+-- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT voor een tabel `user_challenges`
+-- AUTO_INCREMENT for table `user_challenges`
 --
 ALTER TABLE `user_challenges`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT voor een tabel `weekly_analysis`
+-- AUTO_INCREMENT for table `weekly_analysis`
 --
 ALTER TABLE `weekly_analysis`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- Beperkingen voor geëxporteerde tabellen
+-- Constraints for dumped tables
 --
 
 --
--- Beperkingen voor tabel `admin_actions`
+-- Constraints for table `admin_actions`
 --
 ALTER TABLE `admin_actions`
   ADD CONSTRAINT `admin_actions_ibfk_1` FOREIGN KEY (`admin_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `answers`
+-- Constraints for table `answers`
 --
 ALTER TABLE `answers`
   ADD CONSTRAINT `answers_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `daily_entries` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `answers_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `daily_entries`
+-- Constraints for table `daily_entries`
 --
 ALTER TABLE `daily_entries`
   ADD CONSTRAINT `daily_entries_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `devices`
+-- Constraints for table `devices`
 --
 ALTER TABLE `devices`
   ADD CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `device_metrics`
+-- Constraints for table `device_metrics`
 --
 ALTER TABLE `device_metrics`
   ADD CONSTRAINT `device_metrics_ibfk_1` FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `monthly_analysis`
+-- Constraints for table `monthly_analysis`
 --
 ALTER TABLE `monthly_analysis`
   ADD CONSTRAINT `monthly_analysis_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `notifications`
+-- Constraints for table `notifications`
 --
 ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `questions`
+-- Constraints for table `questions`
 --
 ALTER TABLE `questions`
   ADD CONSTRAINT `questions_ibfk_1` FOREIGN KEY (`pillar_id`) REFERENCES `pillars` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `resets`
+-- Constraints for table `resets`
 --
 ALTER TABLE `resets`
   ADD CONSTRAINT `resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `resets_ibfk_2` FOREIGN KEY (`performed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
--- Beperkingen voor tabel `user_challenges`
+-- Constraints for table `user_challenges`
 --
 ALTER TABLE `user_challenges`
   ADD CONSTRAINT `user_challenges_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_challenges_ibfk_2` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `user_meta_admin_view`
+-- Constraints for table `user_meta_admin_view`
 --
 ALTER TABLE `user_meta_admin_view`
   ADD CONSTRAINT `user_meta_admin_view_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Beperkingen voor tabel `weekly_analysis`
+-- Constraints for table `weekly_analysis`
 --
 ALTER TABLE `weekly_analysis`
   ADD CONSTRAINT `weekly_analysis_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
