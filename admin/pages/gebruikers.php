@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Gebruikers - Gezondheidsmeter</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="../../assets/css/admin.css">
     <style>
 /* ---------- USER CARD DESIGN ---------- */
 :root {
@@ -311,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
     
-    <div class="dashboard-container">
+    <div class="dashboard-container1">
         <div class="dashboard-header">
             <div class="dashboard-header-left">
                 <h1>Gebruikers Beheer</h1>
