@@ -242,6 +242,8 @@ class User
         $_SESSION['user_id'] = $user->id;
         $_SESSION['username'] = $user->username;
         $_SESSION['email'] = $user->email;
+        $_SESSION['birthdate'] = $user->birthdate;
+        $_SESSION['gender'] = $user->gender;
 
         return ['success' => true, 'message' => 'Inloggen gelukt.', 'user' => $user];
     }

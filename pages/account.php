@@ -20,6 +20,8 @@ if (!$user) {
 
 $email = htmlspecialchars($user->email);
 $username = htmlspecialchars($user->username);
+$birthdate = htmlspecialchars($user->birthdate);
+$gender = htmlspecialchars($user->gender);
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -58,8 +60,8 @@ $username = htmlspecialchars($user->username);
                 </div>
                 <div class="identity-info2">
                     <p><?= htmlspecialchars($email) ?></p>
-                    <p>+31 212133321</p>
-                    <p>Straatnaam 12, Amsterdam</p>
+                    <p><?= htmlspecialchars($birthdate) ?></p>
+                    <p><?= htmlspecialchars($gender) ?></p>
                 </div>
             </div>
         </div>
