@@ -30,7 +30,7 @@ $message = '';
 $error = '';
 
 // Get all users from database using User model
-$users = User::getAllUsers('created_at DESC');
+$users = User::getAllUsers();
 $totalUsers = count($users);
 
 // Handle Form Submissions - Automatically log all user management actions

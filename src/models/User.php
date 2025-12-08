@@ -264,10 +264,10 @@ class User
         return (bool)$stmt->fetch();
     }
 
-    public static function getAllUsers(string $orderBy = 'created_at DESC'): array
+    public static function getAllUsers(): array
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("SELECT * FROM users ORDER BY $orderBy");
+        $stmt = $pdo->prepare("SELECT * FROM `users` WHERE is_admin = 0");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
