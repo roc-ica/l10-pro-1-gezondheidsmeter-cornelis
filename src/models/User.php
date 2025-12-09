@@ -271,4 +271,27 @@ class User
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public static function blockUser(int $userId, ?string $reason = null): array
+    {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare('UPDATE users SET is_active = 0, block_reason = ? WHERE id = ?');
+        try {
+            $stmt->execute([$reason, $userId]);
+            return ['success' => true, 'message' => 'Gebruiker geblokkeerd.'];
+        } catch (\PDOException $e) {
+            return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
+        }
+    }
+    public static function unblockUser(int $userId): array
+    {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare('UPDATE users SET is_active = 1, block_reason = NULL WHERE id = ?');
+        try {
+            $stmt->execute([$userId]);
+            return ['success' => true, 'message' => 'Gebruiker gedeblokkeerd.'];
+        } catch (\PDOException $e) {
+            return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
+        }
+    }
 }

@@ -33,6 +33,8 @@ $error = '';
 $users = User::getAllUsers();
 $totalUsers = count($users);
 
+// block user
+
 // Handle Form Submissions - Automatically log all user management actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
@@ -220,24 +222,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i data-lucide="mail" class="contact-icon"></i>
                         <span><?php echo htmlspecialchars($user['email']); ?></span>
                     </div>
-                    <div class="contact-item">
+                    <!-- <div class="contact-item">
                         <i data-lucide="user" class="contact-icon"></i>
                         <span>@<?php echo htmlspecialchars($user['username']); ?></span>
-                    </div>
+                    </div> -->
                     <div class="contact-item">
                         <i data-lucide="calendar" class="contact-icon"></i>
                         <span><?php echo $user['birthdate'] ? htmlspecialchars(date('d-m-Y', strtotime($user['birthdate']))) : 'Niet ingevuld'; ?></span>
+                    </div>
+                    <div class="contact-item">
+                        <i data-lucide="smile" class="contact-icon"></i>
+                        <span><?php echo htmlspecialchars($user['gender'] ?? 'Niet ingevuld'); ?></span>
                     </div>
                 </div>
             </div>
         </div>
         <div class="user-actions-wrapper">
-            <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER'); ?></div>
+            <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER'); echo(' ');  echo htmlspecialchars($user['id'])?></div>
             <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['gender'] ?? ''); ?>')">
                 <i data-lucide="pencil"></i> Bewerken
             </button>
-            <button class="btn-action btn-delete" onclick="if(confirm('Weet je zeker dat je deze gebruiker wilt verwijderen?')) { deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>'); }">
-                <i data-lucide="trash-2"></i> Verwijderen
+            <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">
+                <i data-lucide="lock"></i> <?php echo $user['is_active'] ? 'Blokkeren' : 'Deblokkeren'; ?>
             </button>
             <button class="btn-action reset-btn" onclick="if(confirm('Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?')) { resetUserActivity(<?php echo $user['id']; ?>); }">Reset Activity</button>
         </div>
@@ -247,6 +253,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
+
+    <!-- Block User Modal -->
+    <div id="blockUserModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gebruiker Blokkeren</h2>
+                <span class="close" onclick="closeBlockUserModal()">&times;</span>
+            </div>
+            <form id="blockUserForm" method="POST">
+                <input type="hidden" id="block_user_id" name="user_id">
+                <div class="form-group">
+                    <label for="block_reason">Reden (optioneel)</label>
+                    <textarea id="block_reason" name="reason" rows="4" placeholder="Voer hier de reden in waarom deze gebruiker wordt geblokkeerd..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-save">Blokkeren</button>
+                    <button type="button" class="btn-cancel" onclick="closeBlockUserModal()">Annuleren</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Unblock User Modal -->
+    <div id="unblockUserModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gebruiker Deblokkeren</h2>
+                <span class="close" onclick="closeUnblockUserModal()">&times;</span>
+            </div>
+            <form id="unblockUserForm" method="POST">
+                <input type="hidden" id="unblock_user_id" name="user_id">
+                <p>Weet je zeker dat je deze gebruiker wilt deblokkeren?</p>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-save">Ja, Deblokkeren</button>
+                    <button type="button" class="btn-cancel" onclick="closeUnblockUserModal()">Annuleren</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Edit User Modal -->
     <div id="editUserModal" class="modal" style="display: none;">
@@ -331,15 +376,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const result = await response.json();
 
                 if (result.success) {
-                    alert('Gebruiker succesvol bijgewerkt!');
                     closeEditUserModal();
                     location.reload();
                 } else {
-                    alert('Fout: ' + (result.message || 'Onbekende fout'));
+                    console.error('Error:', result.message);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Er is een fout opgetreden.');
             }
         });
 
@@ -359,9 +402,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setTimeout(() => location.reload(), 500);
             } catch (error) {
                 console.error('Error:', error);
-                alert('Er is een fout opgetreden bij het verwijderen.');
             }
         }
+
+        // Block user modal functions
+        function openBlockUserModal(userId, username) {
+            document.getElementById('block_user_id').value = userId;
+            document.getElementById('blockUserModal').style.display = 'block';
+        }
+
+        function closeBlockUserModal() {
+            document.getElementById('blockUserModal').style.display = 'none';
+            document.getElementById('blockUserForm').reset();
+        }
+
+        // Handle block user form submission
+        document.getElementById('blockUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const userId = document.getElementById('block_user_id').value;
+            const reason = document.getElementById('block_reason').value;
+            
+            const formData = new FormData();
+            formData.append('action', 'block_user');
+            formData.append('user_id', userId);
+            formData.append('reason', reason);
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                closeBlockUserModal();
+                setTimeout(() => location.reload(), 500);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Unblock user modal functions
+        function openUnblockUserModal(userId, username) {
+            document.getElementById('unblock_user_id').value = userId;
+            document.getElementById('unblockUserModal').style.display = 'block';
+        }
+
+        function closeUnblockUserModal() {
+            document.getElementById('unblockUserModal').style.display = 'none';
+            document.getElementById('unblockUserForm').reset();
+        }
+
+        // Handle unblock user form submission
+        document.getElementById('unblockUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const userId = document.getElementById('unblock_user_id').value;
+            
+            const formData = new FormData();
+            formData.append('action', 'unblock_user');
+            formData.append('user_id', userId);
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                closeUnblockUserModal();
+                setTimeout(() => location.reload(), 500);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
 
         // Reset user activity function
         async function resetUserActivity(userId) {
@@ -379,7 +491,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setTimeout(() => location.reload(), 500);
             } catch (error) {
                 console.error('Error:', error);
-                alert('Er is een fout opgetreden bij het resetten.');
             }
         }
     </script>
