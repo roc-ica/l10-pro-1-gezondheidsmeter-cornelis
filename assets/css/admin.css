@@ -704,6 +704,9 @@
   .chart-area {
     height: 180px;
   }
+  .user-list-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Specific styles for Vragen page to match design */
@@ -1040,13 +1043,13 @@
 
 /* Container of all cards */
 .user-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1% 1%;
     max-width: 80%;
     margin: 2% 12%;
+    align-items: stretch;
 }
-
 /* Card */
 .user-card {
     background-color: var(--card-bg);
@@ -1058,6 +1061,7 @@
     justify-content: space-between;
     align-items: center;
     transition: 0.25s;
+    height: 100%;
 }
 
 .user-card:hover {
