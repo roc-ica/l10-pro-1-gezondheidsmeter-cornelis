@@ -221,6 +221,8 @@ CREATE TABLE `questions` (
   `input_type` enum('choice','number','boolean','text') NOT NULL DEFAULT 'choice',
   `choices` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`choices`)),
   `active` tinyint(1) DEFAULT 1,
+  `is_main_question` tinyint(1) DEFAULT 1,
+  `is_drugs_question` tinyint(1) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -610,6 +612,104 @@ ALTER TABLE `user_meta_admin_view`
 --
 ALTER TABLE `weekly_analysis`
   ADD CONSTRAINT `weekly_analysis_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_health_scores`
+-- Stores daily health scores with per-pillar breakdown
+--
+
+CREATE TABLE `user_health_scores` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `score_date` date NOT NULL,
+  `overall_score` decimal(5,2) NOT NULL,
+  `pillar_scores` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`pillar_scores`)),
+  `calculation_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`calculation_details`)),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  UNIQUE KEY `user_date` (`user_id`, `score_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for table `user_health_scores`
+--
+ALTER TABLE `user_health_scores`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `score_date` (`score_date`);
+
+--
+-- Constraints for table `user_health_scores`
+--
+ALTER TABLE `user_health_scores`
+  ADD CONSTRAINT `user_health_scores_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `question_scoring_rules`
+-- Defines how answers are scored for flexible health calculations
+--
+
+CREATE TABLE `question_scoring_rules` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `question_id` bigint(20) UNSIGNED NOT NULL,
+  `condition_type` varchar(50) NOT NULL COMMENT 'equals, contains_keyword, greater_than, less_than, range',
+  `condition_value` varchar(255) DEFAULT NULL,
+  `condition_min` int(11) DEFAULT NULL,
+  `condition_max` int(11) DEFAULT NULL,
+  `base_score` decimal(5,2) NOT NULL,
+  `multiplier` decimal(3,2) DEFAULT 1.00,
+  `max_daily_value` int(11) DEFAULT NULL,
+  `excess_penalty_per_unit` decimal(3,2) DEFAULT 0.50,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for table `question_scoring_rules`
+--
+ALTER TABLE `question_scoring_rules`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `question_id` (`question_id`);
+
+--
+-- Constraints for table `question_scoring_rules`
+--
+ALTER TABLE `question_scoring_rules`
+  ADD CONSTRAINT `question_scoring_rules_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `category_keywords`
+-- Maps keywords to multipliers for flexible category-based scoring
+--
+
+CREATE TABLE `category_keywords` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `pillar_id` tinyint(3) UNSIGNED NOT NULL,
+  `keyword` varchar(255) NOT NULL,
+  `subcategory` varchar(255) DEFAULT NULL,
+  `multiplier` decimal(3,2) DEFAULT 1.00,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for table `category_keywords`
+--
+ALTER TABLE `category_keywords`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `pillar_id` (`pillar_id`),
+  ADD KEY `keyword` (`keyword`);
+
+--
+-- Constraints for table `category_keywords`
+--
+ALTER TABLE `category_keywords`
+  ADD CONSTRAINT `category_keywords_ibfk_1` FOREIGN KEY (`pillar_id`) REFERENCES `pillars` (`id`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
