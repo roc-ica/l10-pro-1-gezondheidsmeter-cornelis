@@ -16,6 +16,7 @@ class User
     public $last_login;
     public $is_active;
     public $block_reason;
+    public $deleted_at;
 
     protected $pdo;
 
@@ -28,20 +29,21 @@ class User
             $this->id = $data['id'] ?? null;
             $this->username = $data['username'] ?? null;
             $this->email = $data['email'] ?? null;
-            $this->is_admin = isset($data['is_admin']) ? (int)$data['is_admin'] : null;
+            $this->is_admin = isset($data['is_admin']) ? (int) $data['is_admin'] : null;
             $this->display_name = $data['display_name'] ?? null;
             $this->birthdate = $data['birthdate'] ?? null;
             $this->gender = $data['gender'] ?? null;
             $this->created_at = $data['created_at'] ?? null;
             $this->last_login = $data['last_login'] ?? null;
-            $this->is_active = isset($data['is_active']) ? (int)$data['is_active'] : null;
+            $this->is_active = isset($data['is_active']) ? (int) $data['is_active'] : null;
             $this->block_reason = $data['block_reason'] ?? null;
+            $this->deleted_at = $data['deleted_at'] ?? null;
         }
     }
 
     public function findByUsername(string $username): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1');
+        $stmt = $this->pdo->prepare('SELECT * FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$username, $username]);
         $row = $stmt->fetch();
         return $row !== false ? $row : null;
@@ -50,7 +52,7 @@ class User
     public static function findByUsernameStatic(string $username): ?self
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$username, $username]);
         $row = $stmt->fetch();
         return $row ? new self($row) : null;
@@ -58,7 +60,7 @@ class User
 
     public function findById(int $id): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+        $stmt = $this->pdo->prepare('SELECT * FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         return $row !== false ? $row : null;
@@ -67,7 +69,7 @@ class User
     public static function findByIdStatic(int $id): ?self
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         return $row ? new self($row) : null;
@@ -96,7 +98,7 @@ class User
         }
         if (isset($data['is_admin'])) {
             $fields[] = 'is_admin = ?';
-            $values[] = (int)$data['is_admin'];
+            $values[] = (int) $data['is_admin'];
         }
         if (isset($data['display_name'])) {
             $fields[] = 'display_name = ?';
@@ -112,7 +114,7 @@ class User
         }
         if (isset($data['is_active'])) {
             $fields[] = 'is_active = ?';
-            $values[] = (int)$data['is_active'];
+            $values[] = (int) $data['is_active'];
         }
         if (isset($data['block_reason'])) {
             $fields[] = 'block_reason = ?';
@@ -138,7 +140,7 @@ class User
     public static function getAll(): array
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->query('SELECT * FROM users ORDER BY id DESC');
+        $stmt = $pdo->query('SELECT * FROM users WHERE deleted_at IS NULL ORDER BY id DESC');
         $rows = $stmt->fetchAll();
         $results = [];
         foreach ($rows as $r) {
@@ -176,7 +178,7 @@ class User
         $stmt = $pdo->prepare('INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, NOW())');
         try {
             $stmt->execute([$username, $email, $password_hash]);
-            $id = (int)$pdo->lastInsertId();
+            $id = (int) $pdo->lastInsertId();
             return ['success' => true, 'id' => $id, 'message' => 'Gebruiker geregistreerd.'];
         } catch (\PDOException $e) {
             return ['success' => false, 'id' => null, 'message' => 'Database fout: ' . $e->getMessage()];
@@ -198,7 +200,7 @@ class User
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$lookup, $lookup]);
         $row = $stmt->fetch();
 
@@ -211,7 +213,7 @@ class User
         }
 
         // controleer of account actief is
-        if (isset($row['is_active']) && (int)$row['is_active'] === 0) {
+        if (isset($row['is_active']) && (int) $row['is_active'] === 0) {
             return null;
         }
 
@@ -253,14 +255,60 @@ class User
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
         $stmt->execute([$email]);
-        return (bool)$stmt->fetch();
+        return (bool) $stmt->fetch();
     }
 
     public static function usernameExists($username): bool
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$username]);
-        return (bool)$stmt->fetch();
+        return (bool) $stmt->fetch();
+    }
+
+    public static function getAllUsers(): array
+    {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM `users` WHERE is_admin = 0 AND deleted_at IS NULL");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Soft delete a user by setting deleted_at timestamp
+     */
+    public function softDelete(): array
+    {
+        if (empty($this->id)) {
+            return ['success' => false, 'message' => 'Geen gebruiker geselecteerd om te verwijderen.'];
+        }
+
+        try {
+            $stmt = $this->pdo->prepare('UPDATE users SET deleted_at = NOW() WHERE id = ?');
+            $stmt->execute([$this->id]);
+            $this->deleted_at = date('Y-m-d H:i:s');
+            return ['success' => true, 'message' => 'Gebruiker verwijderd.'];
+        } catch (\PDOException $e) {
+            return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Restore a soft-deleted user
+     */
+    public function restore(): array
+    {
+        if (empty($this->id)) {
+            return ['success' => false, 'message' => 'Geen gebruiker geselecteerd om te herstellen.'];
+        }
+
+        try {
+            $stmt = $this->pdo->prepare('UPDATE users SET deleted_at = NULL WHERE id = ?');
+            $stmt->execute([$this->id]);
+            $this->deleted_at = null;
+            return ['success' => true, 'message' => 'Gebruiker hersteld.'];
+        } catch (\PDOException $e) {
+            return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
+        }
     }
 }
