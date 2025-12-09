@@ -20,7 +20,6 @@ if (!$user) {
 
 $email = htmlspecialchars($user->email);
 $username = htmlspecialchars($user->username);
-$birthdate = htmlspecialchars($user->birthdate);
 $gender = htmlspecialchars($user->gender);
 ?>
 <!DOCTYPE html>
@@ -60,7 +59,6 @@ $gender = htmlspecialchars($user->gender);
                 </div>
                 <div class="identity-info2">
                     <p><?= htmlspecialchars($email) ?></p>
-                    <p><?= htmlspecialchars($birthdate) ?></p>
                     <p><?= htmlspecialchars($gender) ?></p>
                 </div>
             </div>
