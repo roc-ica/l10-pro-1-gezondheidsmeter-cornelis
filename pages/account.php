@@ -20,8 +20,8 @@ if (!$user) {
 
 $email = htmlspecialchars($user->email);
 $username = htmlspecialchars($user->username);
-$birthdate = htmlspecialchars($user->birthdate);
-$gender = htmlspecialchars($user->gender);
+$birthdate = htmlspecialchars($user->birthdate ?? '');
+$gender = htmlspecialchars($user->gender ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="nl">
