@@ -1,0 +1,332 @@
+<?php
+
+require_once __DIR__ . '/../src/config/database.php';
+
+class HealthScoreCalculator
+{
+    private $pdo;
+    private $userId;
+    private $scoreDate;
+    
+    public function __construct(int $userId, string $scoreDate = null)
+    {
+        $this->pdo = Database::getConnection();
+        $this->userId = $userId;
+        $this->scoreDate = $scoreDate ?? date('Y-m-d');
+    }
+    
+    /**
+     * Calculate overall health score (0-100) for the user on a given date
+     */
+    public function calculateScore(): array
+    {
+        $user = $this->getUserProfile();
+        if (!$user) {
+            return ['success' => false, 'score' => 0, 'message' => 'User not found'];
+        }
+        
+        $answers = $this->getDailyAnswers();
+        if (empty($answers)) {
+            return ['success' => false, 'score' => 0, 'message' => 'No answers found for this date'];
+        }
+        
+        $baseScore = 50;
+        $pillarScores = [];
+        $details = [];
+        
+        // Group answers by pillar
+        $answersByPillar = $this->groupAnswersByPillar($answers);
+        
+        foreach ($answersByPillar as $pillarId => $pillarAnswers) {
+            $pillarScore = $this->calculatePillarScore($pillarId, $pillarAnswers, $details);
+            $pillarScores[$pillarId] = $pillarScore;
+        }
+        
+        // Calculate age adjustment
+        $ageAdjustment = $this->calculateAgeAdjustment($user);
+        
+        // Sum pillar scores
+        $totalPillarScore = array_sum(array_values($pillarScores));
+        $maxPossible = count($pillarScores) * 100;
+        
+        // Normalize to 0-100
+        $overallScore = ($baseScore + $totalPillarScore) - abs($ageAdjustment);
+        $overallScore = max(0, min(100, $overallScore));
+        
+        // Store in database
+        $this->storeHealthScore($overallScore, $pillarScores, $details);
+        
+        return [
+            'success' => true,
+            'score' => round($overallScore, 2),
+            'pillar_scores' => $pillarScores,
+            'calculation_details' => $details,
+            'age_adjustment' => round($ageAdjustment, 2)
+        ];
+    }
+    
+    /**
+     * Calculate score for a single pillar based on answers
+     */
+    private function calculatePillarScore(int $pillarId, array $answers, &$details): float
+    {
+        $score = 0;
+        $pillarDetails = [];
+        
+        foreach ($answers as $answer) {
+            $qScore = $this->scoreAnswer($answer, $pillarDetails);
+            $score += $qScore;
+        }
+        
+        // Normalize pillar score to 0-100 (adjust based on number of questions)
+        $normalizedScore = min(100, $score);
+        
+        $details[$pillarId] = [
+            'score' => round($normalizedScore, 2),
+            'items' => $pillarDetails
+        ];
+        
+        return $normalizedScore;
+    }
+    
+    /**
+     * Score a single answer based on rules and keywords
+     */
+    private function scoreAnswer(array $answer, &$details): float
+    {
+        $questionId = $answer['question_id'];
+        $answerValue = $answer['score'] ?? $answer['answer_text'];
+        
+        // Get question details
+        $stmt = $this->pdo->prepare("
+            SELECT q.*, p.name as pillar_name 
+            FROM questions q
+            JOIN pillars p ON q.pillar_id = p.id
+            WHERE q.id = ?
+        ");
+        $stmt->execute([$questionId]);
+        $question = $stmt->fetch();
+        
+        if (!$question) {
+            return 0;
+        }
+        
+        // Special handling for drugs question
+        if ($question['is_drugs_question']) {
+            return $this->scoreDrugsAnswer($answerValue, $question, $details);
+        }
+        
+        // Simple scoring: convert numeric answers to a 0-100 scale
+        $score = 0;
+        
+        if (is_numeric($answerValue)) {
+            $numValue = (float)$answerValue;
+            
+            // Different scoring based on pillar type
+            switch ($question['pillar_id']) {
+                case 1: // Voeding (Nutrition)
+                    // Water intake: 8+ glasses = 100
+                    $score = min(100, ($numValue / 8) * 100);
+                    break;
+                case 2: // Beweging (Exercise)
+                    // Minutes of exercise: 30+ minutes = 100
+                    $score = min(100, ($numValue / 30) * 100);
+                    break;
+                case 3: // Slaap (Sleep)
+                    // Hours of sleep: 7-8 hours = 100
+                    if ($numValue >= 7 && $numValue <= 8) {
+                        $score = 100;
+                    } elseif ($numValue >= 6 && $numValue < 7) {
+                        $score = 80;
+                    } elseif ($numValue > 8 && $numValue <= 9) {
+                        $score = 90;
+                    } elseif ($numValue < 6) {
+                        $score = max(0, ($numValue / 6) * 60);
+                    } else {
+                        $score = 60;
+                    }
+                    break;
+                case 4: // Verslavingen (Addictions) - handled above as is_drugs_question
+                    $score = 100; // Default if not drugs
+                    break;
+                case 5: // Sociaal (Social)
+                    $score = min(100, ($numValue / 5) * 100);
+                    break;
+                case 6: // Mentaal (Mental)
+                    $score = min(100, ($numValue / 4) * 100);
+                    break;
+                default:
+                    $score = min(100, ($numValue / 10) * 100);
+            }
+        } else {
+            // For non-numeric answers (yes/no, choice, etc.)
+            $answerLower = strtolower($answerValue);
+            if (in_array($answerLower, ['ja', 'yes', 'true', '1', 'veel'])) {
+                $score = 50;
+            } elseif (in_array($answerLower, ['nee', 'no', 'false', '0'])) {
+                $score = 100;
+            } else {
+                $score = 50;
+            }
+        }
+        
+        // Cap score at 100
+        $score = min(100, max(0, $score));
+        
+        $details[] = [
+            'question' => $question['question_text'] ?? 'Unknown',
+            'answer' => $answerValue,
+            'score' => round($score, 2)
+        ];
+        
+        return $score;
+    }
+    
+    /**
+     * Special scoring for drugs question (Softdrugs vs Harddrugs)
+     * Both are bad for health, but harddrugs are much worse
+     */
+    private function scoreDrugsAnswer(string $answerValue, array $question, &$details): float
+    {
+        $score = 0;
+        $penalty = 0;
+        
+        // Normalize answer to lowercase
+        $answer = strtolower(trim($answerValue));
+        
+        if (stripos($answer, 'softdrug') !== false || stripos($answer, 'marihuana') !== false) {
+            // Softdrugs: moderate penalty
+            $score = 20;  // Base unhealthy score
+            $penalty = 15; // Additional penalty
+            $status = 'Softdrugs (Marihuana)';
+        } elseif (stripos($answer, 'harddrug') !== false || stripos($answer, 'cocaïne') !== false || 
+                  stripos($answer, 'heroine') !== false || stripos($answer, 'ecstasy') !== false) {
+            // Harddrugs: severe penalty
+            $score = 10;   // Very low base score
+            $penalty = 40; // Severe additional penalty
+            $status = 'Harddrugs (Zeer schadelijk)';
+        } else {
+            // No drugs or 'nee'
+            $score = 0;
+            $penalty = 0;
+            $status = 'Geen druggebruik';
+        }
+        
+        $finalScore = $score - $penalty;
+        
+        $details[] = [
+            'question' => $question['question_text'],
+            'answer' => $status,
+            'base_score' => $score,
+            'multiplier' => 1.0,
+            'penalty' => $penalty,
+            'final_score' => round($finalScore, 2),
+            'note' => $finalScore < 0 ? '⚠️ Druggebruik heeft ernstige invloed op gezondheid!' : ''
+        ];
+        
+        return max(-50, $finalScore); // Cap at -50 for severe penalties
+    }
+    
+    /**
+     * Calculate age-based adjustment
+     */
+    private function calculateAgeAdjustment(array $user): float
+    {
+        if (!$user['birthdate']) {
+            return 0;
+        }
+        
+        $birthDate = new DateTime($user['birthdate']);
+        $today = new DateTime();
+        $age = $today->diff($birthDate)->y;
+        
+        // Optimal age: 25-65
+        if ($age >= 25 && $age <= 65) {
+            return 0;
+        } elseif ($age < 25) {
+            return -2; // Young, slight boost
+        } elseif ($age > 65) {
+            return 5; // Elderly, adjust expectations
+        }
+        
+        return 0;
+    }
+    
+    /**
+     * Get user profile data
+     */
+    private function getUserProfile(): ?array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT id, birthdate, gender 
+            FROM users 
+            WHERE id = ?
+        ");
+        $stmt->execute([$this->userId]);
+        return $stmt->fetch() ?: null;
+    }
+    
+    /**
+     * Get all answers for user on the given date
+     */
+    private function getDailyAnswers(): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT a.*, q.pillar_id, q.question_text
+            FROM answers a
+            JOIN daily_entries de ON a.entry_id = de.id
+            JOIN questions q ON a.question_id = q.id
+            WHERE de.user_id = ? AND de.entry_date = ?
+            ORDER BY a.id ASC
+        ");
+        $stmt->execute([$this->userId, $this->scoreDate]);
+        return $stmt->fetchAll();
+    }
+    
+    /**
+     * Group answers by pillar
+     */
+    private function groupAnswersByPillar(array $answers): array
+    {
+        $grouped = [];
+        
+        foreach ($answers as $answer) {
+            $pillarId = $answer['pillar_id'];
+            if (!isset($grouped[$pillarId])) {
+                $grouped[$pillarId] = [];
+            }
+            $grouped[$pillarId][] = $answer;
+        }
+        
+        return $grouped;
+    }
+    
+    /**
+     * Store calculated score in database
+     */
+    private function storeHealthScore(float $score, array $pillarScores, array $details): void
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                INSERT INTO user_health_scores 
+                (user_id, score_date, overall_score, pillar_scores, calculation_details, created_at)
+                VALUES (?, ?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE 
+                overall_score = VALUES(overall_score),
+                pillar_scores = VALUES(pillar_scores),
+                calculation_details = VALUES(calculation_details)
+            ");
+            
+            $stmt->execute([
+                $this->userId,
+                $this->scoreDate,
+                $score,
+                json_encode($pillarScores),
+                json_encode($details)
+            ]);
+        } catch (PDOException $e) {
+            // Log silently - scoring failure shouldn't break questionnaire
+            error_log("Failed to store health score: " . $e->getMessage());
+        }
+    }
+}
