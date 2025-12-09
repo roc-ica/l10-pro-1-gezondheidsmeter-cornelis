@@ -1,49 +1,37 @@
 <?php
 session_start();
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../src/views/auth/login.php');
     exit;
 }
 
-$username = $_SESSION['username'] ?? 'Gebruiker';
-$userId = $_SESSION['user_id'];
-
-// Database connection
 require_once __DIR__ . '/../src/config/database.php';
+require_once __DIR__ . '/../classes/UserHealthHistory.php';
+
+$userId = $_SESSION['user_id'];
+$username = $_SESSION['username'] ?? 'Gebruiker';
+$date = $_GET['date'] ?? date('Y-m-d');
+
 $pdo = Database::getConnection();
 
-// Get today's entry
-$today = date('Y-m-d');
+// Get today's answers with pillar info
 $stmt = $pdo->prepare("
-    SELECT * FROM daily_entries 
-    WHERE user_id = ? AND entry_date = ?
+    SELECT a.*, q.pillar_id, p.name as pillar_name, p.color as pillar_color, q.question_text
+    FROM answers a
+    JOIN questions q ON a.question_id = q.id
+    JOIN pillars p ON q.pillar_id = p.id
+    JOIN daily_entries de ON a.entry_id = de.id
+    WHERE de.user_id = ? AND de.entry_date = ?
+    ORDER BY q.pillar_id ASC
 ");
-$stmt->execute([$userId, $today]);
-$todayEntry = $stmt->fetch();
+$stmt->execute([$userId, $date]);
+$todayAnswers = $stmt->fetchAll();
 
-// Get today's answers with question details
-$todayAnswers = [];
-if ($todayEntry) {
-    $stmt = $pdo->prepare("
-        SELECT a.*, q.question_text, q.pillar_id, p.name as pillar_name, p.color as pillar_color
-        FROM answers a
-        JOIN questions q ON a.question_id = q.id
-        JOIN pillars p ON q.pillar_id = p.id
-        WHERE a.entry_id = ?
-        ORDER BY q.pillar_id, q.id
-    ");
-    $stmt->execute([$todayEntry['id']]);
-    $todayAnswers = $stmt->fetchAll();
-}
-
-// Get statistics for the last 7 days
+// Get weekly stats
 $weekAgo = date('Y-m-d', strtotime('-7 days'));
 $stmt = $pdo->prepare("
-    SELECT 
-        de.entry_date,
-        COUNT(DISTINCT a.question_id) as answered_count
+    SELECT de.entry_date, COUNT(a.id) as answered_count 
     FROM daily_entries de
     LEFT JOIN answers a ON de.id = a.entry_id
     WHERE de.user_id = ? AND de.entry_date >= ?
@@ -82,6 +70,13 @@ foreach ($allEntries as $entryDate) {
     }
 }
 
+// Get today's score
+$history = new UserHealthHistory($userId);
+$todayScore = $history->getTodayScore();
+$pillarScores = !empty($todayAnswers) ? $history->getPillarScores($date) : null;
+$trendData = $history->getTrendData(30);
+$avgScore = $history->getAverageScore(7);
+
 // Group answers by pillar
 $answersByPillar = [];
 foreach ($todayAnswers as $answer) {
@@ -98,39 +93,25 @@ foreach ($todayAnswers as $answer) {
 ?>
 <!DOCTYPE html>
 <html lang="nl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultaten - Gezondheidsmeter</title>
+    <title>Je Gezondheid - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/dashboard.css">
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 </head>
-
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
-
+    
     <div class="dashboard-container">
-        <!-- Header -->
         <div class="dashboard-header">
             <div class="dashboard-header-left">
-                <h1>Jouw Resultaten</h1>
-                <p><?= date('l j F Y') ?></p>
-            </div>
-            <div class="dashboard-header-right">
-                <a href="vragen.php" class="btn-naar-app">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        style="display: inline-block; vertical-align: middle; margin-right: 6px;">
-                        <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Nieuwe Vragenlijst
-                </a>
+                <h1>Je Gezondheid</h1>
+                <p>Bekijk je gezondheidsscores en voortgang</p>
             </div>
         </div>
 
-        <?php if ($todayEntry && $todayEntry['submitted_at']): ?>
+        <?php if (!empty($todayAnswers)): ?>
             <!-- Success Message -->
             <div class="success-message">
                 <div class="success-icon">
@@ -141,56 +122,59 @@ foreach ($todayAnswers as $answer) {
                 </div>
                 <div class="success-content">
                     <h2>Gefeliciteerd! 🎉</h2>
-                    <p>Je hebt de vragenlijst van vandaag voltooid om
-                        <?= date('H:i', strtotime($todayEntry['submitted_at'])) ?> uur</p>
+                    <p>Je hebt de vragenlijst van vandaag voltooid</p>
                 </div>
             </div>
 
-            <!-- Stats Overview -->
+            <!-- Today's Score Card -->
+            <?php if ($todayScore): ?>
+            <div class="today-score-card">
+                <p class="today-score-subtitle">Vandaag's Gezondheid Score</p>
+                <div class="today-score-value">
+                    <?php echo round($todayScore['overall_score'], 1); ?>/100
+                </div>
+                <p class="today-score-date">
+                    <?php echo htmlspecialchars(date('d M Y', strtotime($todayScore['score_date']))); ?>
+                </p>
+            </div>
+            <?php endif; ?>
+
+            <!-- Stats Row -->
             <div class="stats-row">
-                <div class="stat-card stat-card-primary">
-                    <div class="stat-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 11l3 3L22 4" />
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-label">Vragen Beantwoord</div>
-                        <div class="stat-number"><?= count($todayAnswers) ?></div>
-                        <div class="stat-subtitle">Vandaag</div>
-                    </div>
+                <div class="stats-card">
+                    <p class="stats-label">Gemiddelde (7 dagen)</p>
+                    <p class="stats-value stats-value-average">
+                        <?php echo $avgScore ? round($avgScore, 1) : 'N/A'; ?>
+                    </p>
                 </div>
-
-                <div class="stat-card stat-card-success">
-                    <div class="stat-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-label">Huidige Streak</div>
-                        <div class="stat-number"><?= $currentStreak ?> dagen</div>
-                        <div class="stat-subtitle">Blijf doorgaan! 🔥</div>
-                    </div>
+                <div class="stats-card">
+                    <p class="stats-label">Huidige Streak</p>
+                    <p class="stats-value stats-value-days">
+                        <?php echo $currentStreak; ?> 🔥
+                    </p>
                 </div>
-
-                <div class="stat-card stat-card-info">
-                    <div class="stat-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                            <line x1="16" y1="2" x2="16" y2="6" />
-                            <line x1="8" y1="2" x2="8" y2="6" />
-                            <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-label">Totaal Ingevuld</div>
-                        <div class="stat-number"><?= $totalEntries ?></div>
-                        <div class="stat-subtitle">Vragenlijsten</div>
-                    </div>
+                <div class="stats-card">
+                    <p class="stats-label">Totaal Ingevuld</p>
+                    <p class="stats-value stats-value-days">
+                        <?php echo $totalEntries; ?>
+                    </p>
                 </div>
             </div>
+
+            <!-- Pillar Breakdown -->
+            <?php if ($pillarScores && is_array($pillarScores)): ?>
+            <div class="pillar-section">
+                <h3 class="pillar-section-title">Score Per Categorie</h3>
+                <div class="pillar-grid">
+                    <?php foreach ($pillarScores as $pillarId => $score): ?>
+                    <div class="pillar-card">
+                        <p class="pillar-card-label">Categorie <?php echo $pillarId; ?></p>
+                        <p class="pillar-card-score"><?php echo round($score, 1); ?></p>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Answers by Pillar -->
             <div class="dashboard-card dashboard-card-full">
@@ -199,14 +183,13 @@ foreach ($todayAnswers as $answer) {
                 </div>
                 <div class="pillars-grid">
                     <?php foreach ($answersByPillar as $pillarData): ?>
-                        <div class="pillar-section"
-                            style="border-left: 4px solid <?= htmlspecialchars($pillarData['color']) ?>">
-                            <h4 class="pillar-title"><?= htmlspecialchars($pillarData['name']) ?></h4>
+                        <div class="pillar-section" style="border-left: 4px solid <?php echo htmlspecialchars($pillarData['color']); ?>">
+                            <h4 class="pillar-title"><?php echo htmlspecialchars($pillarData['name']); ?></h4>
                             <div class="pillar-answers">
                                 <?php foreach ($pillarData['answers'] as $answer): ?>
                                     <div class="answer-item">
-                                        <div class="answer-question"><?= htmlspecialchars($answer['question_text']) ?></div>
-                                        <div class="answer-response"><?= htmlspecialchars($answer['answer_text']) ?></div>
+                                        <div class="answer-question"><?php echo htmlspecialchars($answer['question_text']); ?></div>
+                                        <div class="answer-response"><?php echo htmlspecialchars($answer['answer_text']); ?></div>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -215,7 +198,33 @@ foreach ($todayAnswers as $answer) {
                 </div>
             </div>
 
+            <!-- Trends Section -->
+            <?php if (!empty($trendData)): ?>
+            <div class="trends-section">
+                <h3 class="trends-title">Gezondheid Trend (30 dagen)</h3>
+                <div class="trends-table">
+                    <table class="trends-chart">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach (array_reverse($trendData) as $trend): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars(date('d M Y', strtotime($trend['score_date']))); ?></td>
+                                <td><?php echo round($trend['overall_score'], 1); ?>/100</td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Weekly Activity Chart -->
+            <?php if (!empty($weeklyStats)): ?>
             <div class="dashboard-card dashboard-card-full">
                 <div class="card-header">
                     <h3>Activiteit Afgelopen Week</h3>
@@ -224,6 +233,7 @@ foreach ($todayAnswers as $answer) {
                     <canvas id="weeklyActivityChart"></canvas>
                 </div>
             </div>
+            <?php endif; ?>
 
         <?php else: ?>
             <!-- No results yet -->
@@ -238,10 +248,20 @@ foreach ($todayAnswers as $answer) {
                     </div>
                     <h2>Nog geen resultaten</h2>
                     <p>Je hebt vandaag nog geen vragenlijst ingevuld.</p>
-                    <a href="vragen.php" class="btn-primary">Start Vragenlijst</a>
+                    <a href="vragen-hierarchical.php" class="btn-primary">Start Vragenlijst</a>
                 </div>
             </div>
         <?php endif; ?>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons-container">
+            <a href="../pages/vragen-hierarchical.php" class="btn-action btn-action-primary">
+                Antwoord Vragen
+            </a>
+            <a href="../pages/home.php" class="btn-action btn-action-secondary">
+                Home
+            </a>
+        </div>
     </div>
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
@@ -253,7 +273,7 @@ foreach ($todayAnswers as $answer) {
         // Weekly Activity Chart
         const ctx = document.getElementById('weeklyActivityChart');
         if (ctx) {
-            const weeklyData = <?= json_encode($weeklyStats) ?>;
+            const weeklyData = <?php echo json_encode($weeklyStats); ?>;
             const labels = weeklyData.map(d => {
                 const date = new Date(d.entry_date);
                 return date.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -294,5 +314,4 @@ foreach ($todayAnswers as $answer) {
         }
     </script>
 </body>
-
 </html>
