@@ -1,13 +1,27 @@
 <?php
 session_start();
 
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../src/views/auth/login.php');
     exit;
 }
 
-$username = $_SESSION['username'] ?? 'Gebruiker';
+// Get user data from database
+require_once __DIR__ . '/../src/models/User.php';
+$user = User::findByIdStatic($_SESSION['user_id']);
+
+if (!$user) {
+    // User not found, redirect to login
+    header('Location: ../src/views/auth/login.php');
+    exit;
+}
+
+$email = htmlspecialchars($user->email);
+$username = htmlspecialchars($user->username);
+$birthdate = htmlspecialchars($user->birthdate);
+$gender = htmlspecialchars($user->gender);
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -41,13 +55,13 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
                         </div>
                     </div>
                     <div class="identity-button">
-                        <button>Bewerken</button>
+                        <button onclick="openEditModal()">Bewerken</button>
                     </div>
                 </div>
                 <div class="identity-info2">
-                    <p>email:<php></php></p>
-                    <p>+31 212133321</p>
-                    <p>Straatnaam 12, Amsterdam</p>
+                    <p><?= htmlspecialchars($email) ?></p>
+                    <p><?= htmlspecialchars($birthdate) ?></p>
+                    <p><?= htmlspecialchars($gender) ?></p>
                 </div>
             </div>
         </div>
@@ -155,6 +169,93 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
             } catch (error) {
                 console.error('Error deleting health data:', error);
                 alert('Er is een fout opgetreden bij het wissen van je gegevens.');
+            }
+        });
+    </script>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gegevens Bewerken</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form id="editForm" method="POST">
+                <div class="form-group">
+                    <label for="edit_email">E-mailadres</label>
+                    <input type="email" id="edit_email" name="email" value="<?= htmlspecialchars($user->email) ?>" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_birthdate">Geboortedatum</label>
+                    <input type="date" id="edit_birthdate" name="birthdate" value="<?= htmlspecialchars($user->birthdate) ?>">
+                </div>
+                <div class="form-group">
+                    <label for="edit_gender">Geslacht</label>
+                    <select id="edit_gender" name="gender">
+                        <option value="">-- Selecteer --</option>
+                        <option value="Male" <?= $user->gender === 'Male' ? 'selected' : '' ?>>Man</option>
+                        <option value="Female" <?= $user->gender === 'Female' ? 'selected' : '' ?>>Vrouw</option>
+                        <option value="Other" <?= $user->gender === 'Other' ? 'selected' : '' ?>>Anders</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-save">Opslaan</button>
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Annuleren</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/session-guard.js"></script>
+    <script>
+        function openEditModal() {
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(document.getElementById('editForm'));
+            const data = {
+                email: formData.get('email'),
+                birthdate: formData.get('birthdate'),
+                gender: formData.get('gender')
+            };
+
+            try {
+                const response = await fetch('/api/update-profile.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Profiel succesvol bijgewerkt!');
+                    closeEditModal();
+                    location.reload();
+                } else {
+                    alert('Fout: ' + (result.message || 'Onbekende fout'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Er is een fout opgetreden.');
             }
         });
     </script>

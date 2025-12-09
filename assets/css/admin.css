@@ -640,7 +640,7 @@
 /* Analytics Row - Full width chart blocks */
 .dashboard-container1 {
   max-width: 1200px;
-  margin: 0 20%;
+  margin: 0 16%;
   padding: 40px 30px;
 }
 
@@ -704,6 +704,9 @@
   .chart-area {
     height: 180px;
   }
+  .user-list-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Specific styles for Vragen page to match design */
@@ -904,4 +907,258 @@
     cursor: pointer;
 }
 
-/*style for users containers*/
+/*style for users pagina*/
+
+/* Modal Styling */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+}
+
+.modal[style*="display: block"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  padding: 30px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  margin: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 20px;
+}
+
+.close {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--color-text-light);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close:hover {
+  color: var(--color-text);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-opacity);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
+
+.btn-save,
+.btn-cancel {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-save {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-save:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(10, 159, 28, 0.3);
+}
+
+.btn-cancel {
+  background-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-cancel:hover {
+  background-color: var(--color-border-dark);
+}
+
+:root {
+    --color-success: #22c55e;
+    --color-danger: #ff6c6c;
+    --color-border: #e5e7eb;
+    --color-primary-text: #1f2937;
+    --color-secondary-text: #4b5563;
+    --card-bg: #ffffff;
+}
+
+/* Container of all cards */
+.user-list-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1% 1%;
+    max-width: 80%;
+    margin: 2% 12%;
+    align-items: stretch;
+}
+/* Card */
+.user-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.25s;
+    height: 80%;
+}
+
+.user-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 25px rgba(0,0,0,0.18);
+}
+
+/* Left side */
+.user-info-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.user-details {
+    flex-grow: 1;
+}
+
+.user-name {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--color-primary-text);
+    margin: 0 0 0.5rem 0;
+}
+
+.user-contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: var(--color-secondary-text);
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+}
+
+.contact-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    color: #6b7280;
+}
+
+/* Right side */
+.user-actions-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.score-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-success);
+}
+
+/* Buttons */
+.btn-action {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    font-size: 0.85rem;
+    cursor: pointer;
+    width: 9.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-edit {
+    background: #f9fafb;
+    color: #374151;
+}
+
+.btn-edit:hover {
+    background: #f3f4f6;
+}
+
+.btn-delete {
+    background: #fff;
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+
+.btn-delete:hover {
+    background: #fff1f1;
+}
+.reset-btn {
+    background-color: #ff4d4d;
+    color: white;
+}
+
+.reset-btn:hover {
+    background-color: #e60000;
+}
+
