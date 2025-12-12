@@ -25,7 +25,7 @@ $todayEntryId = $todayEntry ? $todayEntry['id'] : null;
 // Initialize session answers tracking from database
 if (!isset($_SESSION['answered_questions'])) {
     $_SESSION['answered_questions'] = [];
-    
+
     // Load today's answers from database
     if ($todayEntryId) {
         $stmt = $pdo->prepare("
@@ -40,37 +40,34 @@ if (!isset($_SESSION['answered_questions'])) {
     }
 }
 
-// Handle answer submission for both parts of a question
+// Handle single answer submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_answer'])) {
-    $mainQuestionId = $_POST['main_question_id'] ?? null;
-    $secondaryQuestionId = $_POST['secondary_question_id'] ?? null;
-    $mainAnswer = $_POST['main_answer'] ?? null;
-    $secondaryAnswer = $_POST['secondary_answer'] ?? null;
-    
-    // Both answers are required
-    if ($mainQuestionId && $secondaryQuestionId && $mainAnswer !== null && $secondaryAnswer !== null) {
+    $questionId = $_POST['question_id'] ?? null;
+    $answer = $_POST['answer'] ?? null;
+
+    if ($questionId && $answer !== null) {
         // Get or create today's entry
         if (!$todayEntryId) {
             $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
             $stmt->execute([$userId, $today]);
             $todayEntryId = $pdo->lastInsertId();
         }
-        
-        // Save both answers
+
+        // Save answer
         $stmt = $pdo->prepare("
             INSERT INTO answers (entry_id, question_id, answer_text)
             VALUES (?, ?, ?)
             ON DUPLICATE KEY UPDATE answer_text = VALUES(answer_text)
         ");
-        
-        // Save main answer
-        $stmt->execute([$todayEntryId, $mainQuestionId, $mainAnswer]);
-        // Save secondary answer
-        $stmt->execute([$todayEntryId, $secondaryQuestionId, $secondaryAnswer]);
-        
-        // Mark both as answered in session
-        $_SESSION['answered_questions'][$mainQuestionId] = $mainAnswer;
-        $_SESSION['answered_questions'][$secondaryQuestionId] = $secondaryAnswer;
+
+        $stmt->execute([$todayEntryId, $questionId, $answer]);
+
+        // Mark as answered in session
+        $_SESSION['answered_questions'][$questionId] = $answer;
+
+        // Refresh page to move to next question
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
     }
 }
 
@@ -85,34 +82,43 @@ $stmt = $pdo->prepare("
 $stmt->execute();
 $mainQuestions = $stmt->fetchAll();
 
-// For each main question, fetch its linked secondary question
-foreach ($mainQuestions as &$q) {
+// Construct a flat list of all questions (Main and Secondary)
+$flatQuestions = [];
+foreach ($mainQuestions as $q) {
+    // Add Main Question
+    $q['type'] = 'main';
+    $flatQuestions[] = $q;
+
+    // Check for Secondary Question
     $stmt = $pdo->prepare("
         SELECT * FROM questions 
         WHERE active = 1 AND parent_question_id = ? AND is_main_question = 0
         LIMIT 1
     ");
     $stmt->execute([$q['id']]);
-    $q['secondary'] = $stmt->fetch();
-}
+    $secondary = $stmt->fetch();
 
-// Find next unanswered question pair (main + secondary)
-$currentQuestion = null;
-$currentQuestionIndex = 0;
-
-foreach ($mainQuestions as $idx => $q) {
-    if (!isset($_SESSION['answered_questions'][$q['id']])) {
-        $currentQuestion = $q;
-        $currentQuestionIndex = $idx;
-        break;
+    if ($secondary) {
+        $secondary['type'] = 'secondary';
+        $secondary['pillar_name'] = $q['pillar_name']; // Inherit pillar info
+        $secondary['pillar_color'] = $q['pillar_color'];
+        $flatQuestions[] = $secondary;
     }
 }
 
-$totalQuestions = count($mainQuestions);
+// Find next unanswered question
+$currentQuestion = null;
+$currentQuestionIndex = 0;
+$totalQuestions = count($flatQuestions);
 $answeredCount = 0;
-foreach ($mainQuestions as $q) {
+
+foreach ($flatQuestions as $idx => $q) {
     if (isset($_SESSION['answered_questions'][$q['id']])) {
         $answeredCount++;
+    } elseif ($currentQuestion === null) {
+        // Found the first unanswered question
+        $currentQuestion = $q;
+        $currentQuestionIndex = $idx;
     }
 }
 
@@ -124,7 +130,7 @@ $allQuestionsAnswered = false;
 
 if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
     $allQuestionsAnswered = true;
-    
+
     // Mark entry as submitted if not already
     if ($todayEntryId) {
         $stmt = $pdo->prepare("
@@ -134,7 +140,7 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
         ");
         $stmt->execute([$todayEntryId]);
     }
-    
+
     $calculator = new HealthScoreCalculator($userId, $today);
     $scoreResult = $calculator->calculateScore();
     if ($scoreResult['success']) {
@@ -144,6 +150,7 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
 ?>
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -152,9 +159,10 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 </head>
+
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
-    
+
     <div class="dashboard-container">
         <div class="dashboard-header">
             <div class="dashboard-header-left">
@@ -166,7 +174,8 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
         <!-- Progress Card -->
         <div class="progress-card">
             <div class="progress-label">Voortgang</div>
-            <div class="progress-count"><?php echo $answeredCount; ?> van <?php echo $totalQuestions; ?> vragensets beantwoord</div>
+            <div class="progress-count"><?php echo $answeredCount; ?> van <?php echo $totalQuestions; ?> vragen
+                beantwoord</div>
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" style="width: <?php echo $progress; ?>%"></div>
             </div>
@@ -177,18 +186,18 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
             <div class="question-card">
                 <div class="question-badge">Score Berekend</div>
                 <h2 class="question-text">Je Gezondheid Score</h2>
-                
+
                 <div class="health-score-display-result">
                     <div class="score-number-large"><?php echo $healthScore['score']; ?>/100</div>
                     <p class="health-score-subtitle">Gebaseerd op je antwoorden van vandaag</p>
-                    
+
                     <div class="pillar-breakdown">
                         <?php if (isset($healthScore['pillar_scores']) && is_array($healthScore['pillar_scores'])): ?>
                             <?php foreach ($healthScore['pillar_scores'] as $pillarId => $score): ?>
-                            <div class="pillar-item">
-                                <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
-                                <p class="pillar-score"><?php echo round($score, 1); ?></p>
-                            </div>
+                                <div class="pillar-item">
+                                    <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
+                                    <p class="pillar-score"><?php echo round($score, 1); ?></p>
+                                </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
@@ -199,46 +208,35 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                 </div>
             </div>
 
-        <?php elseif ($currentQuestion && $currentQuestion['secondary']): ?>
-            <!-- Two-Part Question Card -->
+        <?php elseif ($currentQuestion): ?>
+            <!-- Single Question Card -->
             <div class="question-card">
-                <div class="question-badge">Vraag <?php echo $currentQuestionIndex + 1; ?> van <?php echo $totalQuestions; ?></div>
-                
+                <div class="question-badge">Vraag <?php echo $currentQuestionIndex + 1; ?> van
+                    <?php echo $totalQuestions; ?></div>
+                <div class="question-type-badge">
+                    <?php echo $currentQuestion['type'] === 'main' ? 'Hoofdvraag' : 'Detailvraag'; ?></div>
+
+                <h2 class="question-text">
+                    <?php echo htmlspecialchars($currentQuestion['question_text']); ?>
+                </h2>
+
                 <form method="POST" class="question-form">
-                    <input type="hidden" name="main_question_id" value="<?php echo $currentQuestion['id']; ?>">
-                    <input type="hidden" name="secondary_question_id" value="<?php echo $currentQuestion['secondary']['id']; ?>">
+                    <input type="hidden" name="question_id" value="<?php echo $currentQuestion['id']; ?>">
                     <input type="hidden" name="save_answer" value="1">
 
-                    <!-- Main Question -->
-                    <div class="question-part-main">
-                        <h2 class="question-text">
-                            <?php echo htmlspecialchars($currentQuestion['question_text']); ?>
-                        </h2>
-                        <div class="answer-section">
-                            <p class="answer-label">Voer antwoord in:</p>
-                            <input type="number" name="main_answer" class="form-input-large" placeholder="Voer getal in" required>
-                        </div>
-                    </div>
-
-                    <!-- Secondary Question -->
-                    <div class="question-part-secondary">
-                        <h2 class="question-text">
-                            <?php echo htmlspecialchars($currentQuestion['secondary']['question_text']); ?>
-                        </h2>
-                        <div class="answer-section">
-                            <p class="answer-label">Voer antwoord in:</p>
-                            <input type="number" name="secondary_answer" class="form-input-large" placeholder="Voer getal in" required>
-                        </div>
+                    <div class="answer-section">
+                        <p class="answer-label">Jouw antwoord:</p>
+                        <input type="number" name="answer" class="form-input-large" placeholder="Voer een waarde in"
+                            required autofocus>
                     </div>
 
                     <!-- Navigation -->
                     <div class="question-nav">
-                        <?php if ($currentQuestionIndex > 0): ?>
-                        <button type="button" class="nav-btn prev-btn" onclick="window.history.back();">← Vorige</button>
-                        <?php else: ?>
-                        <span></span>
-                        <?php endif; ?>
-                        
+                        <!-- We can add a generic back button if desired, but history.back works for browser nav -->
+                        <!-- If we want to allow going back to previous question logically, we'd need links to previous indexes or handling via GET params -->
+                        <a href="../pages/home.php" class="nav-btn prev-btn"
+                            style="text-decoration:none; text-align:center; display:flex; align-items:center; justify-content:center;">Stoppen</a>
+
                         <button type="submit" class="nav-btn next-btn">Volgende →</button>
                     </div>
                 </form>
@@ -250,7 +248,7 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                 <div class="question-badge">Voltooid!</div>
                 <h2 class="question-text">Alle vragen beantwoord!</h2>
                 <p class="answer-label">Dank je wel voor het invullen van vandaag's vragenlijst.</p>
-                
+
                 <div class="question-nav">
                     <a href="../pages/home.php" class="nav-btn submit-btn">Terug naar Home</a>
                 </div>
@@ -262,4 +260,5 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
 </body>
+
 </html>
