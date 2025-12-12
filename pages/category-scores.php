@@ -123,7 +123,7 @@ for ($i = 6; $i >= 0; $i--) {
                     
                     <div class="score-display">
                         <div class="score-circle" style="background: <?php echo htmlspecialchars($pillar['color']); ?>; opacity: 0.85;">
-                            <?php echo round($score); %>
+                            <?php echo round($score); ?>%
                         </div>
                         <div class="score-info">
                             <div class="score-label">Score</div>
