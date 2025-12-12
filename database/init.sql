@@ -47,7 +47,9 @@ CREATE TABLE `answers` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `entry_id` bigint(20) UNSIGNED NOT NULL,
   `question_id` bigint(20) UNSIGNED NOT NULL,
+  `question_parent_id` bigint(20) UNSIGNED DEFAULT NULL,
   `answer_text` text DEFAULT NULL,
+  `answer_sequence` int DEFAULT 1,
   `score` tinyint(3) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -191,6 +193,12 @@ CREATE TABLE `questions` (
   `input_type` enum('choice','number','boolean','text') NOT NULL DEFAULT 'choice',
   `choices` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`choices`)),
   `active` tinyint(1) DEFAULT 1,
+  `is_main_question` tinyint(1) DEFAULT 1,
+  `is_drugs_question` tinyint(1) DEFAULT 0,
+  `parent_question_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `question_type` enum('main','secondary','tertiary') DEFAULT 'main',
+  `answer_type` enum('binary','number','choice','text') DEFAULT 'binary',
+  `show_on_answer` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -301,6 +309,7 @@ ALTER TABLE `admin_actions`
 ALTER TABLE `answers`
   ADD PRIMARY KEY (`id`),
   ADD KEY `question_id` (`question_id`),
+  ADD KEY `question_parent_id` (`question_parent_id`),
   ADD KEY `entry_id` (`entry_id`,`question_id`);
 
 --
@@ -361,7 +370,8 @@ ALTER TABLE `pillars`
 --
 ALTER TABLE `questions`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `pillar_id` (`pillar_id`);
+  ADD KEY `pillar_id` (`pillar_id`),
+  ADD KEY `fk_parent_question` (`parent_question_id`);
 
 --
 -- Indexen voor tabel `resets`
@@ -509,7 +519,8 @@ ALTER TABLE `admin_actions`
 --
 ALTER TABLE `answers`
   ADD CONSTRAINT `answers_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `daily_entries` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `answers_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `answers_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `answers_ibfk_3` FOREIGN KEY (`question_parent_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
 
 --
 -- Beperkingen voor tabel `daily_entries`
@@ -545,7 +556,8 @@ ALTER TABLE `notifications`
 -- Beperkingen voor tabel `questions`
 --
 ALTER TABLE `questions`
-  ADD CONSTRAINT `questions_ibfk_1` FOREIGN KEY (`pillar_id`) REFERENCES `pillars` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `questions_ibfk_1` FOREIGN KEY (`pillar_id`) REFERENCES `pillars` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `questions_ibfk_parent` FOREIGN KEY (`parent_question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
 
 --
 -- Beperkingen voor tabel `resets`
@@ -572,6 +584,134 @@ ALTER TABLE `user_meta_admin_view`
 --
 ALTER TABLE `weekly_analysis`
   ADD CONSTRAINT `weekly_analysis_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `user_health_scores`
+-- Stores daily health scores with per-pillar breakdown
+--
+
+CREATE TABLE `user_health_scores` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `score_date` date NOT NULL,
+  `overall_score` decimal(5,2) NOT NULL,
+  `pillar_scores` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`pillar_scores`)),
+  `calculation_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`calculation_details`)),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  UNIQUE KEY `user_date` (`user_id`, `score_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `question_scoring_rules`
+-- Defines how answers are scored for flexible health calculations
+--
+
+CREATE TABLE `question_scoring_rules` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `question_id` bigint(20) UNSIGNED NOT NULL,
+  `condition_type` varchar(50) NOT NULL COMMENT 'equals, contains_keyword, greater_than, less_than, range',
+  `condition_value` varchar(255) DEFAULT NULL,
+  `condition_min` int(11) DEFAULT NULL,
+  `condition_max` int(11) DEFAULT NULL,
+  `base_score` decimal(5,2) NOT NULL,
+  `multiplier` decimal(3,2) DEFAULT 1.00,
+  `max_daily_value` int(11) DEFAULT NULL,
+  `excess_penalty_per_unit` decimal(3,2) DEFAULT 0.50,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `category_keywords`
+-- Maps keywords to multipliers for flexible category-based scoring
+--
+
+CREATE TABLE `category_keywords` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `pillar_id` tinyint(3) UNSIGNED NOT NULL,
+  `keyword` varchar(255) NOT NULL,
+  `subcategory` varchar(255) DEFAULT NULL,
+  `multiplier` decimal(3,2) DEFAULT 1.00,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexen voor nieuwe tabellen
+--
+
+--
+-- Indexen voor tabel `user_health_scores`
+--
+ALTER TABLE `user_health_scores`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `score_date` (`score_date`);
+
+--
+-- Indexen voor tabel `question_scoring_rules`
+--
+ALTER TABLE `question_scoring_rules`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `question_id` (`question_id`);
+
+--
+-- Indexen voor tabel `category_keywords`
+--
+ALTER TABLE `category_keywords`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `pillar_id` (`pillar_id`),
+  ADD KEY `keyword` (`keyword`);
+
+--
+-- AUTO_INCREMENT voor nieuwe tabellen
+--
+
+--
+-- AUTO_INCREMENT voor tabel `user_health_scores`
+--
+ALTER TABLE `user_health_scores`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT voor tabel `question_scoring_rules`
+--
+ALTER TABLE `question_scoring_rules`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT voor tabel `category_keywords`
+--
+ALTER TABLE `category_keywords`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- Beperkingen voor nieuwe tabellen
+--
+
+--
+-- Beperkingen voor tabel `user_health_scores`
+--
+ALTER TABLE `user_health_scores`
+  ADD CONSTRAINT `user_health_scores_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Beperkingen voor tabel `question_scoring_rules`
+--
+ALTER TABLE `question_scoring_rules`
+  ADD CONSTRAINT `question_scoring_rules_ibfk_1` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
+
+--
+-- Beperkingen voor tabel `category_keywords`
+--
+ALTER TABLE `category_keywords`
+  ADD CONSTRAINT `category_keywords_ibfk_1` FOREIGN KEY (`pillar_id`) REFERENCES `pillars` (`id`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
