@@ -1245,8 +1245,8 @@
   background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(22, 163, 74, 0.25) 100%);
   border: 2px solid rgba(22, 163, 74, 0.3);
   border-radius: 20px;
-  padding: 32px;
-  width: 100%;
+  padding: 25px;
+  width: 95%;
   display: flex;
   flex-direction: column;
   gap: 24px;

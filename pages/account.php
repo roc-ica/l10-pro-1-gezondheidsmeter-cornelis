@@ -18,10 +18,10 @@ if (!$user) {
     exit;
 }
 
-$email = htmlspecialchars($user->email);
-$username = htmlspecialchars($user->username);
-$birthdate = htmlspecialchars($user->birthdate);
-$gender = htmlspecialchars($user->gender);
+$email = htmlspecialchars($user->email ?? '');
+$username = htmlspecialchars($user->username ?? '');
+$birthdate = htmlspecialchars($user->birthdate ?? '');
+$gender = htmlspecialchars($user->gender ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -45,7 +45,9 @@ $gender = htmlspecialchars($user->gender);
                 <div class="identity-info1">
                     <div class="identity-details">
                         <div class="identity-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -114,13 +116,16 @@ $gender = htmlspecialchars($user->gender);
                 <div class="inst-item inst-item-danger">
                     <div>
                         <div class="score-label"><strong>Gezondheids gegevens wissen?</strong></div>
-                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden</div>
+                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden
+                        </div>
                     </div>
                     <div>
                         <button class="btn-delete-data" id="deleteHealthDataBtn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
                             Wissen
                         </button>
@@ -131,35 +136,35 @@ $gender = htmlspecialchars($user->gender);
 
         <button class="account-logout" onclick="window.location.href='logout.php'">Afmelden?</button>
     </div>
-    
+
     <?php include __DIR__ . '/../components/footer.php'; ?>
-    
+
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
     <script>
         // Delete health data handler
-        document.getElementById('deleteHealthDataBtn').addEventListener('click', async function() {
+        document.getElementById('deleteHealthDataBtn').addEventListener('click', async function () {
             const confirmed = confirm('Weet je zeker dat je al je gezondheidsgegevens wilt wissen?\n\nDit omvat:\n- Alle ingevulde vragenlijsten\n- Je antwoorden\n- Je voortgang en streak\n\nDeze actie kan NIET ongedaan worden gemaakt!');
-            
+
             if (!confirmed) {
                 return;
             }
-            
+
             // Double confirmation for safety
             const doubleConfirm = confirm('LAATSTE WAARSCHUWING!\n\nAlle data wordt permanent verwijderd.\n\nKlik OK om definitief te wissen.');
-            
+
             if (!doubleConfirm) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('../api/delete-health-data.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     alert('Je gezondheidsgegevens zijn succesvol gewist.');
                     window.location.reload();
@@ -183,11 +188,13 @@ $gender = htmlspecialchars($user->gender);
             <form id="editForm" method="POST">
                 <div class="form-group">
                     <label for="edit_email">E-mailadres</label>
-                    <input type="email" id="edit_email" name="email" value="<?= htmlspecialchars($user->email) ?>" required>
+                    <input type="email" id="edit_email" name="email" value="<?= htmlspecialchars($user->email ?? '') ?>"
+                        required>
                 </div>
                 <div class="form-group">
                     <label for="edit_birthdate">Geboortedatum</label>
-                    <input type="date" id="edit_birthdate" name="birthdate" value="<?= htmlspecialchars($user->birthdate) ?>">
+                    <input type="date" id="edit_birthdate" name="birthdate"
+                        value="<?= htmlspecialchars($user->birthdate ?? '') ?>">
                 </div>
                 <div class="form-group">
                     <label for="edit_gender">Geslacht</label>
@@ -217,7 +224,7 @@ $gender = htmlspecialchars($user->gender);
         }
 
         // Close modal when clicking outside of it
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             const modal = document.getElementById('editModal');
             if (event.target === modal) {
                 modal.style.display = 'none';
