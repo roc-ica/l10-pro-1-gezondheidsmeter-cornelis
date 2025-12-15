@@ -51,148 +51,6 @@ $offset = ($page - 1) * $usersPerPage;
 $paginatedUsers = array_slice($users, $offset, $usersPerPage);
 $totalPages = ceil($totalUsers / $usersPerPage);
 
-
-// block user
-
-// Handle Form Submissions - Automatically log all user management actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action'])) {
-        
-        // Create new user
-        if ($_POST['action'] === 'create_user') {
-            $newUsername = trim($_POST['username'] ?? '');
-            $newEmail = trim($_POST['email'] ?? '');
-            $newPassword = $_POST['password'] ?? '';
-            $displayName = trim($_POST['display_name'] ?? '');
-            
-            if ($newUsername && $newEmail && $newPassword) {
-                $result = User::register($newUsername, $newEmail, $newPassword);
-                if ($result['success']) {
-                    $message = "Gebruiker succesvol aangemaakt!";
-                    $newUser = User::findByUsernameStatic($newUsername);
-                    if ($newUser) {
-                        $logger->logUserCreate($adminUserId, $newUser->id, [
-                            'username' => $newUsername,
-                            'email' => $newEmail,
-                            'display_name' => $displayName
-                        ]);
-                    }
-                } else {
-                    $error = $result['message'] ?? 'Fout bij aanmaken gebruiker.';
-                }
-            } else {
-                $error = "Vul alle velden in.";
-            }
-        }
-        
-        // Update user
-        elseif ($_POST['action'] === 'update_user') {
-            $userId = $_POST['user_id'] ?? null;
-            $displayName = trim($_POST['display_name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $isAdmin = isset($_POST['is_admin']) ? 1 : 0;
-            
-            if ($userId) {
-                $targetUser = User::findByIdStatic((int)$userId);
-                if ($targetUser) {
-                    $changes = [];
-                    if ($displayName) $changes['display_name'] = $displayName;
-                    if ($email) $changes['email'] = $email;
-                    if ($isAdmin !== $targetUser->is_admin) $changes['is_admin'] = $isAdmin;
-                    
-                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'is_admin' => $isAdmin]);
-                    if ($updateResult['success']) {
-                        $message = "Gebruiker bijgewerkt!";
-                        if (!empty($changes)) {
-                            $logger->logUserUpdate($adminUserId, (int)$userId, $changes);
-                        }
-                    } else {
-                        $error = "Fout bij bijwerken gebruiker.";
-                    }
-                }
-            }
-        }
-        
-        // Block user
-        elseif ($_POST['action'] === 'block_user') {
-            $userId = $_POST['user_id'] ?? null;
-            $reason = trim($_POST['reason'] ?? '');
-            
-            if ($userId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 0, block_reason = ? WHERE id = ?");
-                if ($stmt->execute([$reason, $userId])) {
-                    $message = "Gebruiker geblokkeerd.";
-                    $logger->logUserBlock($adminUserId, (int)$userId, $reason);
-                } else {
-                    $error = "Fout bij blokkeren gebruiker.";
-                }
-            }
-        }
-        
-        // Unblock user
-        elseif ($_POST['action'] === 'unblock_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 1, block_reason = NULL WHERE id = ?");
-                if ($stmt->execute([$userId])) {
-                    $message = "Gebruiker gedeblokkeerd.";
-                    $logger->logUserUnblock($adminUserId, (int)$userId);
-                } else {
-                    $error = "Fout bij deblokkeren gebruiker.";
-                }
-            }
-        }
-        
-        // Delete user
-        elseif ($_POST['action'] === 'delete_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId && $userId != $adminUserId) {
-                $targetUser = User::findByIdStatic((int)$userId);
-                if ($targetUser) {
-                    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-                    if ($stmt->execute([$userId])) {
-                        $message = "Gebruiker verwijderd.";
-                        $logger->logUserDelete($adminUserId, (int)$userId, $targetUser->username);
-                    } else {
-                        $error = "Fout bij verwijderen gebruiker.";
-                    }
-                }
-            } elseif ($userId == $adminUserId) {
-                $error = "Je kunt jezelf niet verwijderen.";
-            }
-        }
-        
-        // Activate user
-        elseif ($_POST['action'] === 'activate_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 1 WHERE id = ?");
-                if ($stmt->execute([$userId])) {
-                    $message = "Gebruiker geactiveerd.";
-                    $logger->logUserActivate($adminUserId, (int)$userId);
-                } else {
-                    $error = "Fout bij activeren gebruiker.";
-                }
-            }
-        }
-        
-        // Deactivate user
-        elseif ($_POST['action'] === 'deactivate_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId && $userId != $adminUserId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 0 WHERE id = ?");
-                if ($stmt->execute([$userId])) {
-                    $message = "Gebruiker gedeactiveerd.";
-                    $logger->logUserDeactivate($adminUserId, (int)$userId);
-                } else {
-                    $error = "Fout bij deactiveren gebruiker.";
-                }
-            } elseif ($userId == $adminUserId) {
-                $error = "Je kunt jezelf niet deactiveren.";
-            }
-        }
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -463,24 +321,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
 
-        // Delete user function
-        async function deleteUser(userId, username) {
-            const formData = new FormData();
-            formData.append('action', 'delete_user');
-            formData.append('user_id', userId);
-
-            try {
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                // Reload page after successful deletion
-                setTimeout(() => location.reload(), 500);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
 
         // Block user modal functions
         function openBlockUserModal(userId, username) {
@@ -500,19 +340,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const userId = document.getElementById('block_user_id').value;
             const reason = document.getElementById('block_reason').value;
             
-            const formData = new FormData();
-            formData.append('action', 'block_user');
-            formData.append('user_id', userId);
-            formData.append('reason', reason);
+            const data = {
+                action: 'block',
+                user_id: userId,
+                reason: reason
+            };
 
             try {
-                const response = await fetch(window.location.href, {
+                const response = await fetch('/api/block-user.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 });
 
-                closeBlockUserModal();
-                setTimeout(() => location.reload(), 500);
+                const result = await response.json();
+
+                if (result.success) {
+                    closeBlockUserModal();
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    console.error('Error:', result.message);
+                }
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -535,41 +385,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             const userId = document.getElementById('unblock_user_id').value;
             
-            const formData = new FormData();
-            formData.append('action', 'unblock_user');
-            formData.append('user_id', userId);
+            const data = {
+                action: 'unblock',
+                user_id: userId
+            };
 
             try {
-                const response = await fetch(window.location.href, {
+                const response = await fetch('/api/block-user.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 });
 
-                closeUnblockUserModal();
-                setTimeout(() => location.reload(), 500);
+                const result = await response.json();
+
+                if (result.success) {
+                    closeUnblockUserModal();
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    console.error('Error:', result.message);
+                }
             } catch (error) {
                 console.error('Error:', error);
             }
         });
-
-        // Reset user activity function
-        async function resetUserActivity(userId) {
-            const formData = new FormData();
-            formData.append('action', 'reset_activity');
-            formData.append('user_id', userId);
-
-            try {
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                // Reload page after successful reset
-                setTimeout(() => location.reload(), 500);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
     </script>
 </body>
 </html>
