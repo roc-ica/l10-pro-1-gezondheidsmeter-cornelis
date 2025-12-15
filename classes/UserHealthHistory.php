@@ -7,15 +7,13 @@ class UserHealthHistory
 {
     private $pdo;
     private $userId;
-    private $calculator;
-    
+
     public function __construct(int $userId)
     {
         $this->pdo = Database::getConnection();
         $this->userId = $userId;
-        $this->calculator = new HealthScoreCalculator($userId);
     }
-    
+
     /**
      * Get today's health score
      */
@@ -23,13 +21,33 @@ class UserHealthHistory
     {
         return $this->getScoreByDate(date('Y-m-d'));
     }
-    
+
     /**
-     * Get health score for specific date by calculating from answers
+     * Get health score for specific date
+     * Tries to fetch from database first, calculates if missing
      */
     public function getScoreByDate(string $date): ?array
     {
-        // Check if user has a daily entry for this date
+        // 1. Try to fetch existing score from table
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM user_health_scores 
+            WHERE user_id = ? AND score_date = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$this->userId, $date]);
+        $existingScore = $stmt->fetch();
+
+        if ($existingScore) {
+            return [
+                'success' => true,
+                'score_date' => $existingScore['score_date'],
+                'overall_score' => (float) $existingScore['overall_score'],
+                'pillar_scores' => $existingScore['pillar_scores'], // Already JSON string or auto-decoded by PDO depending on config, but usually string
+                'calculation_details' => $existingScore['calculation_details']
+            ];
+        }
+
+        // 2. If not found, check if we have answers to calculate it
         $stmt = $this->pdo->prepare("
             SELECT id FROM daily_entries 
             WHERE user_id = ? AND entry_date = ? AND submitted_at IS NOT NULL
@@ -37,121 +55,109 @@ class UserHealthHistory
         ");
         $stmt->execute([$this->userId, $date]);
         $entry = $stmt->fetch();
-        
+
         if (!$entry) {
-            return null;
+            return null; // No data to calculate from
         }
-        
-        // Calculate score using HealthScoreCalculator
-        $result = $this->calculator->calculateScore($date);
-        
+
+        // 3. Calculate and store (lazy load)
+        // Instantiate calculator for THIS specific date
+        $calculator = new HealthScoreCalculator($this->userId, $date);
+        $result = $calculator->calculateScore();
+
         if (!$result['success']) {
             return null;
         }
-        
-        // Format response to match expected structure
+
+        // Return in consistent format
         return [
+            'success' => true,
             'score_date' => $date,
             'overall_score' => $result['score'],
-            'pillar_scores' => json_encode($result['pillar_scores'] ?? []),
-            'calculation_details' => json_encode($result['calculation_details'] ?? [])
+            'pillar_scores' => json_encode($result['pillar_scores']),
+            'calculation_details' => json_encode($result['calculation_details'])
         ];
     }
-    
+
     /**
      * Get health scores for last N days
      */
     public function getScoresLastDays(int $days = 7): array
     {
+        $startDate = date('Y-m-d', strtotime("-$days days"));
+
+        // Fetch all available pre-calculated scores in one go for performance
         $stmt = $this->pdo->prepare("
-            SELECT DISTINCT entry_date FROM daily_entries 
-            WHERE user_id = ? 
-            AND entry_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-            AND submitted_at IS NOT NULL
-            ORDER BY entry_date DESC
+            SELECT * FROM user_health_scores 
+            WHERE user_id = ? AND score_date >= ?
+            ORDER BY score_date DESC
         ");
-        $stmt->execute([$this->userId, $days]);
-        $dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
+        $stmt->execute([$this->userId, $startDate]);
+        $rows = $stmt->fetchAll();
+
         $scores = [];
-        foreach ($dates as $date) {
-            $score = $this->getScoreByDate($date);
-            if ($score) {
-                $scores[] = $score;
-            }
+        foreach ($rows as $row) {
+            $scores[] = [
+                'score_date' => $row['score_date'],
+                'overall_score' => (float) $row['overall_score'],
+                'pillar_scores' => $row['pillar_scores'],
+                'calculation_details' => $row['calculation_details']
+            ];
         }
+
         return $scores;
     }
-    
+
     /**
      * Get average health score for period
      */
     public function getAverageScore(int $days = 7): ?float
     {
         $scores = $this->getScoresLastDays($days);
-        
+
         if (empty($scores)) {
             return null;
         }
-        
+
         $total = 0;
         foreach ($scores as $score) {
             $total += $score['overall_score'];
         }
-        
+
         return $total / count($scores);
     }
-    
+
     /**
      * Get pillar scores breakdown for specific date
      */
     public function getPillarScores(string $date): ?array
     {
         $score = $this->getScoreByDate($date);
-        if (!$score || !$score['pillar_scores']) {
+
+        if (!$score || empty($score['pillar_scores'])) {
             return null;
         }
+
+        // Handle potential double-encoding or already decoded
+        if (is_array($score['pillar_scores'])) {
+            return $score['pillar_scores'];
+        }
+
         return json_decode($score['pillar_scores'], true);
     }
-    
-    /**
-     * Get calculation details for specific date (transparency)
-     */
-    public function getCalculationDetails(string $date): ?array
-    {
-        $score = $this->getScoreByDate($date);
-        if (!$score || !$score['calculation_details']) {
-            return null;
-        }
-        return json_decode($score['calculation_details'], true);
-    }
-    
+
     /**
      * Get health trend data for chart
      */
     public function getTrendData(int $days = 30): array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT DISTINCT entry_date FROM daily_entries 
-            WHERE user_id = ? 
-            AND entry_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-            AND submitted_at IS NOT NULL
-            ORDER BY entry_date ASC
-        ");
-        $stmt->execute([$this->userId, $days]);
-        $dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        $trendData = [];
-        foreach ($dates as $date) {
-            $score = $this->getScoreByDate($date);
-            if ($score) {
-                $trendData[] = [
-                    'score_date' => $date,
-                    'overall_score' => $score['overall_score']
-                ];
-            }
-        }
-        
-        return $trendData;
+        $scores = $this->getScoresLastDays($days);
+
+        // Sort by date ASC for chart
+        usort($scores, function ($a, $b) {
+            return strtotime($a['score_date']) - strtotime($b['score_date']);
+        });
+
+        return $scores;
     }
 }
