@@ -233,6 +233,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="./home.php" class="btn-naar-app">Naar App</a>
             </div>
         </div>
+    <form method="GET" style="margin: 20px 0; text-align: center;">
+        <input type="text" name="search" placeholder="Zoek gebruiker..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding:8px; width:250px; border-radius:5px; border:1px solid #ccc;">
+        <button type="submit" style="padding:8px 12px; border-radius:5px; background:#22c55e; color:white; border:none; cursor:pointer;">Zoeken</button>
+    </form>
+
 
         <?php if ($message): ?>
             <div class="message" style="background-color: #dcfce7; color: #166534; border-color: #166534;">
@@ -306,6 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a class="page-btn" href="?page=<?php echo $page + 1; ?>">Volgende →</a>
     <?php endif; ?>
 </div>
+
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
 
