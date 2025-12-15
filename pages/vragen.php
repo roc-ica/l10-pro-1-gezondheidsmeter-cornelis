@@ -195,7 +195,7 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                         <?php if (isset($healthScore['pillar_scores']) && is_array($healthScore['pillar_scores'])): ?>
                             <?php foreach ($healthScore['pillar_scores'] as $pillarId => $score): ?>
                                 <div class="pillar-item">
-                                    <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
+                                    <p class="pillar-label"><?php echo htmlspecialchars($healthScore['pillar_names'][$pillarId] ?? "Pilaar $pillarId"); ?></p>
                                     <p class="pillar-score"><?php echo round($score, 1); ?></p>
                                 </div>
                             <?php endforeach; ?>
@@ -212,9 +212,11 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
             <!-- Single Question Card -->
             <div class="question-card">
                 <div class="question-badge">Vraag <?php echo $currentQuestionIndex + 1; ?> van
-                    <?php echo $totalQuestions; ?></div>
+                    <?php echo $totalQuestions; ?>
+                </div>
                 <div class="question-type-badge">
-                    <?php echo $currentQuestion['type'] === 'main' ? 'Hoofdvraag' : 'Detailvraag'; ?></div>
+                    <?php echo $currentQuestion['type'] === 'main' ? 'Hoofdvraag' : 'Detailvraag'; ?>
+                </div>
 
                 <h2 class="question-text">
                     <?php echo htmlspecialchars($currentQuestion['question_text']); ?>
@@ -224,21 +226,76 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                     <input type="hidden" name="question_id" value="<?php echo $currentQuestion['id']; ?>">
                     <input type="hidden" name="save_answer" value="1">
 
+
                     <div class="answer-section">
-                        <p class="answer-label">Jouw antwoord:</p>
-                        <input type="number" name="answer" class="form-input-large" placeholder="Voer een waarde in"
-                            required autofocus>
+                        <p class="answer-label">Kies een antwoord:</p>
+
+                        <?php
+                        // Determine options based on pillar
+                        $options = [];
+                        $gridClass = 'answer-grid-compact';
+                        $unit = '';
+
+                        $val = $currentQuestion['pillar_id'];
+
+                        // Check for Drug question specific
+                        if (!empty($currentQuestion['is_drugs_question'])) {
+                            $options = ['Nee', 'Softdrugs', 'Harddrugs'];
+                            $gridClass = 'answer-grid'; // Use wider grid
+                        } else {
+                            switch ($val) {
+                                case 1: // Voeding
+                                    // 0-8+ glasses
+                                    $options = range(0, 8);
+                                    $options[] = '9+';
+                                    $unit = 'glazen';
+                                    break;
+                                case 2: // Beweging
+                                    $options = [0, 15, 30, 45, 60, 90, 120];
+                                    $unit = 'minuten';
+                                    break;
+                                case 3: // Slaap
+                                    $options = range(4, 12);
+                                    $unit = 'uur';
+                                    break;
+                                case 4: // Verslavingen fallback
+                                    $options = ['Nee', 'Softdrugs', 'Harddrugs'];
+                                    $gridClass = 'answer-grid';
+                                    break;
+                                case 5: // Sociaal
+                                case 6: // Mentaal
+                                    $options = range(1, 10);
+                                    break;
+                                default:
+                                    $options = range(1, 10);
+                            }
+                        }
+                        ?>
+
+                        <div class="<?php echo $gridClass; ?>">
+                            <?php foreach ($options as $opt): ?>
+                                <?php
+                                $displayValue = $opt;
+                                $submitValue = $opt === '9+' ? 9 : $opt; // Handle 9+ special case
+                                ?>
+                                <button type="submit" name="answer" value="<?php echo htmlspecialchars($submitValue); ?>"
+                                    class="answer-btn">
+                                    <?php echo htmlspecialchars($displayValue); ?>
+                                    <?php if ($unit): ?>
+                                        <span class="answer-unit"><?php echo $unit; ?></span>
+                                    <?php endif; ?>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
 
                     <!-- Navigation -->
-                    <div class="question-nav">
-                        <!-- We can add a generic back button if desired, but history.back works for browser nav -->
-                        <!-- If we want to allow going back to previous question logically, we'd need links to previous indexes or handling via GET params -->
+                    <div class="question-nav" style="justify-content: center; border:none; padding-top:10px;">
                         <a href="../pages/home.php" class="nav-btn prev-btn"
-                            style="text-decoration:none; text-align:center; display:flex; align-items:center; justify-content:center;">Stoppen</a>
-
-                        <button type="submit" class="nav-btn next-btn">Volgende →</button>
+                            style="text-decoration:none; border:none; background:none; color:#999; font-size:12px;">Stoppen
+                            en later verdergaan</a>
                     </div>
+
                 </form>
             </div>
 

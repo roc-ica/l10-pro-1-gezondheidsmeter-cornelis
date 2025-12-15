@@ -269,28 +269,28 @@ $displayTips = array_slice($allTips, 0, 4);
                                 $timeAgo = $diff->d . ' dagen geleden';
                             }
                             ?>
-                            <div class="activity-item">
-                                <div class="activity-icon activity-icon-success">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                </div>
-                                <div class="activity-content">
-                                    <div class="activity-title">Je hebt ingecheckt bij jezelf</div>
-                                    <div class="activity-time"><?= $timeAgo ?></div>
-                                </div>
-                            </div>
-                        <?php
+                                    <div class="activity-item">
+                                        <div class="activity-icon activity-icon-success">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        </div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">Je hebt ingecheckt bij jezelf</div>
+                                            <div class="activity-time"><?= $timeAgo ?></div>
+                                        </div>
+                                    </div>
+                                <?php
                         endforeach;
                     else:
                         ?>
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <div class="activity-title">Nog geen metingen</div>
-                                <div class="activity-time">Zet vandaag de eerste stap!</div>
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Nog geen metingen</div>
+                                    <div class="activity-time">Zet vandaag de eerste stap!</div>
+                                </div>
                             </div>
-                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -364,13 +364,13 @@ $displayTips = array_slice($allTips, 0, 4);
             </div>
             <div class="tips-grid">
                 <?php foreach ($displayTips as $tip): ?>
-                    <div class="tip-card">
-                        <div class="tip-icon"><?= $tip['icon'] ?></div>
-                        <div class="tip-content">
-                            <h4><?= $tip['title'] ?></h4>
-                            <p><?= $tip['text'] ?></p>
+                        <div class="tip-card">
+                            <div class="tip-icon"><?= $tip['icon'] ?></div>
+                            <div class="tip-content">
+                                <h4><?= $tip['title'] ?></h4>
+                                <p><?= $tip['text'] ?></p>
+                            </div>
                         </div>
-                    </div>
                 <?php endforeach; ?>
             </div>
         </div>

@@ -528,7 +528,7 @@
 /* Progress Card */
 .progress-card {
   background-color: var(--color-primary-opacity);
-  border: 2px solid #16a34a;
+  border: 2px solid rgba(22, 163, 74, 0.3);
   border-radius: 12px;
   padding: 20px 24px;
   margin-bottom: 20px;
@@ -568,7 +568,7 @@
 /* Question Card */
 .question-card {
   background-color: var(--color-primary-opacity);
-  border: 2px solid #16a34a;
+  border: 2px solid rgba(22, 163, 74, 0.3) !important;
   border-radius: 12px;
   padding: 24px;
 }
@@ -635,6 +635,34 @@
   background: #dcfce7;
   color: #16a34a;
   font-weight: 600;
+}
+
+.answer-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 12px;
+}
+
+.answer-grid-compact .answer-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.answer-unit {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.answer-btn:hover .answer-unit {
+  color: #15803d;
 }
 
 /* Question Navigation */
@@ -710,7 +738,7 @@
 /* Progress Card */
 .progress-card {
   background-color: var(--color-primary-opacity);
-  border: 2px solid #16a34a;
+  border: 2px solid rgba(22, 163, 74, 0.3) !important;
   border-radius: 12px;
   padding: 20px 24px;
   margin-bottom: 20px;
