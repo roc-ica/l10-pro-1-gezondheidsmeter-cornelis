@@ -49,10 +49,18 @@ class HealthScoreCalculator
 
         // Sum pillar scores
         $totalPillarScore = array_sum(array_values($pillarScores));
-        $maxPossible = count($pillarScores) * 100;
+        
+        // Explicitly divide by 4 as requested (or count if dynamic, but user specified 4 categories)
+        // We use count($pillarScores) to be safe against missing pillars, effectively averaging the available scores.
+        $pillarCount = count($pillarScores) > 0 ? count($pillarScores) : 1;
+        
+        // Calculate average
+        $overallScore = $totalPillarScore / $pillarCount;
 
+        // Apply age adjustment (subtracting from the average)
+        $overallScore -= abs($ageAdjustment);
+        
         // Normalize to 0-100
-        $overallScore = ($baseScore + $totalPillarScore) - abs($ageAdjustment);
         $overallScore = max(0, min(100, $overallScore));
 
         // Store in database

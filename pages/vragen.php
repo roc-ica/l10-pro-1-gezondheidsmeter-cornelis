@@ -76,7 +76,7 @@ $stmt = $pdo->prepare("
     SELECT q.*, p.name as pillar_name, p.color as pillar_color
     FROM questions q
     JOIN pillars p ON q.pillar_id = p.id
-    WHERE q.active = 1 AND q.is_main_question = 1 AND q.parent_question_id IS NULL
+    WHERE q.active = 1 AND q.question_type = 'main' AND q.parent_question_id IS NULL
     ORDER BY q.id ASC
 ");
 $stmt->execute();
@@ -92,7 +92,7 @@ foreach ($mainQuestions as $q) {
     // Check for Secondary Question
     $stmt = $pdo->prepare("
         SELECT * FROM questions 
-        WHERE active = 1 AND parent_question_id = ? AND is_main_question = 0
+        WHERE active = 1 AND parent_question_id = ? AND question_type = 'secondary'
         LIMIT 1
     ");
     $stmt->execute([$q['id']]);
