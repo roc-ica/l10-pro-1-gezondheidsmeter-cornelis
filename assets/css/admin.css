@@ -1529,3 +1529,31 @@ input[type="checkbox"]:focus {
   gap: 8px;
   padding-top: 5px;
 }
+
+/*PAGINATION VOOR GEBRUIKERS ADMIN*/
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 40px 0;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    background-color: #f1f5f9;
+    color: #0f172a;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover {
+    background-color: #e2e8f0;
+}
+
+.page-btn.active {
+    background-color: #2563eb;
+    color: white;
+}

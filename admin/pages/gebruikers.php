@@ -33,6 +33,14 @@ $error = '';
 $users = User::getAllUsers();
 $totalUsers = count($users);
 
+// Pagination 10 per page
+$usersPerPage = 10;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$offset = ($page - 1) * $usersPerPage;
+
+$paginatedUsers = array_slice($users, $offset, $usersPerPage);
+$totalPages = ceil($totalUsers / $usersPerPage);
+
 // block user
 
 // Handle Form Submissions - Automatically log all user management actions
@@ -182,6 +190,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Gebruikers - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../../assets/css/admin.css">
+    <style>
+        /*PAGINATION VOOR GEBRUIKERS ADMIN*/
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            background-color: #ffffff;
+            color: #0f172a;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .page-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .page-btn.active {
+            background-color: #22c55e;
+            color: white;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
@@ -211,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 <div class="user-list-container">
 
-    <?php foreach ($users as $user): ?>
+<?php foreach ($paginatedUsers as $user): ?>
     <!-- User Card for <?php echo htmlspecialchars($user['username']); ?> -->
     <div class="user-card">
         <div class="user-info-wrapper">
@@ -250,6 +287,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <?php endforeach; ?>
 
+</div>
+<!-- Pagination -->
+<div class="pagination">
+    <?php if ($page > 1): ?>
+        <a class="page-btn" href="?page=<?php echo $page - 1; ?>">← Vorige</a>
+    <?php endif; ?>
+
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <a 
+            href="?page=<?php echo $i; ?>"
+            class="page-btn <?php echo $i === $page ? 'active' : ''; ?>">
+            <?php echo $i; ?>
+        </a>
+    <?php endfor; ?>
+
+    <?php if ($page < $totalPages): ?>
+        <a class="page-btn" href="?page=<?php echo $page + 1; ?>">Volgende →</a>
+    <?php endif; ?>
 </div>
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
