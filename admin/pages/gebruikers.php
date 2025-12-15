@@ -30,16 +30,27 @@ $message = '';
 $error = '';
 
 // Get all users from database using User model
-$users = User::getAllUsers();
+$search = trim($_GET['search'] ?? ''); // get search input
+
+$users = User::getAllUsers(); // get all users
+
+// FILTER users if search is not empty
+if ($search !== '') {
+    $users = array_filter($users, function($u) use ($search) {
+        return str_contains(strtolower($u['username']), strtolower($search)) ||
+               str_contains(strtolower($u['display_name'] ?? ''), strtolower($search));
+    });
+}
+
 $totalUsers = count($users);
 
 // Pagination 10 per page
 $usersPerPage = 10;
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($page - 1) * $usersPerPage;
-
 $paginatedUsers = array_slice($users, $offset, $usersPerPage);
 $totalPages = ceil($totalUsers / $usersPerPage);
+
 
 // block user
 
@@ -295,22 +306,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 <!-- Pagination -->
 <div class="pagination">
+    <?php
+    $searchParam = isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '';
+    ?>
+
     <?php if ($page > 1): ?>
-        <a class="page-btn" href="?page=<?php echo $page - 1; ?>">← Vorige</a>
+        <a class="page-btn" href="?page=<?php echo $page - 1 . $searchParam; ?>">← Vorige</a>
     <?php endif; ?>
 
     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
         <a 
-            href="?page=<?php echo $i; ?>"
+            href="?page=<?php echo $i . $searchParam; ?>"
             class="page-btn <?php echo $i === $page ? 'active' : ''; ?>">
             <?php echo $i; ?>
         </a>
     <?php endfor; ?>
 
     <?php if ($page < $totalPages): ?>
-        <a class="page-btn" href="?page=<?php echo $page + 1; ?>">Volgende →</a>
+        <a class="page-btn" href="?page=<?php echo $page + 1 . $searchParam; ?>">Volgende →</a>
     <?php endif; ?>
 </div>
+
 
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
