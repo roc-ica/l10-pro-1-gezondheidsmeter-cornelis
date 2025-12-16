@@ -2622,3 +2622,118 @@
 .btn-action-secondary:hover {
   background: #5568d3;
 }
+
+/* Button Group for Yes/No Questions */
+.button-group {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-yes,
+.btn-no {
+  flex: 1;
+  min-width: 140px;
+  max-width: 200px;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  background: var(--color-white);
+  color: var(--color-text);
+}
+
+.btn-yes:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 159, 28, 0.2);
+}
+
+.btn-no:hover {
+  background: #fee2e2;
+  border-color: var(--color-error);
+  color: var(--color-error);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.btn-yes:active {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary-dark);
+  transform: translateY(0);
+}
+
+.btn-no:active {
+  background: var(--color-error);
+  color: var(--color-white);
+  border-color: var(--color-error);
+  transform: translateY(0);
+}
+
+/* Selected button state (for previously chosen answers) */
+.btn-yes.btn-selected {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary-dark);
+}
+
+.btn-no.btn-selected {
+  background: var(--color-error);
+  color: var(--color-white);
+  border-color: var(--color-error);
+}
+
+/* Number Input Field */
+.form-input-number {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  transition: all 0.3s ease;
+  background: var(--color-white);
+  color: var(--color-text);
+}
+
+.form-input-number:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-opacity);
+  background: var(--color-white);
+}
+
+.form-input-number::placeholder {
+  color: var(--color-text-light);
+}
+
+.form-input-number::-webkit-outer-spin-button,
+.form-input-number::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.form-input-number[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Question Part Styling */
+.question-part {
+  padding: 20px 0;
+}
+
+.question-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 24px 0;
+  line-height: 1.4;
+}

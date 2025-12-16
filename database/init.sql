@@ -206,13 +206,17 @@ CREATE TABLE `questions` (
 -- Gegevens worden geëxporteerd voor tabel `questions`
 --
 
-INSERT INTO `questions` (`id`, `pillar_id`, `question_text`, `input_type`, `choices`, `active`, `created_at`) VALUES
-(1, 1, 'Hoeveel glazen water heb je vandaag gedronken?', 'number', NULL, 1, '2025-11-17 10:34:03'),
-(2, 1, 'Heb je frisdrank of alcohol gedronken vandaag?', 'choice', '[\"Nee\",\"Een beetje\",\"Veel\"]', 1, '2025-11-17 10:34:03'),
-(3, 2, 'Hoeveel minuten heb je vandaag bewogen?', 'number', NULL, 1, '2025-11-17 10:34:03'),
-(4, 3, 'Hoeveel uur heb je geslapen?', 'number', NULL, 1, '2025-11-17 10:34:03'),
-(5, 6, 'Heb je meer dan 2 uur extra schermtijd gehad vandaag?', 'boolean', NULL, 1, '2025-11-17 10:34:03'),
-(6, 4, 'Heb je alcohol of cannabis gebruikt vandaag?', 'choice', '[\"Nee\",\"1 keer\",\"Meerdere keren\"]', 1, '2025-11-17 10:34:03');
+INSERT INTO `questions` (`id`, `pillar_id`, `question_text`, `input_type`, `choices`, `active`, `is_main_question`, `parent_question_id`, `created_at`) VALUES
+(1, 1, 'Heb je vandaag genoeg water gedronken?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
+(2, 1, 'Hoeveel glazen water heb je vandaag gedronken?', 'number', NULL, 1, 0, 1, '2025-11-17 10:34:03'),
+(3, 2, 'Heb je vandaag bewogen?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
+(4, 2, 'Hoeveel minuten heb je bewogen?', 'number', NULL, 1, 0, 3, '2025-11-17 10:34:03'),
+(5, 3, 'Heb je goed geslapen?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
+(6, 3, 'Hoeveel uur heb je geslapen?', 'number', NULL, 1, 0, 5, '2025-11-17 10:34:03'),
+(7, 4, 'Heb je alcohol of drugs gebruikt?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
+(8, 4, 'Hoeveel keer heb je alcohol of drugs gebruikt?', 'number', NULL, 1, 0, 7, '2025-11-17 10:34:03'),
+(9, 5, 'Heb je social contact gehad?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
+(10, 5, 'Hoeveel uur heb je social contact gehad?', 'number', NULL, 1, 0, 9, '2025-11-17 10:34:03');
 
 -- --------------------------------------------------------
 
