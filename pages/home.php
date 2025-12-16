@@ -14,8 +14,39 @@ $userId = $_SESSION['user_id'];
 require_once __DIR__ . '/../src/config/database.php';
 $pdo = Database::getConnection();
 
+// Time-based greeting
+$hour = date('H');
+if ($hour < 12) {
+    $greeting = 'Goedemorgen';
+} elseif ($hour < 18) {
+    $greeting = 'Goedemiddag';
+} else {
+    $greeting = 'Goedenavond';
+}
+
+// Inspirational quotes
+$quotes = [
+    "Elke stap is er één. Ga zo door!",
+    "Gezondheid is je grootste rijkdom.",
+    "Luister naar je lichaam, het vertelt je verhaal.",
+    "Vandaag is een nieuwe kans om je goed te voelen.",
+    "Kleine veranderingen zorgen voor grote resultaten.",
+    "Jouw welzijn staat vandaag op nummer één.",
+    "Rust is net zo belangrijk als inspanning."
+];
+$randomQuote = $quotes[array_rand($quotes)];
+
 // Get current date
-$currentDate = date('l j F Y');
+$currentDate = date('l j F Y'); // Note: For localized Dutch date, setlocale() would be needed, or a mapping array.
+// Simple Dutch date mapping for "human" feel
+$days = ['Monday' => 'Maandag', 'Tuesday' => 'Dinsdag', 'Wednesday' => 'Woensdag', 'Thursday' => 'Donderdag', 'Friday' => 'Vrijdag', 'Saturday' => 'Zaterdag', 'Sunday' => 'Zondag'];
+$months = ['January' => 'januari', 'February' => 'februari', 'March' => 'maart', 'April' => 'april', 'May' => 'mei', 'June' => 'juni', 'July' => 'juli', 'August' => 'augustus', 'September' => 'september', 'October' => 'oktober', 'November' => 'november', 'December' => 'december'];
+$dayName = $days[date('l')];
+$monthName = $months[date('F')];
+$dayNum = date('j');
+$year = date('Y');
+$dutchDate = "$dayName $dayNum $monthName $year";
+
 
 // Get total completed questionnaires
 $stmt = $pdo->prepare("
@@ -76,6 +107,21 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
 } else {
     $healthScore = 0;
 }
+
+// Random Health Tips
+$allTips = [
+    ['icon' => '💧', 'title' => 'Start met water', 'text' => 'Drink een glas water direct na het opstaan om je stofwisseling te activeren.'],
+    ['icon' => '🚶', 'title' => 'Even bewegen', 'text' => 'Een wandeling van 10 minuten kan je stemming en energie al direct verbeteren.'],
+    ['icon' => '🌙', 'title' => 'Digitale rust', 'text' => 'Probeer vanavond een uur voor het slapen je schermen weg te leggen.'],
+    ['icon' => '🥦', 'title' => 'Kleur op je bord', 'text' => 'Voeg vandaag één extra stuk fruit of groente toe aan je maaltijd.'],
+    ['icon' => '🧠', 'title' => 'Even niets', 'text' => 'Neem 5 minuten pauze om even helemaal niets te doen. Gewoon ademen.'],
+    ['icon' => '👥', 'title' => 'Verbinding', 'text' => 'Stuur een berichtje naar iemand die je waardeert. Sociaal contact is gezond!'],
+    ['icon' => '☀️', 'title' => 'Daglicht', 'text' => 'Probeer in de ochtend wat daglicht te vangen voor een beter slaapritme.'],
+    ['icon' => '📝', 'title' => 'Dankbaarheid', 'text' => 'Schrijf aan het einde van de dag 3 dingen op waar je dankbaar voor bent.']
+];
+shuffle($allTips);
+$displayTips = array_slice($allTips, 0, 4);
+
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -83,7 +129,7 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Gezondheidsmeter</title>
+    <title>Jouw Dashboard - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     <link rel="manifest" href="/manifest.json">
@@ -95,20 +141,22 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
 
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
-    
+
     <div class="dashboard-container">
         <!-- Dashboard Header -->
         <div class="dashboard-header">
             <div class="dashboard-header-left">
-                <h1>Welkom terug, <?= htmlspecialchars($username) ?>!</h1>
-                <p><?= $currentDate ?></p>
+                <h1><?= $greeting ?>, <?= htmlspecialchars($username) ?></h1>
+                <p class="quote-text">"<?= $randomQuote ?>"</p>
+                <p class="date-display"><?= $dutchDate ?></p>
             </div>
             <div class="dashboard-header-right">
-                <a href="vragen.php" class="btn-naar-app">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
-                        <path d="M12 5v14M5 12h14"/>
+                <a href="vragen.php" class="btn-naar-app pulse-animation">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                        <path d="M12 5v14M5 12h14" />
                     </svg>
-                    Nieuwe Meting
+                    Hoe voel je je vandaag?
                 </a>
             </div>
         </div>
@@ -118,17 +166,18 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
             <div class="stat-card stat-card-primary">
                 <div class="stat-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Gezondheidscore</div>
+                    <div class="stat-label">Je Welzijn</div>
                     <div class="stat-number"><?= $healthScore ?>%</div>
                     <div class="stat-trend stat-trend-up">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                            <polyline points="18 15 12 9 6 15"/>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3">
+                            <polyline points="18 15 12 9 6 15" />
                         </svg>
-                        Afgelopen week
+                        Balans deze week
                     </div>
                 </div>
             </div>
@@ -136,12 +185,12 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
             <div class="stat-card stat-card-success">
                 <div class="stat-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Voortgang Deze Week</div>
+                    <div class="stat-label">Jouw Week</div>
                     <div class="stat-number"><?= $weeklyProgress ?>%</div>
                     <div class="stat-progress">
                         <div class="stat-progress-bar" style="width: <?= $weeklyProgress ?>%"></div>
@@ -152,27 +201,28 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
             <div class="stat-card stat-card-warning">
                 <div class="stat-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Huidige Streak</div>
+                    <div class="stat-label">Dagen op Rij</div>
                     <div class="stat-number"><?= $currentStreak ?> dagen</div>
-                    <div class="stat-subtitle"><?= $currentStreak > 0 ? 'Blijf doorgaan! 🔥' : 'Start vandaag!' ?></div>
+                    <div class="stat-subtitle">
+                        <?= $currentStreak > 0 ? 'Lekker bezig! 🔥' : 'Begin vandaag je reeks!' ?></div>
                 </div>
             </div>
 
             <div class="stat-card stat-card-info">
                 <div class="stat-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 16v-4M12 8h.01"/>
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4M12 8h.01" />
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Totaal Ingevuld</div>
+                    <div class="stat-label">Jouw Reis</div>
                     <div class="stat-number"><?= $totalQuestions ?></div>
-                    <div class="stat-subtitle">Vragenlijsten</div>
+                    <div class="stat-subtitle">Metingen voltooid</div>
                 </div>
             </div>
         </div>
@@ -182,7 +232,7 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
             <!-- Recent Activity -->
             <div class="dashboard-card">
                 <div class="card-header">
-                    <h3>Recente Activiteit</h3>
+                    <h3>Recente Momenten</h3>
                     <a href="results.php" class="card-link">Alles bekijken →</a>
                 </div>
                 <div class="activity-list">
@@ -199,14 +249,14 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
                     ");
                     $stmt->execute([$userId]);
                     $activities = $stmt->fetchAll();
-                    
+
                     if (count($activities) > 0):
                         foreach ($activities as $activity):
                             $timeAgo = '';
                             $submitted = new DateTime($activity['submitted_at']);
                             $now = new DateTime();
                             $diff = $now->diff($submitted);
-                            
+
                             if ($diff->d == 0) {
                                 if ($diff->h == 0) {
                                     $timeAgo = $diff->i . ' minuten geleden';
@@ -218,28 +268,29 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
                             } else {
                                 $timeAgo = $diff->d . ' dagen geleden';
                             }
-                    ?>
-                    <div class="activity-item">
-                        <div class="activity-icon activity-icon-success">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="20 6 9 17 4 12"/>
-                            </svg>
-                        </div>
-                        <div class="activity-content">
-                            <div class="activity-title">Vragenlijst voltooid (<?= $activity['answer_count'] ?> vragen)</div>
-                            <div class="activity-time"><?= $timeAgo ?></div>
-                        </div>
-                    </div>
-                    <?php 
+                            ?>
+                                    <div class="activity-item">
+                                        <div class="activity-icon activity-icon-success">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        </div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">Je hebt ingecheckt bij jezelf</div>
+                                            <div class="activity-time"><?= $timeAgo ?></div>
+                                        </div>
+                                    </div>
+                                <?php
                         endforeach;
                     else:
-                    ?>
-                    <div class="activity-item">
-                        <div class="activity-content">
-                            <div class="activity-title">Nog geen activiteit</div>
-                            <div class="activity-time">Start je eerste vragenlijst!</div>
-                        </div>
-                    </div>
+                        ?>
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Nog geen metingen</div>
+                                    <div class="activity-time">Zet vandaag de eerste stap!</div>
+                                </div>
+                            </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -247,46 +298,49 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
             <!-- Quick Actions -->
             <div class="dashboard-card">
                 <div class="card-header">
-                    <h3>Snelle Acties</h3>
+                    <h3>Direct naar</h3>
                 </div>
                 <div class="quick-actions">
                     <a href="vragen.php" class="action-button action-button-primary">
                         <div class="action-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 11l3 3L22 4"/>
-                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                             </svg>
                         </div>
                         <div class="action-content">
-                            <div class="action-title">Start Vragenlijst</div>
-                            <div class="action-subtitle">Beantwoord dagelijkse vragen</div>
+                            <div class="action-title">Start een check-in</div>
+                            <div class="action-subtitle">Hoe voel je je nu?</div>
                         </div>
                     </a>
-                    
+
                     <a href="results.php" class="action-button action-button-secondary">
                         <div class="action-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="20" x2="12" y2="10"/>
-                                <line x1="18" y1="20" x2="18" y2="4"/>
-                                <line x1="6" y1="20" x2="6" y2="16"/>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="12" y1="20" x2="12" y2="10" />
+                                <line x1="18" y1="20" x2="18" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="16" />
                             </svg>
                         </div>
                         <div class="action-content">
-                            <div class="action-title">Bekijk Resultaten</div>
-                            <div class="action-subtitle">Analyseer je voortgang</div>
+                            <div class="action-title">Bekijk je inzichten</div>
+                            <div class="action-subtitle">Zie hoe je groeit</div>
                         </div>
                     </a>
-                    
+
                     <a href="account.php" class="action-button action-button-secondary">
                         <div class="action-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
                             </svg>
                         </div>
                         <div class="action-content">
-                            <div class="action-title">Mijn Profiel</div>
-                            <div class="action-subtitle">Beheer je account</div>
+                            <div class="action-title">Jouw Profiel</div>
+                            <div class="action-subtitle">Instellingen & Gegevens</div>
                         </div>
                     </a>
                 </div>
@@ -296,13 +350,7 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
         <!-- Weekly Overview Chart -->
         <div class="dashboard-card dashboard-card-full">
             <div class="card-header">
-                <h3>Wekelijks Overzicht</h3>
-                <div class="chart-legend">
-                    <div class="legend-item">
-                        <div class="legend-dot legend-dot-primary"></div>
-                        <span>Voltooide Vragenlijsten</span>
-                    </div>
-                </div>
+                <h3>Jouw week in beeld</h3>
             </div>
             <div class="chart-container">
                 <canvas id="weeklyChart"></canvas>
@@ -312,43 +360,24 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
         <!-- Health Tips -->
         <div class="dashboard-card dashboard-card-full">
             <div class="card-header">
-                <h3>Gezondheids Tips</h3>
+                <h3>Inspiratie voor Vandaag</h3>
             </div>
             <div class="tips-grid">
-                <div class="tip-card">
-                    <div class="tip-icon">💧</div>
-                    <div class="tip-content">
-                        <h4>Blijf Gehydrateerd</h4>
-                        <p>Drink minstens 8 glazen water per dag voor optimale gezondheid.</p>
-                    </div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-icon">🏃</div>
-                    <div class="tip-content">
-                        <h4>Beweeg Regelmatig</h4>
-                        <p>30 minuten matige beweging per dag kan je gezondheid aanzienlijk verbeteren.</p>
-                    </div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-icon">😴</div>
-                    <div class="tip-content">
-                        <h4>Voldoende Slaap</h4>
-                        <p>Streef naar 7-9 uur slaap per nacht voor optimaal herstel.</p>
-                    </div>
-                </div>
-                <div class="tip-card">
-                    <div class="tip-icon">🥗</div>
-                    <div class="tip-content">
-                        <h4>Gezonde Voeding</h4>
-                        <p>Eet gevarieerd met veel groenten, fruit en volkorenproducten.</p>
-                    </div>
-                </div>
+                <?php foreach ($displayTips as $tip): ?>
+                        <div class="tip-card">
+                            <div class="tip-icon"><?= $tip['icon'] ?></div>
+                            <div class="tip-content">
+                                <h4><?= $tip['title'] ?></h4>
+                                <p><?= $tip['text'] ?></p>
+                            </div>
+                        </div>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
-    
+
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -374,25 +403,27 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
                 ];
             }
             ?>
-            
+
             const weeklyData = <?= json_encode($chartData) ?>;
             const labels = weeklyData.map(d => {
                 const date = new Date(d.date);
                 return date.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' });
             });
             const data = weeklyData.map(d => d.count);
-            
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Voltooide Vragenlijsten',
+                        label: 'Check-ins',
                         data: data,
                         borderColor: '#16a34a',
                         backgroundColor: 'rgba(22, 163, 74, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -408,6 +439,14 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
                             beginAtZero: true,
                             ticks: {
                                 stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
                             }
                         }
                     }

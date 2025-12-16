@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Get user data from database
 require_once __DIR__ . '/../src/models/User.php';
+require_once __DIR__ . '/../src/config/database.php';
 $user = User::findByIdStatic($_SESSION['user_id']);
 
 if (!$user) {
@@ -18,10 +19,75 @@ if (!$user) {
     exit;
 }
 
-$email = htmlspecialchars($user->email);
-$username = htmlspecialchars($user->username);
+$email = htmlspecialchars($user->email ?? '');
+$username = htmlspecialchars($user->username ?? '');
 $birthdate = htmlspecialchars($user->birthdate ?? '');
 $gender = htmlspecialchars($user->gender ?? '');
+
+// Initialize Database connection for stats
+$pdo = Database::getConnection();
+
+// 1. Calculate Average Health Score (from user_health_scores)
+$stmt = $pdo->prepare("SELECT AVG(overall_score) FROM user_health_scores WHERE user_id = ?");
+$stmt->execute([$user->id]);
+$avgScore = round((float)$stmt->fetchColumn());
+
+// 2. Calculate Response Rate (Submitted Days / Days since Signup)
+$createdAt = new DateTime($user->created_at ?? 'now');
+$now = new DateTime();
+$daysSinceSignup = max(1, $now->diff($createdAt)->days + 1);
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM daily_entries WHERE user_id = ? AND submitted_at IS NOT NULL");
+$stmt->execute([$user->id]);
+$submittedEntries = $stmt->fetchColumn();
+
+// Calculate percentage, max 100%
+$responseRate = min(100, round(($submittedEntries / $daysSinceSignup) * 100));
+
+// 3. Calculate Current Streak
+$stmt = $pdo->prepare("
+    SELECT entry_date FROM daily_entries 
+    WHERE user_id = ? AND submitted_at IS NOT NULL
+    ORDER BY entry_date DESC
+");
+$stmt->execute([$user->id]);
+$allEntries = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+$currentStreak = 0;
+$checkDate = new DateTime(); // Today
+// Check if most recent entry is today, if not check if it was yesterday (allow 1 day grace for "current" streak display in some contexts, but strict streak means today must be done or yesterday done)
+// We will follow strict logic: Streak counts back from TODAY. If today not done but yesterday done, streak is preserved but count might not include today.
+// To handle "I haven't done it TODAY yet, but I did yesterday", we usually check if today is done. If not, check yesterday.
+// Home.php logic:
+// foreach ($allEntries as $entryDate) { ... if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) ... }
+// We will reuse that for consistency.
+
+$checkDate = new DateTime();
+$streakFoundToday = false;
+$streakFoundYesterday = false;
+
+// First loop to see if we have valid streak activity
+foreach ($allEntries as $entryDate) {
+    $entry = new DateTime($entryDate);
+    if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
+        $currentStreak++;
+        $checkDate->modify('-1 day');
+        $streakFoundToday = true;
+    } elseif ($currentStreak === 0 && $entry->format('Y-m-d') === (new DateTime('-1 day'))->format('Y-m-d')) {
+        // Allow streak to start from yesterday if today is missing
+        $currentStreak++;
+        $checkDate->modify('-1 day'); // Move check to yesterday
+        $checkDate->modify('-1 day'); // Move check to day before yesterday for next loop
+        $streakFoundYesterday = true;
+    } elseif ($currentStreak > 0 && $entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
+        $currentStreak++;
+        $checkDate->modify('-1 day');
+    } else {
+        // Gap found
+        // If we haven't started counting yet, continue searching? No, streak is continuous.
+        if ($currentStreak > 0) break;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -45,7 +111,9 @@ $gender = htmlspecialchars($user->gender ?? '');
                 <div class="identity-info1">
                     <div class="identity-details">
                         <div class="identity-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -60,8 +128,7 @@ $gender = htmlspecialchars($user->gender ?? '');
                 </div>
                 <div class="identity-info2">
                     <p><?= htmlspecialchars($email) ?></p>
-                    <p><?= htmlspecialchars($birthdate) ?></p>
-                    <p><?= htmlspecialchars($gender) ?></p>
+                    <p><?= htmlspecialchars($gender ?: 'Niet opgegeven') ?></p>
                 </div>
             </div>
         </div>
@@ -73,15 +140,15 @@ $gender = htmlspecialchars($user->gender ?? '');
             <div class="summary-content">
                 <div class="summary-item">
                     <div class="score-label">Gemiddelde Score</div>
-                    <div class="score-value">85%</div>
+                    <div class="score-value"><?= $avgScore ?>/100</div>
                 </div>
                 <div class="summary-item">
-                    <div class="score-label">Beantwoorde Vragen</div>
-                    <div class="score-value">85%</div>
+                    <div class="score-label">Invulpercentage</div>
+                    <div class="score-value"><?= $responseRate ?>%</div>
                 </div>
                 <div class="summary-item">
                     <div class="streak-label">Huidige Streak</div>
-                    <div class="streak-value">7 Dagen</div>
+                    <div class="streak-value"><?= $currentStreak ?> Dagen</div>
                 </div>
             </div>
         </div>
@@ -114,13 +181,16 @@ $gender = htmlspecialchars($user->gender ?? '');
                 <div class="inst-item inst-item-danger">
                     <div>
                         <div class="score-label"><strong>Gezondheids gegevens wissen?</strong></div>
-                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden</div>
+                        <div class="score-value">Let op, je gezondheids gegevens kunnen niet meer terug gezet worden
+                        </div>
                     </div>
                     <div>
                         <button class="btn-delete-data" id="deleteHealthDataBtn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
                             Wissen
                         </button>
@@ -131,35 +201,35 @@ $gender = htmlspecialchars($user->gender ?? '');
 
         <button class="account-logout" onclick="window.location.href='logout.php'">Afmelden?</button>
     </div>
-    
+
     <?php include __DIR__ . '/../components/footer.php'; ?>
-    
+
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
     <script>
         // Delete health data handler
-        document.getElementById('deleteHealthDataBtn').addEventListener('click', async function() {
+        document.getElementById('deleteHealthDataBtn').addEventListener('click', async function () {
             const confirmed = confirm('Weet je zeker dat je al je gezondheidsgegevens wilt wissen?\n\nDit omvat:\n- Alle ingevulde vragenlijsten\n- Je antwoorden\n- Je voortgang en streak\n\nDeze actie kan NIET ongedaan worden gemaakt!');
-            
+
             if (!confirmed) {
                 return;
             }
-            
+
             // Double confirmation for safety
             const doubleConfirm = confirm('LAATSTE WAARSCHUWING!\n\nAlle data wordt permanent verwijderd.\n\nKlik OK om definitief te wissen.');
-            
+
             if (!doubleConfirm) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('../api/delete-health-data.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     alert('Je gezondheidsgegevens zijn succesvol gewist.');
                     window.location.reload();
@@ -183,11 +253,13 @@ $gender = htmlspecialchars($user->gender ?? '');
             <form id="editForm" method="POST">
                 <div class="form-group">
                     <label for="edit_email">E-mailadres</label>
-                    <input type="email" id="edit_email" name="email" value="<?= htmlspecialchars($user->email) ?>" required>
+                    <input type="email" id="edit_email" name="email" value="<?= htmlspecialchars($user->email ?? '') ?>"
+                        required>
                 </div>
                 <div class="form-group">
                     <label for="edit_birthdate">Geboortedatum</label>
-                    <input type="date" id="edit_birthdate" name="birthdate" value="<?= htmlspecialchars($user->birthdate) ?>">
+                    <input type="date" id="edit_birthdate" name="birthdate"
+                        value="<?= htmlspecialchars($user->birthdate ?? '') ?>">
                 </div>
                 <div class="form-group">
                     <label for="edit_gender">Geslacht</label>
@@ -217,7 +289,7 @@ $gender = htmlspecialchars($user->gender ?? '');
         }
 
         // Close modal when clicking outside of it
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             const modal = document.getElementById('editModal');
             if (event.target === modal) {
                 modal.style.display = 'none';

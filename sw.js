@@ -1,19 +1,19 @@
-const CACHE_NAME = 'gezondheidsmeter-v2';
+const CACHE_NAME = 'gezondheidsmeter-v3';
 const urlsToCache = [
-    '/',
-    '/index.php',
-    '/manifest.json',
-    '/assets/css/style.css',
-    '/assets/css/admin.css',
-    '/assets/images/icons/gm192x192.png',
-    '/assets/images/icons/gm512x512.png',
-    '/js/pwa.js',
-    '/pages/home.php',
-    '/pages/account.php',
-    '/pages/geschiedenis.php',
-    '/pages/vragen.php',
-    '/src/views/auth/login.php',
-    '/src/views/auth/register.php'
+    './',
+    './index.php',
+    './manifest.json',
+    './assets/css/style.css',
+    './assets/css/admin.css',
+    './assets/images/icons/gm192x192.png',
+    './assets/images/icons/gm512x512.png',
+    './js/pwa.js',
+    './pages/home.php',
+    './pages/account.php',
+    './pages/geschiedenis.php',
+    './pages/vragen.php',
+    './src/views/auth/login.php',
+    './src/views/auth/register.php'
 ];
 
 self.addEventListener('install', event => {

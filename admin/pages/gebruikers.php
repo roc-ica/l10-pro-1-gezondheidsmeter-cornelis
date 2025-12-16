@@ -30,167 +30,68 @@ $message = '';
 $error = '';
 
 // Get all users from database using User model
-$users = User::getAllUsers();
+$search = trim($_GET['search'] ?? ''); // get search input
+
+$users = User::getAllUsers(); // get all users
+
+// FILTER users if search is not empty
+if ($search !== '') {
+    $users = array_filter($users, function($u) use ($search) {
+        return str_contains(strtolower($u['username']), strtolower($search)) ||
+               str_contains(strtolower($u['display_name'] ?? ''), strtolower($search));
+    });
+}
+
 $totalUsers = count($users);
 
-// block user
+// Pagination 10 per page
+$usersPerPage = 10;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$offset = ($page - 1) * $usersPerPage;
+$paginatedUsers = array_slice($users, $offset, $usersPerPage);
+$totalPages = ceil($totalUsers / $usersPerPage);
 
-// Handle Form Submissions - Automatically log all user management actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action'])) {
-
-        // Create new user
-        if ($_POST['action'] === 'create_user') {
-            $newUsername = trim($_POST['username'] ?? '');
-            $newEmail = trim($_POST['email'] ?? '');
-            $newPassword = $_POST['password'] ?? '';
-            $displayName = trim($_POST['display_name'] ?? '');
-
-            if ($newUsername && $newEmail && $newPassword) {
-                $result = User::register($newUsername, $newEmail, $newPassword);
-                if ($result['success']) {
-                    $message = "Gebruiker succesvol aangemaakt!";
-                    $newUser = User::findByUsernameStatic($newUsername);
-                    if ($newUser) {
-                        $logger->logUserCreate($adminUserId, $newUser->id, [
-                            'username' => $newUsername,
-                            'email' => $newEmail,
-                            'display_name' => $displayName
-                        ]);
-                    }
-                } else {
-                    $error = $result['message'] ?? 'Fout bij aanmaken gebruiker.';
-                }
-            } else {
-                $error = "Vul alle velden in.";
-            }
-        }
-
-        // Update user
-        elseif ($_POST['action'] === 'update_user') {
-            $userId = $_POST['user_id'] ?? null;
-            $displayName = trim($_POST['display_name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $isAdmin = isset($_POST['is_admin']) ? 1 : 0;
-
-            if ($userId) {
-                $targetUser = User::findByIdStatic((int) $userId);
-                if ($targetUser) {
-                    $changes = [];
-                    if ($displayName)
-                        $changes['display_name'] = $displayName;
-                    if ($email)
-                        $changes['email'] = $email;
-                    if ($isAdmin !== $targetUser->is_admin)
-                        $changes['is_admin'] = $isAdmin;
-
-                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'is_admin' => $isAdmin]);
-                    if ($updateResult['success']) {
-                        $message = "Gebruiker bijgewerkt!";
-                        if (!empty($changes)) {
-                            $logger->logUserUpdate($adminUserId, (int) $userId, $changes);
-                        }
-                    } else {
-                        $error = "Fout bij bijwerken gebruiker.";
-                    }
-                }
-            }
-        }
-
-        // Block user
-        elseif ($_POST['action'] === 'block_user') {
-            $userId = $_POST['user_id'] ?? null;
-            $reason = trim($_POST['reason'] ?? '');
-
-            if ($userId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 0, block_reason = ? WHERE id = ?");
-                if ($stmt->execute([$reason, $userId])) {
-                    $message = "Gebruiker geblokkeerd.";
-                    $logger->logUserBlock($adminUserId, (int) $userId, $reason);
-                } else {
-                    $error = "Fout bij blokkeren gebruiker.";
-                }
-            }
-        }
-
-        // Unblock user
-        elseif ($_POST['action'] === 'unblock_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 1, block_reason = NULL WHERE id = ?");
-                if ($stmt->execute([$userId])) {
-                    $message = "Gebruiker gedeblokkeerd.";
-                    $logger->logUserUnblock($adminUserId, (int) $userId);
-                } else {
-                    $error = "Fout bij deblokkeren gebruiker.";
-                }
-            }
-        }
-
-        // Delete user (soft delete)
-        elseif ($_POST['action'] === 'delete_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId && $userId != $adminUserId) {
-                $targetUser = User::findByIdStatic((int) $userId);
-                if ($targetUser) {
-                    $result = $targetUser->softDelete();
-                    if ($result['success']) {
-                        $message = "Gebruiker verwijderd.";
-                        $logger->logUserDelete($adminUserId, (int) $userId, $targetUser->username);
-                    } else {
-                        $error = $result['message'] ?? "Fout bij verwijderen gebruiker.";
-                    }
-                }
-            } elseif ($userId == $adminUserId) {
-                $error = "Je kunt jezelf niet verwijderen.";
-            }
-        }
-
-        // Activate user
-        elseif ($_POST['action'] === 'activate_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 1 WHERE id = ?");
-                if ($stmt->execute([$userId])) {
-                    $message = "Gebruiker geactiveerd.";
-                    $logger->logUserActivate($adminUserId, (int) $userId);
-                } else {
-                    $error = "Fout bij activeren gebruiker.";
-                }
-            }
-        }
-
-        // Deactivate user
-        elseif ($_POST['action'] === 'deactivate_user') {
-            $userId = $_POST['user_id'] ?? null;
-            if ($userId && $userId != $adminUserId) {
-                $stmt = $pdo->prepare("UPDATE users SET is_active = 0 WHERE id = ?");
-                if ($stmt->execute([$userId])) {
-                    $message = "Gebruiker gedeactiveerd.";
-                    $logger->logUserDeactivate($adminUserId, (int) $userId);
-                } else {
-                    $error = "Fout bij deactiveren gebruiker.";
-                }
-            } elseif ($userId == $adminUserId) {
-                $error = "Je kunt jezelf niet deactiveren.";
-            }
-        }
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Gebruikers - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../../assets/css/admin.css">
-</head>
+    <style>
+        /*PAGINATION VOOR GEBRUIKERS ADMIN*/
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
 
+        .page-btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            background-color: #ffffff;
+            color: #0f172a;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .page-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .page-btn.active {
+            background-color: #22c55e;
+            color: white;
+        }
+    </style>
+</head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
-
+    
     <div class="dashboard-container1">
         <div class="dashboard-header">
             <div class="dashboard-header-left">
@@ -201,6 +102,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="./home.php" class="btn-naar-app">Naar App</a>
             </div>
         </div>
+    <form method="GET" style="margin: 20px 0; text-align: center;">
+        <input type="text" name="search" placeholder="Zoek gebruiker..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding:8px; width:250px; border-radius:5px; border:1px solid #ccc;">
+        <button type="submit" style="padding:8px 12px; border-radius:5px; background:#22c55e; color:white; border:none; cursor:pointer;">Zoeken</button>
+    </form>
+
 
         <?php if ($message): ?>
             <div class="message" style="background-color: #dcfce7; color: #166534; border-color: #166534;">
@@ -214,49 +120,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
     </div>
-    <div class="user-list-container">
+<div class="user-list-container">
 
-        <?php foreach ($users as $user): ?>
-            <!-- User Card for <?php echo htmlspecialchars($user['username']); ?> -->
-            <div class="user-card">
-                <div class="user-info-wrapper">
-                    <div class="user-details">
-                        <h2 class="user-name"><?php echo htmlspecialchars($user['display_name'] ?? $user['username']); ?>
-                        </h2>
-                        <div class="user-contact-info">
-                            <div class="contact-item">
-                                <i data-lucide="mail" class="contact-icon"></i>
-                                <span><?php echo htmlspecialchars($user['email']); ?></span>
-                            </div>
-                            <div class="contact-item">
-                                <i data-lucide="user" class="contact-icon"></i>
-                                <span>@<?php echo htmlspecialchars($user['username']); ?></span>
-                            </div>
-                            <div class="contact-item">
-                                <i data-lucide="calendar" class="contact-icon"></i>
-                                <span><?php echo $user['birthdate'] ? htmlspecialchars(date('d-m-Y', strtotime($user['birthdate']))) : 'Niet ingevuld'; ?></span>
-                            </div>
-                        </div>
+<?php foreach ($paginatedUsers as $user): ?>
+    <!-- User Card for <?php echo htmlspecialchars($user['username']); ?> -->
+    <div class="user-card">
+        <div class="user-info-wrapper">
+            <div class="user-details">
+                <h2 class="user-name"><?php echo htmlspecialchars($user['display_name'] ?? $user['username']); ?></h2>
+                <div class="user-contact-info">
+                    <div class="contact-item">
+                        <i data-lucide="mail" class="contact-icon"></i>
+                        <span><?php echo htmlspecialchars($user['email']); ?></span>
+                    </div>
+                    <!-- <div class="contact-item">
+                        <i data-lucide="user" class="contact-icon"></i>
+                        <span>@<?php echo htmlspecialchars($user['username']); ?></span>
+                    </div> -->
+                    <div class="contact-item">
+                        <i data-lucide="calendar" class="contact-icon"></i>
+                        <span><?php echo $user['birthdate'] ? htmlspecialchars(date('d-m-Y', strtotime($user['birthdate']))) : 'Niet ingevuld'; ?></span>
+                    </div>
+                    <div class="contact-item">
+                        <i data-lucide="smile" class="contact-icon"></i>
+                        <span><?php echo htmlspecialchars($user['gender'] ?? 'Niet ingevuld'); ?></span>
                     </div>
                 </div>
-                <div class="user-actions-wrapper">
-                    <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER'); ?></div>
-                    <button class="btn-action btn-edit"
-                        onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['gender'] ?? ''); ?>')">
-                        <i data-lucide="pencil"></i> Bewerken
-                    </button>
-                    <button class="btn-action btn-delete"
-                        onclick="if(confirm('Weet je zeker dat je deze gebruiker wilt verwijderen?')) { deleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>'); }">
-                        <i data-lucide="trash-2"></i> Verwijderen
-                    </button>
-                    <button class="btn-action reset-btn"
-                        onclick="if(confirm('Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?')) { resetUserActivity(<?php echo $user['id']; ?>); }">Reset
-                        Activity</button>
-                </div>
             </div>
-        <?php endforeach; ?>
-
+        </div>
+        <div class="user-actions-wrapper">
+            <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER'); echo(' ');  echo htmlspecialchars($user['id'])?></div>
+            <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['gender'] ?? ''); ?>')">
+                <i data-lucide="pencil"></i> Bewerken
+            </button>
+            <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">
+                <i data-lucide="lock"></i> <?php echo $user['is_active'] ? 'Blokkeren' : 'Deblokkeren'; ?>
+            </button>
+            <button class="btn-action reset-btn" onclick="if(confirm('Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?')) { resetUserActivity(<?php echo $user['id']; ?>); }">Reset Activity</button>
+        </div>
     </div>
+    <?php endforeach; ?>
+
+</div>
+<!-- Pagination -->
+<div class="pagination">
+    <?php
+    $searchParam = isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '';
+    ?>
+
+    <?php if ($page > 1): ?>
+        <a class="page-btn" href="?page=<?php echo $page - 1 . $searchParam; ?>">← Vorige</a>
+    <?php endif; ?>
+
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <a 
+            href="?page=<?php echo $i . $searchParam; ?>"
+            class="page-btn <?php echo $i === $page ? 'active' : ''; ?>">
+            <?php echo $i; ?>
+        </a>
+    <?php endfor; ?>
+
+    <?php if ($page < $totalPages): ?>
+        <a class="page-btn" href="?page=<?php echo $page + 1 . $searchParam; ?>">Volgende →</a>
+    <?php endif; ?>
+</div>
+
+
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
 
@@ -271,8 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="hidden" id="block_user_id" name="user_id">
                 <div class="form-group">
                     <label for="block_reason">Reden (optioneel)</label>
-                    <textarea id="block_reason" name="reason" rows="4"
-                        placeholder="Voer hier de reden in waarom deze gebruiker wordt geblokkeerd..."></textarea>
+                    <textarea id="block_reason" name="reason" rows="4" placeholder="Voer hier de reden in waarom deze gebruiker wordt geblokkeerd..."></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="submit" class="btn-save">Blokkeren</button>
@@ -351,7 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Close modal when clicking outside
-        window.onclick = function (event) {
+        window.onclick = function(event) {
             const modal = document.getElementById('editUserModal');
             if (event.target === modal) {
                 modal.style.display = 'none';
@@ -393,24 +321,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
 
-        // Delete user function
-        async function deleteUser(userId, username) {
-            const formData = new FormData();
-            formData.append('action', 'delete_user');
-            formData.append('user_id', userId);
-
-            try {
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                // Reload page after successful deletion
-                setTimeout(() => location.reload(), 500);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
 
         // Block user modal functions
         function openBlockUserModal(userId, username) {
@@ -429,20 +339,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             const userId = document.getElementById('block_user_id').value;
             const reason = document.getElementById('block_reason').value;
-
-            const formData = new FormData();
-            formData.append('action', 'block_user');
-            formData.append('user_id', userId);
-            formData.append('reason', reason);
+            
+            const data = {
+                action: 'block',
+                user_id: userId,
+                reason: reason
+            };
 
             try {
-                const response = await fetch(window.location.href, {
+                const response = await fetch('/api/block-user.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 });
 
-                closeBlockUserModal();
-                setTimeout(() => location.reload(), 500);
+                const result = await response.json();
+
+                if (result.success) {
+                    closeBlockUserModal();
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    console.error('Error:', result.message);
+                }
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -464,43 +384,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             e.preventDefault();
 
             const userId = document.getElementById('unblock_user_id').value;
-
-            const formData = new FormData();
-            formData.append('action', 'unblock_user');
-            formData.append('user_id', userId);
+            
+            const data = {
+                action: 'unblock',
+                user_id: userId
+            };
 
             try {
-                const response = await fetch(window.location.href, {
+                const response = await fetch('/api/block-user.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 });
 
-                closeUnblockUserModal();
-                setTimeout(() => location.reload(), 500);
+                const result = await response.json();
+
+                if (result.success) {
+                    closeUnblockUserModal();
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    console.error('Error:', result.message);
+                }
             } catch (error) {
                 console.error('Error:', error);
             }
         });
-
-        // Reset user activity function
-        async function resetUserActivity(userId) {
-            const formData = new FormData();
-            formData.append('action', 'reset_activity');
-            formData.append('user_id', userId);
-
-            try {
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                // Reload page after successful reset
-                setTimeout(() => location.reload(), 500);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
     </script>
 </body>
-
 </html>
