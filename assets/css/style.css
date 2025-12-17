@@ -21,21 +21,22 @@
 }
 
 .btn-export-data {
-    display: inline-flex;
-    align-items: center;
-    background-color: #3b82f6; 
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
 }
+
 .btn-export-data:hover {
-    background-color: #2563eb;
+  background-color: #2563eb;
 }
 
 /* Navbar Styling */
@@ -55,10 +56,45 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: space-between;
+}
+
+.navbar-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 60;
+}
+
+.navbar-toggle span {
+  width: 100%;
+  height: 3px;
+  background-color: #0f172a;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  position: relative;
+  transform-origin: center;
+}
+
+.navbar-toggle.active span:first-child {
+  transform: translateY(9px) rotate(45deg);
+}
+
+.navbar-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar-toggle.active span:last-child {
+  transform: translateY(-9px) rotate(-45deg);
 }
 
 .navbar-brand {
@@ -2378,14 +2414,96 @@
 .today-score-date {
   margin: 0;
   opacity: 0.9;
-  font-size: 14px;
 }
 
+/* Stats Row (Default Desktop) */
 .stats-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+  width: 100%;
   margin-bottom: 20px;
+  /* Keep original margin-bottom */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar-toggle {
+    display: flex;
+  }
+
+  .navbar-links {
+    display: none;
+    position: fixed;
+    /* Fixed to cover screen */
+    top: 64px;
+    /* Below navbar */
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 64px);
+    /* Full height minus navbar */
+    background-color: rgba(242, 240, 239, 0.85);
+    /* Semi-transparent background */
+    backdrop-filter: blur(12px);
+    /* Blurry background effect */
+    -webkit-backdrop-filter: blur(12px);
+    /* Safari support */
+    flex-direction: column;
+    justify-content: center;
+    /* Center links vertically */
+    align-items: center;
+    /* Center links horizontally */
+    z-index: 49;
+    gap: 30px;
+    /* More space between links */
+    transition: all 0.3s ease;
+  }
+
+  .navbar-links.active {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .nav-link {
+    padding: 10px 0;
+    border-bottom: none;
+    /* Remove separator for cleaner look */
+    width: auto;
+    font-size: 24px;
+    /* Larger text for full screen menu */
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .nav-link:hover {
+    color: #16a34a;
+    transform: scale(1.1);
+    /* Subtle zoom on hover */
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stats-card {
