@@ -108,19 +108,35 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
     $healthScore = 0;
 }
 
-// Random Health Tips
-$allTips = [
-    ['icon' => '💧', 'title' => 'Start met water', 'text' => 'Drink een glas water direct na het opstaan om je stofwisseling te activeren.'],
-    ['icon' => '🚶', 'title' => 'Even bewegen', 'text' => 'Een wandeling van 10 minuten kan je stemming en energie al direct verbeteren.'],
-    ['icon' => '🌙', 'title' => 'Digitale rust', 'text' => 'Probeer vanavond een uur voor het slapen je schermen weg te leggen.'],
-    ['icon' => '🥦', 'title' => 'Kleur op je bord', 'text' => 'Voeg vandaag één extra stuk fruit of groente toe aan je maaltijd.'],
-    ['icon' => '🧠', 'title' => 'Even niets', 'text' => 'Neem 5 minuten pauze om even helemaal niets te doen. Gewoon ademen.'],
-    ['icon' => '👥', 'title' => 'Verbinding', 'text' => 'Stuur een berichtje naar iemand die je waardeert. Sociaal contact is gezond!'],
-    ['icon' => '☀️', 'title' => 'Daglicht', 'text' => 'Probeer in de ochtend wat daglicht te vangen voor een beter slaapritme.'],
-    ['icon' => '📝', 'title' => 'Dankbaarheid', 'text' => 'Schrijf aan het einde van de dag 3 dingen op waar je dankbaar voor bent.']
+// Daily Focus Content (Premium/Human curated feel)
+$focusItems = [
+    [
+        'category' => 'Mentale Kracht',
+        'title' => 'De kracht van stilte',
+        'text' => 'In een wereld vol ruis is stilte een luxe. Probeer vandaag eens 5 minuten helemaal niets te doen. Geen telefoon, geen muziek, alleen jij en je gedachten. Het geeft je brein de kans om echt te resetten.'
+    ],
+    [
+        'category' => 'Fysieke Gezondheid',
+        'title' => 'Bewegen als medicijn',
+        'text' => 'Je hoeft niet direct een marathon te lopen. Een korte wandeling na de lunch verlaagt je bloedsuikerspiegel en geeft je nieuwe energie voor de middag. Maak er vandaag een prioriteit van.'
+    ],
+    [
+        'category' => 'Voeding',
+        'title' => 'Eet de regenboog',
+        'text' => 'Kijk eens kritisch naar je bord vanavond. Hoeveel verschillende kleuren zie je? Probeer minstens drie verschillende kleuren groenten toe te voegen voor een breder spectrum aan vitaminen.'
+    ],
+    [
+        'category' => 'Slaaphygiëne',
+        'title' => 'Licht en Ritme',
+        'text' => 'Je biologische klok wordt gestuurd door licht. Probeer vanavond, een uur voor het slapen, felle lampen en schermen te vermijden. Het helpt je lichaam om op natuurlijke wijze melatonine aan te maken.'
+    ],
+    [
+        'category' => 'Persoonlijke Groei',
+        'title' => 'Dankbaarheid',
+        'text' => 'Geluk zit niet in meer krijgen, maar in waarderen wat je hebt. Schrijf vanavond drie kleine dingen op die vandaag goed gingen. Het traint je brein om positiever naar de wereld te kijken.'
+    ]
 ];
-shuffle($allTips);
-$displayTips = array_slice($allTips, 0, 4);
+$dailyFocus = $focusItems[array_rand($focusItems)];
 
 ?>
 <!DOCTYPE html>
@@ -162,68 +178,74 @@ $displayTips = array_slice($allTips, 0, 4);
         </div>
 
         <!-- Stats Overview -->
-        <div class="stats-row">
-            <div class="stat-card stat-card-primary">
-                <div class="stat-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                    </svg>
+<!-- Stats Overview (Minimal/Data-Driven Design) -->
+        <div class="stats-row" style="grid-template-columns: repeat(4, 1fr); gap: 20px;">
+            <!-- 1. Health Score (Radial Chart) -->
+            <div class="stat-card" style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Welzijn</span>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-label">Je Welzijn</div>
-                    <div class="stat-number"><?= $healthScore ?>%</div>
-                    <div class="stat-trend stat-trend-up">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="3">
-                            <polyline points="18 15 12 9 6 15" />
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="position: relative; width: 64px; height: 64px;">
+                        <svg width="64" height="64" viewBox="0 0 36 36">
+                            <path d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3" />
+                            <path d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2563eb" stroke-width="3"
+                                stroke-dasharray="<?= $healthScore ?>, 100" class="radial-progress" />
                         </svg>
-                        Balans deze week
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.9rem; font-weight: 700; color: #1f2937;">
+                            <?= $healthScore ?>%
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: #9ca3af;">Jouw score</div>
+                        <div style="font-size: 0.75rem; color: #2563eb; font-weight: 500;">Vandaag</div>
                     </div>
                 </div>
             </div>
 
-            <div class="stat-card stat-card-success">
-                <div class="stat-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                    </svg>
+            <!-- 2. Weekly Goal (Segmented Dots) -->
+            <div class="stat-card" style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Weekdoel</span>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-label">Jouw Week</div>
-                    <div class="stat-number"><?= $weeklyProgress ?>%</div>
-                    <div class="stat-progress">
-                        <div class="stat-progress-bar" style="width: <?= $weeklyProgress ?>%"></div>
-                    </div>
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 2rem; font-weight: 700; color: #1f2937;"><?= $weeklyCompleted ?></span>
+                    <span style="font-size: 1rem; color: #9ca3af; font-weight: 500;">/ 7</span>
                 </div>
-            </div>
-
-            <div class="stat-card stat-card-warning">
-                <div class="stat-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                    </svg>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-label">Dagen op Rij</div>
-                    <div class="stat-number"><?= $currentStreak ?> dagen</div>
-                    <div class="stat-subtitle">
-                        <?= $currentStreak > 0 ? 'Lekker bezig! 🔥' : 'Begin vandaag je reeks!' ?></div>
+                <div style="display: flex; gap: 6px;">
+                    <?php for ($i = 0; $i < 7; $i++): ?>
+                        <div style="width: 100%; height: 6px; border-radius: 4px; background-color: <?= $i < $weeklyCompleted ? '#16a34a' : '#e5e7eb' ?>;"></div>
+                    <?php endfor; ?>
                 </div>
             </div>
 
-            <div class="stat-card stat-card-info">
-                <div class="stat-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 16v-4M12 8h.01" />
-                    </svg>
+            <!-- 3. Streak (Minimal) -->
+            <div class="stat-card" style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Reeks</span>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-label">Jouw Reis</div>
-                    <div class="stat-number"><?= $totalQuestions ?></div>
-                    <div class="stat-subtitle">Metingen voltooid</div>
+                <div style="display: flex; align-items: baseline; gap: 5px;">
+                    <span style="font-size: 2.5rem; font-weight: 800; color: #d97706; line-height: 1;"><?= $currentStreak ?></span>
+                    <span style="font-size: 1rem; color: #9ca3af; font-weight: 500;">dagen</span>
                 </div>
+                <div style="margin-top: 5px; font-size: 0.8rem; color: #d97706; background: #fef3c7; display: inline-block; padding: 2px 8px; border-radius: 12px; font-weight: 500;">
+                    Hou vol!
+                </div>
+            </div>
+
+            <!-- 4. Total (Clean Counter) -->
+            <div class="stat-card" style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Totaal</span>
+                </div>
+                <div style="margin-bottom: 5px;">
+                    <span style="font-size: 2rem; font-weight: 700; color: #1f2937;"><?= $totalQuestions ?></span>
+                </div>
+                <div style="font-size: 0.8rem; color: #9ca3af;">Check-ins voltooid</div>
             </div>
         </div>
 
@@ -357,21 +379,17 @@ $displayTips = array_slice($allTips, 0, 4);
             </div>
         </div>
 
-        <!-- Health Tips -->
-        <div class="dashboard-card dashboard-card-full">
+        <!-- Inspiration / Daily Focus -->
+        <div class="dashboard-card dashboard-card-full" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left: 4px solid #16a34a;">
             <div class="card-header">
-                <h3>Inspiratie voor Vandaag</h3>
+                <h3>Inspiratie van Vandaag</h3>
             </div>
-            <div class="tips-grid">
-                <?php foreach ($displayTips as $tip): ?>
-                        <div class="tip-card">
-                            <div class="tip-icon"><?= $tip['icon'] ?></div>
-                            <div class="tip-content">
-                                <h4><?= $tip['title'] ?></h4>
-                                <p><?= $tip['text'] ?></p>
-                            </div>
-                        </div>
-                <?php endforeach; ?>
+            <div class="daily-focus-content" style="padding: 0 20px 20px 20px;">
+                <span class="focus-category" style="display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #16a34a; letter-spacing: 0.05em; margin-bottom: 8px;"><?= htmlspecialchars($dailyFocus['category']) ?></span>
+                <h4 class="focus-title" style="font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 0 0 12px 0;"><?= htmlspecialchars($dailyFocus['title']) ?></h4>
+                <p class="focus-text" style="color: #4b5563; line-height: 1.6; font-size: 0.95rem; margin: 0; max-width: 800px;">
+                    <?= htmlspecialchars($dailyFocus['text']) ?>
+                </p>
             </div>
         </div>
     </div>

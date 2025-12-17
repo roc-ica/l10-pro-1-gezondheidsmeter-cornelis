@@ -1,4 +1,4 @@
-<!-- <?php
+<?php
 session_start();
 
 require_once __DIR__ . '/../classes/DashboardStats.php';
@@ -18,7 +18,7 @@ $statsModel = new DashboardStats();
 $dashboardData = $statsModel->getOverview($userId);
 
 $questionModel = new Question();
-$highlightQuestion = $questionModel->getHighlightQuestion();
+$highlightQuestion = $questionModel->getHighlightQuestion();  
 
 $isLoggedIn = isset($_SESSION['user_id']);
 $questionsData = $dashboardData['hero']['questions'];
