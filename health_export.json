@@ -1,0 +1,803 @@
+{
+    "metadata": {
+        "exported_at": "2025-12-17 08:25:15",
+        "app_name": "Gezondheidsmeter",
+        "version": "1.0"
+    },
+    "profile": {
+        "username": "colin",
+        "email": "colinpoort@hotmail.com",
+        "birthdate": null,
+        "gender": null,
+        "created_at": "2025-11-26 09:27:57"
+    },
+    "health_history": [
+        {
+            "date": "2025-12-17",
+            "submitted_at": "2025-12-17 08:11:43",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": "4",
+                    "category": "Voeding",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": "1",
+                    "category": "Voeding",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": "10",
+                    "category": "Beweging",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": "7",
+                    "category": "Slaap",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": "1",
+                    "category": "Mentaal",
+                    "score_value": null
+                }
+            ]
+        },
+        {
+            "date": "2025-12-01",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": 10,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": 2,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": 60,
+                    "category": "Beweging",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": 7,
+                    "category": "Slaap",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": 2,
+                    "category": "Mentaal",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": 0,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-30",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": 10,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": 2,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": 60,
+                    "category": "Beweging",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": 7,
+                    "category": "Slaap",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": 2,
+                    "category": "Mentaal",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": 0,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-29",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": 6,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": 1,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": 60,
+                    "category": "Beweging",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": 8,
+                    "category": "Slaap",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": 2,
+                    "category": "Mentaal",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": 1,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-28",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": 2,
+                    "category": "Voeding",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": 2,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": 60,
+                    "category": "Beweging",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": 7,
+                    "category": "Slaap",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": 2,
+                    "category": "Mentaal",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": 0,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-27",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": 10,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": 2,
+                    "category": "Voeding",
+                    "score_value": 10
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": 60,
+                    "category": "Beweging",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": 7,
+                    "category": "Slaap",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": 2,
+                    "category": "Mentaal",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": 0,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-26",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": 10,
+                    "category": "Voeding",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": 2,
+                    "category": "Voeding",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": 60,
+                    "category": "Beweging",
+                    "score_value": 5
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": 7,
+                    "category": "Slaap",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": 2,
+                    "category": "Mentaal",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": 0,
+                    "category": "Verslavingen",
+                    "score_value": 9
+                }
+            ]
+        },
+        {
+            "date": "2025-11-25",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": 10,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": 2,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": 60,
+                    "category": "Beweging",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": 7,
+                    "category": "Slaap",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": 2,
+                    "category": "Mentaal",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-24",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": null,
+                    "category": "Beweging",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": null,
+                    "category": "Slaap",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": null,
+                    "category": "Mentaal",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-23",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 10
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 10
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": null,
+                    "category": "Beweging",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": null,
+                    "category": "Slaap",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": null,
+                    "category": "Mentaal",
+                    "score_value": 10
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-22",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": null,
+                    "category": "Beweging",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": null,
+                    "category": "Slaap",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": null,
+                    "category": "Mentaal",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-21",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": null,
+                    "category": "Beweging",
+                    "score_value": 4
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": null,
+                    "category": "Slaap",
+                    "score_value": 5
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": null,
+                    "category": "Mentaal",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 9
+                }
+            ]
+        },
+        {
+            "date": "2025-11-20",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 10
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": null,
+                    "category": "Beweging",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": null,
+                    "category": "Slaap",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": null,
+                    "category": "Mentaal",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-19",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": null,
+                    "category": "Beweging",
+                    "score_value": 5
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": null,
+                    "category": "Slaap",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": null,
+                    "category": "Mentaal",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        },
+        {
+            "date": "2025-11-18",
+            "submitted_at": "2025-12-01 09:14:01",
+            "notes": null,
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 2,
+                    "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                    "answer": null,
+                    "category": "Voeding",
+                    "score_value": 9
+                },
+                {
+                    "question_id": 3,
+                    "question": "Hoeveel minuten heb je vandaag bewogen?",
+                    "answer": null,
+                    "category": "Beweging",
+                    "score_value": 6
+                },
+                {
+                    "question_id": 4,
+                    "question": "Hoeveel uur heb je geslapen?",
+                    "answer": null,
+                    "category": "Slaap",
+                    "score_value": 7
+                },
+                {
+                    "question_id": 5,
+                    "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                    "answer": null,
+                    "category": "Mentaal",
+                    "score_value": 8
+                },
+                {
+                    "question_id": 6,
+                    "question": "Heb je alcohol of cannabis gebruikt vandaag?",
+                    "answer": null,
+                    "category": "Verslavingen",
+                    "score_value": 10
+                }
+            ]
+        }
+    ],
+    "calculated_scores": [
+        {
+            "score_date": "2025-12-17",
+            "overall_score": "43.65",
+            "pillar_scores": {
+                "1": 31.25,
+                "2": 33.33333333333333,
+                "3": 100,
+                "6": 10
+            },
+            "calculation_details": {
+                "1": {
+                    "score": 31.25,
+                    "items": [
+                        {
+                            "question": "Hoeveel glazen water heb je vandaag gedronken?",
+                            "answer": "4",
+                            "score": 50
+                        },
+                        {
+                            "question": "Heb je frisdrank of alcohol gedronken vandaag?",
+                            "answer": "1",
+                            "score": 12.5
+                        }
+                    ]
+                },
+                "2": {
+                    "score": 33.33,
+                    "items": [
+                        {
+                            "question": "Hoeveel minuten heb je vandaag bewogen?",
+                            "answer": "10",
+                            "score": 33.33
+                        }
+                    ]
+                },
+                "3": {
+                    "score": 100,
+                    "items": [
+                        {
+                            "question": "Hoeveel uur heb je geslapen?",
+                            "answer": "7",
+                            "score": 100
+                        }
+                    ]
+                },
+                "6": {
+                    "score": 10,
+                    "items": [
+                        {
+                            "question": "Heb je meer dan 2 uur extra schermtijd gehad vandaag?",
+                            "answer": "1",
+                            "score": 10
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

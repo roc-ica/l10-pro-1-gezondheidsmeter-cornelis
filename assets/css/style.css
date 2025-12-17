@@ -20,6 +20,24 @@
   --color-primary-lightgreen: rgba(22, 163, 74, 0.5);
 }
 
+.btn-export-data {
+    display: inline-flex;
+    align-items: center;
+    background-color: #3b82f6; 
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
+}
+.btn-export-data:hover {
+    background-color: #2563eb;
+}
+
 /* Navbar Styling */
 .navbar {
   background: var(--color-background);

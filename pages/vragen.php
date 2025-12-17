@@ -15,6 +15,35 @@ $username = $_SESSION['username'] ?? 'Gebruiker';
 $pdo = Database::getConnection();
 $today = date('Y-m-d');
 
+// Handle reset request
+if (isset($_GET['reset']) && $_GET['reset'] == '1') {
+    // 1. Get today's entry ID if exists
+    $stmt = $pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
+    $stmt->execute([$userId, $today]);
+    $entry = $stmt->fetch();
+    
+    if ($entry) {
+        // 2. Delete existing answers
+        $stmt = $pdo->prepare("DELETE FROM answers WHERE entry_id = ?");
+        $stmt->execute([$entry['id']]);
+        
+        // 3. Reset submission status
+        $stmt = $pdo->prepare("UPDATE daily_entries SET submitted_at = NULL WHERE id = ?");
+        $stmt->execute([$entry['id']]);
+
+        // 4. Also clear calculated score for today to keep data consistent
+        $stmt = $pdo->prepare("DELETE FROM user_health_scores WHERE user_id = ? AND score_date = ?");
+        $stmt->execute([$userId, $today]);
+    }
+    
+    // 5. Clear session data
+    unset($_SESSION['answered_questions']);
+    
+    // 6. Redirect to clean URL
+    header("Location: " . strtok($_SERVER["REQUEST_URI"], '?'));
+    exit;
+}
+
 // Get today's entry to check for existing answers
 $stmt = $pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
 $stmt->execute([$userId, $today]);

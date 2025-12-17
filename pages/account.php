@@ -96,7 +96,7 @@ foreach ($allEntries as $entryDate) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account - Gezondheidsmeter</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 </head>
@@ -178,6 +178,40 @@ foreach ($allEntries as $entryDate) {
                         <input type="checkbox" id="email-reports" name="email-reports" checked>
                     </div>
                 </div>
+                <div class="inst-item">
+                    <div>
+                        <div class="score-label"><strong>Mijn gegevens exporteren</strong></div>
+                        <div class="score-value">Download een kopie van al je gezondheidsdata (JSON)</div>
+                    </div>
+                    <div>
+                        <button class="btn-export-data" onclick="window.location.href='../api/export-health-data.php'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 4px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Downloaden
+                        </button>
+                    </div>
+                </div>
+                <!-- Import Section -->
+                <div class="inst-item">
+                    <div>
+                        <div class="score-label"><strong>Gegevens importeren</strong></div>
+                        <div class="score-value">Herstel data vanuit een eerder gemaakte backup</div>
+                    </div>
+                    <div>
+                        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(this)">
+                        <button class="btn-export-data" style="background-color: #6366f1;" onclick="document.getElementById('importFile').click()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 4px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            Importeren
+                        </button>
+                    </div>
+                </div>
                 <div class="inst-item inst-item-danger">
                     <div>
                         <div class="score-label"><strong>Gezondheids gegevens wissen?</strong></div>
@@ -241,6 +275,44 @@ foreach ($allEntries as $entryDate) {
                 alert('Er is een fout opgetreden bij het wissen van je gegevens.');
             }
         });
+
+        // Handle Import
+        async function handleImport(input) {
+            if (!input.files || input.files.length === 0) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('import_file', file);
+
+            // Show loading state (simple alert for now)
+            const confirmImport = confirm(`Weet je zeker dat je "${file.name}" wilt importeren?\nDit voegt gegevens toe aan je huidige data.`);
+            
+            if (!confirmImport) {
+                input.value = ''; // Reset input
+                return;
+            }
+
+            try {
+                const response = await fetch('../api/import-health-data.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message);
+                    window.location.reload();
+                } else {
+                    alert('Import fout: ' + (result.error || 'Onbekende fout'));
+                }
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Er is een technische fout opgetreden tijdens het importeren.');
+            } finally {
+                input.value = ''; // Reset for next use
+            }
+        }
     </script>
 
     <!-- Edit Modal -->
