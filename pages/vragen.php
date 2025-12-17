@@ -69,33 +69,49 @@ if (!isset($_SESSION['answered_questions'])) {
 }
 
 // Handle answer submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_answer'])) {
-    $questionId = $_POST['question_id'] ?? null;
-    $answer = $_POST['answer'] ?? null;
-    
-    if ($questionId && $answer !== null) {
-        // Get or create today's entry
-        if (!$todayEntryId) {
-            $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
-            $stmt->execute([$userId, $today]);
-            $todayEntryId = $pdo->lastInsertId();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    // Handle 'Previous' action
+    if ($action === 'previous') {
+        // Remove the last answered question from session to go back
+        if (!empty($_SESSION['answered_questions'])) {
+            $lastQuestionId = array_key_last($_SESSION['answered_questions']);
+            unset($_SESSION['answered_questions'][$lastQuestionId]);
         }
-        
-        // Save answer
-        $stmt = $pdo->prepare("
-            INSERT INTO answers (entry_id, question_id, answer_text)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE answer_text = VALUES(answer_text)
-        ");
-        
-        $stmt->execute([$todayEntryId, $questionId, $answer]);
-        
-        // Mark as answered in session
-        $_SESSION['answered_questions'][$questionId] = $answer;
-        
-        // Refresh page to move to next question
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
+    }
+
+    // Handle 'Next' action
+    if ($action === 'next' || isset($_POST['save_answer'])) {
+        $questionId = $_POST['question_id'] ?? null;
+        $answer = $_POST['answer'] ?? null;
+        
+        if ($questionId && $answer !== null) {
+            // Get or create today's entry
+            if (!$todayEntryId) {
+                $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
+                $stmt->execute([$userId, $today]);
+                $todayEntryId = $pdo->lastInsertId();
+            }
+            
+            // Save answer
+            $stmt = $pdo->prepare("
+                INSERT INTO answers (entry_id, question_id, answer_text)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE answer_text = VALUES(answer_text)
+            ");
+            
+            $stmt->execute([$todayEntryId, $questionId, $answer]);
+            
+            // Mark as answered in session
+            $_SESSION['answered_questions'][$questionId] = $answer;
+            
+            // Refresh page to move to next question
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
+        }
     }
 }
 
@@ -236,7 +252,6 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                 
                 <form method="POST" class="question-form">
                     <input type="hidden" name="question_id" value="<?php echo $currentQuestion['id']; ?>">
-                    <input type="hidden" name="save_answer" value="1">
 
                     <!-- Main Question -->
                     <div class="question-part-main">
@@ -245,19 +260,30 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                         </h2>
                         <div class="answer-section">
                             <p class="answer-label">Voer antwoord in:</p>
-                            <input type="number" name="answer" class="form-input-large" placeholder="Voer getal in" required>
+                            <?php
+                            $savedAnswer = '';
+                            if ($todayEntryId) {
+                                $stmt = $pdo->prepare("SELECT answer_text FROM answers WHERE entry_id = ? AND question_id = ?");
+                                $stmt->execute([$todayEntryId, $currentQuestion['id']]);
+                                $result = $stmt->fetch();
+                                if ($result) {
+                                    $savedAnswer = $result['answer_text'];
+                                }
+                            }
+                            ?>
+                            <input type="number" name="answer" class="form-input-large" placeholder="Voer getal in" value="<?php echo htmlspecialchars($savedAnswer); ?>" required>
                         </div>
                     </div>
 
                     <!-- Navigation -->
                     <div class="question-nav">
                         <?php if ($currentQuestionIndex > 0): ?>
-                        <button type="button" class="nav-btn prev-btn" onclick="window.history.back();">← Vorige</button>
+                        <button type="submit" name="action" value="previous" class="nav-btn prev-btn" formnovalidate>← Vorige</button>
                         <?php else: ?>
                         <span></span>
                         <?php endif; ?>
                         
-                        <button type="submit" class="nav-btn next-btn">Volgende →</button>
+                        <button type="submit" name="action" value="next" class="nav-btn next-btn">Volgende →</button>
                     </div>
                 </form>
             </div>
