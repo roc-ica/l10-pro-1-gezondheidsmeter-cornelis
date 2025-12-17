@@ -43,19 +43,22 @@ class HealthScoreCalculator
             $pillarNames[$pillarId] = $this->getPillarName($pillarId);
         }
 
-        // Calculate Average of Pillar Scores (Weighting all pillars equally for now)
-        $countPillars = count($pillarScores);
-        $averagePillarScore = $countPillars > 0 ? array_sum($pillarScores) / $countPillars : 0;
-
         // Calculate age adjustment
         $ageAdjustment = $this->calculateAgeAdjustment($user);
 
         // Sum pillar scores
         $totalPillarScore = array_sum(array_values($pillarScores));
-        $maxPossible = count($pillarScores) * 100;
+        
+        // Calculate average
+        // We use count($pillarScores) to be safe against missing pillars.
+        $pillarCount = count($pillarScores) > 0 ? count($pillarScores) : 1;
+        
+        $overallScore = $totalPillarScore / $pillarCount;
 
+        // Apply age adjustment
+        $overallScore -= abs($ageAdjustment);
+        
         // Normalize to 0-100
-        $overallScore = ($baseScore + $totalPillarScore) - abs($ageAdjustment);
         $overallScore = max(0, min(100, $overallScore));
 
         // Store in database
