@@ -179,7 +179,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
 
         <!-- Stats Overview -->
 <!-- Stats Overview (Minimal/Data-Driven Design) -->
-        <div class="stats-row" style="grid-template-columns: repeat(4, 1fr); gap: 20px;">
+        <div class="stats-row">
             <!-- 1. Health Score (Radial Chart) -->
             <div class="stat-card" style="padding: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">

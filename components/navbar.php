@@ -38,8 +38,13 @@ if (!function_exists('isActive')) {
         <div class="navbar-brand">
             <span class="brand-text">Gezondheids<span class="brand-meter">Meter</span></span>
         </div>
+        <button class="navbar-toggle" aria-label="Toggle navigation" onclick="this.classList.toggle('active'); document.querySelector('.navbar-links').classList.toggle('active');">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <?php if (!$isAuthPage): ?>
-                <div class="navbar-links">
+        <div class="navbar-links">
             <a href="<?= $isAdmin ? 'index.php' : 'home.php' ?>" class="nav-link <?= isActive($isAdmin ? 'index.php' : 'home.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
             <a href="geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
