@@ -233,10 +233,6 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                                     </p>
                                     <p class="pillar-score"><?php echo round($score, 1); ?></p>
                                 </div>
-                                <div class="pillar-item">
-                                    <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
-                                    <p class="pillar-score"><?php echo round($score, 1); ?></p>
-                                </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
@@ -251,7 +247,10 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
             <!-- Two-Part Question Card -->
             <div class="question-card">
                 <div class="question-badge">Vraag <?php echo $currentQuestionIndex + 1; ?> van
-                    <?php echo $totalQuestions; ?></div>
+                    <?php echo $totalQuestions; ?>
+                </div>
+
+                <h2 class="question-text"><?php echo htmlspecialchars($currentQuestion['question_text']); ?></h2>
 
                 <form method="POST" class="question-form">
                     <input type="hidden" name="question_id" value="<?php echo $currentQuestion['id']; ?>">
@@ -299,11 +298,12 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                     <div class="question-nav"
                         style="justify-content: space-between; border:none; padding-top:10px; display: flex;">
                         <?php if ($currentQuestionIndex > 0): ?>
-                            <?php $prevQId = $flatQuestions[$currentQuestionIndex - 1]['id']; ?>
-                            <button type="submit" name="go_back" value="<?php echo $prevQId; ?>"
-                                class="nav-btn prev-btn">Vorige</button>
+                            <?php $prevQId = $mainQuestions[$currentQuestionIndex - 1]['id']; ?>
+                            <button type="submit" name="go_back" value="<?php echo $prevQId; ?>" class="nav-btn prev-btn"
+                                style="flex: 0 0 25%;">Vorige</button>
                         <?php else: ?>
-                            <button type="button" class="nav-btn prev-btn" style="visibility: hidden">Vorige</button>
+                            <button type="button" class="nav-btn prev-btn"
+                                style="visibility: hidden; flex: 0 0 25%;">Vorige</button>
                         <?php endif; ?>
 
                         <a href="../pages/home.php" class="nav-btn prev-btn"
