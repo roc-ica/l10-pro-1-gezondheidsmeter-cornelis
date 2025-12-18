@@ -200,9 +200,7 @@ $displayTips = array_slice($allTips, 0, 4);
 
             <div class="stat-card stat-card-warning">
                 <div class="stat-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                    </svg>
+                    <img src="../assets/images/icons/8722283.png" alt="Fire Icon">
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Dagen op Rij</div>
@@ -214,10 +212,7 @@ $displayTips = array_slice($allTips, 0, 4);
 
             <div class="stat-card stat-card-info">
                 <div class="stat-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 16v-4M12 8h.01" />
-                    </svg>
+                    <img src="../assets/images/icons/pngtree-travel-vector-icon-design-illustration-png-image_9005139.png" alt="Travel Icon">
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Jouw Reis</div>
