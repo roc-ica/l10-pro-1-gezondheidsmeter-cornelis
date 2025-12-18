@@ -30,7 +30,6 @@ class HealthScoreCalculator
             return ['success' => false, 'score' => 0, 'message' => 'No answers found for this date'];
         }
 
-        $baseScore = 50;
         $pillarScores = [];
         $pillarNames = [];
         $details = [];
@@ -49,10 +48,17 @@ class HealthScoreCalculator
 
         // Sum pillar scores
         $totalPillarScore = array_sum(array_values($pillarScores));
-        $maxPossible = count($pillarScores) * 100;
+        
+        // Calculate average
+        // We use count($pillarScores) to be safe against missing pillars.
+        $pillarCount = count($pillarScores) > 0 ? count($pillarScores) : 1;
+        
+        $overallScore = $totalPillarScore / $pillarCount;
 
+        // Apply age adjustment
+        $overallScore -= abs($ageAdjustment);
+        
         // Normalize to 0-100
-        $overallScore = ($baseScore + $totalPillarScore) - abs($ageAdjustment);
         $overallScore = max(0, min(100, $overallScore));
 
         // Store in database
@@ -73,16 +79,22 @@ class HealthScoreCalculator
      */
     private function calculatePillarScore(int $pillarId, array $answers, &$details): float
     {
-        $score = 0;
+        $totalScore = 0;
+        $count = 0;
         $pillarDetails = [];
 
         foreach ($answers as $answer) {
             $qScore = $this->scoreAnswer($answer, $pillarDetails);
-            $score += $qScore;
+            $totalScore += $qScore;
+            $count++;
         }
 
-        // Normalize pillar score to 0-100 (adjust based on number of questions)
-        $normalizedScore = min(100, $score);
+        // Calculate average score for the pillar (0-100)
+        // If no questions answered in this pillar (shouldn't happen here), return 0
+        $averageScore = $count > 0 ? $totalScore / $count : 0;
+
+        // Normalize: Keep it 0-100
+        $normalizedScore = max(0, min(100, $averageScore));
 
         $details[$pillarId] = [
             'score' => round($normalizedScore, 2),

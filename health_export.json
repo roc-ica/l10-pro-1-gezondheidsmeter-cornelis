@@ -1,0 +1,312 @@
+{
+    "metadata": {
+        "exported_at": "2025-12-17 10:15:00",
+        "app_name": "Gezondheidsmeter",
+        "version": "1.0"
+    },
+    "profile": {
+        "username": "colin",
+        "email": "colinpoort@hotmail.com",
+        "birthdate": null,
+        "gender": null,
+        "created_at": "2025-11-26 09:27:57"
+    },
+    "health_history": [
+        {
+            "date": "2025-12-17",
+            "submitted_at": "2025-12-17 08:11:43",
+            "notes": "Low day",
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Water",
+                    "answer": "2",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Frisdrank",
+                    "answer": "Ja",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Bewegen",
+                    "answer": "5",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Slaap",
+                    "answer": "5",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Schermtijd",
+                    "answer": "Ja",
+                    "score_value": null
+                }
+            ]
+        },
+        {
+            "date": "2025-12-16",
+            "submitted_at": "2025-12-16 09:14:01",
+            "notes": "High day",
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Water",
+                    "answer": "10",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Frisdrank",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Bewegen",
+                    "answer": "60",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Slaap",
+                    "answer": "8",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Schermtijd",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 6,
+                    "question": "Drugs",
+                    "answer": "Nee",
+                    "score_value": null
+                }
+            ]
+        },
+        {
+            "date": "2025-12-15",
+            "submitted_at": "2025-12-15 09:14:01",
+            "notes": "Medium day",
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Water",
+                    "answer": "6",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Frisdrank",
+                    "answer": "Ja",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Bewegen",
+                    "answer": "20",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Slaap",
+                    "answer": "6",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Schermtijd",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 6,
+                    "question": "Drugs",
+                    "answer": "Nee",
+                    "score_value": null
+                }
+            ]
+        },
+        {
+            "date": "2025-12-14",
+            "submitted_at": "2025-12-14 09:14:01",
+            "notes": "Very High day",
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Water",
+                    "answer": "12",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Frisdrank",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Bewegen",
+                    "answer": "90",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Slaap",
+                    "answer": "8",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Schermtijd",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 6,
+                    "question": "Drugs",
+                    "answer": "Nee",
+                    "score_value": null
+                }
+            ]
+        },
+        {
+            "date": "2025-12-13",
+            "submitted_at": "2025-12-13 09:14:01",
+            "notes": "Low day",
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Water",
+                    "answer": "1",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Frisdrank",
+                    "answer": "Ja",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Bewegen",
+                    "answer": "0",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Slaap",
+                    "answer": "4",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Schermtijd",
+                    "answer": "Ja",
+                    "score_value": null
+                },
+                {
+                    "question_id": 6,
+                    "question": "Drugs",
+                    "answer": "Nee",
+                    "score_value": null
+                }
+            ]
+        },
+        {
+            "date": "2025-12-12",
+            "submitted_at": "2025-12-12 09:14:01",
+            "notes": "High day",
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Water",
+                    "answer": "9",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Frisdrank",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Bewegen",
+                    "answer": "45",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Slaap",
+                    "answer": "7",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Schermtijd",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 6,
+                    "question": "Drugs",
+                    "answer": "Nee",
+                    "score_value": null
+                }
+            ]
+        },
+        {
+            "date": "2025-12-11",
+            "submitted_at": "2025-12-11 09:14:01",
+            "notes": "Average day",
+            "answers": [
+                {
+                    "question_id": 1,
+                    "question": "Water",
+                    "answer": "6",
+                    "score_value": null
+                },
+                {
+                    "question_id": 2,
+                    "question": "Frisdrank",
+                    "answer": "Nee",
+                    "score_value": null
+                },
+                {
+                    "question_id": 3,
+                    "question": "Bewegen",
+                    "answer": "30",
+                    "score_value": null
+                },
+                {
+                    "question_id": 4,
+                    "question": "Slaap",
+                    "answer": "6",
+                    "score_value": null
+                },
+                {
+                    "question_id": 5,
+                    "question": "Schermtijd",
+                    "answer": "Ja",
+                    "score_value": null
+                },
+                {
+                    "question_id": 6,
+                    "question": "Drugs",
+                    "answer": "Nee",
+                    "score_value": null
+                }
+            ]
+        }
+    ],
+    "calculated_scores": []
+}

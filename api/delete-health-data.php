@@ -39,6 +39,11 @@ try {
         $stmt->execute([$userId]);
     }
 
+    // Delete calculated health scores
+    $stmt = $pdo->prepare("DELETE FROM user_health_scores WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $deletedScores = $stmt->rowCount();
+
     // Commit transaction
     $pdo->commit();
 

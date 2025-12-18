@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Get user data from database
 require_once __DIR__ . '/../src/models/User.php';
+require_once __DIR__ . '/../src/config/database.php';
 $user = User::findByIdStatic($_SESSION['user_id']);
 
 if (!$user) {
@@ -22,10 +23,71 @@ $email = htmlspecialchars($user->email ?? '');
 $username = htmlspecialchars($user->username ?? '');
 $birthdate = htmlspecialchars($user->birthdate ?? '');
 $gender = htmlspecialchars($user->gender ?? '');
-$email = htmlspecialchars($user->email);
-$username = htmlspecialchars($user->username);
-$birthdate = htmlspecialchars($user->birthdate ?? '');
-$gender = htmlspecialchars($user->gender ?? '');
+
+// Initialize Database connection for stats
+$pdo = Database::getConnection();
+
+// 1. Calculate Average Health Score (from user_health_scores)
+$stmt = $pdo->prepare("SELECT AVG(overall_score) FROM user_health_scores WHERE user_id = ?");
+$stmt->execute([$user->id]);
+$avgScore = round((float)$stmt->fetchColumn());
+
+// 2. Calculate Response Rate (Submitted Days / Days since Signup)
+$createdAt = new DateTime($user->created_at ?? 'now');
+$now = new DateTime();
+$daysSinceSignup = max(1, $now->diff($createdAt)->days + 1);
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM daily_entries WHERE user_id = ? AND submitted_at IS NOT NULL");
+$stmt->execute([$user->id]);
+$submittedEntries = $stmt->fetchColumn();
+
+// Calculate percentage, max 100%
+$responseRate = min(100, round(($submittedEntries / $daysSinceSignup) * 100));
+
+// 3. Calculate Current Streak
+$stmt = $pdo->prepare("
+    SELECT entry_date FROM daily_entries 
+    WHERE user_id = ? AND submitted_at IS NOT NULL
+    ORDER BY entry_date DESC
+");
+$stmt->execute([$user->id]);
+$allEntries = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+$currentStreak = 0;
+$checkDate = new DateTime(); // Today
+// Check if most recent entry is today, if not check if it was yesterday (allow 1 day grace for "current" streak display in some contexts, but strict streak means today must be done or yesterday done)
+// We will follow strict logic: Streak counts back from TODAY. If today not done but yesterday done, streak is preserved but count might not include today.
+// To handle "I haven't done it TODAY yet, but I did yesterday", we usually check if today is done. If not, check yesterday.
+// Home.php logic:
+// foreach ($allEntries as $entryDate) { ... if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) ... }
+// We will reuse that for consistency.
+
+$checkDate = new DateTime();
+$streakFoundToday = false;
+$streakFoundYesterday = false;
+
+// First loop to see if we have valid streak activity
+foreach ($allEntries as $entryDate) {
+    $entry = new DateTime($entryDate);
+    if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
+        $currentStreak++;
+        $checkDate->modify('-1 day');
+        $streakFoundToday = true;
+    } elseif ($currentStreak === 0 && $entry->format('Y-m-d') === (new DateTime('-1 day'))->format('Y-m-d')) {
+        // Allow streak to start from yesterday if today is missing
+        $currentStreak++;
+        $checkDate->modify('-1 day'); // Move check to yesterday
+        $checkDate->modify('-1 day'); // Move check to day before yesterday for next loop
+        $streakFoundYesterday = true;
+    } elseif ($currentStreak > 0 && $entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
+        $currentStreak++;
+        $checkDate->modify('-1 day');
+    } else {
+        // Gap found
+        // If we haven't started counting yet, continue searching? No, streak is continuous.
+        if ($currentStreak > 0) break;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -34,7 +96,7 @@ $gender = htmlspecialchars($user->gender ?? '');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account - Gezondheidsmeter</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 </head>
@@ -66,7 +128,7 @@ $gender = htmlspecialchars($user->gender ?? '');
                 </div>
                 <div class="identity-info2">
                     <p><?= htmlspecialchars($email) ?></p>
-                    <p><?= htmlspecialchars($gender) ?></p>
+                    <p><?= htmlspecialchars($gender ?: 'Niet opgegeven') ?></p>
                 </div>
             </div>
         </div>
@@ -78,15 +140,15 @@ $gender = htmlspecialchars($user->gender ?? '');
             <div class="summary-content">
                 <div class="summary-item">
                     <div class="score-label">Gemiddelde Score</div>
-                    <div class="score-value">85%</div>
+                    <div class="score-value"><?= $avgScore ?>/100</div>
                 </div>
                 <div class="summary-item">
-                    <div class="score-label">Beantwoorde Vragen</div>
-                    <div class="score-value">85%</div>
+                    <div class="score-label">Invulpercentage</div>
+                    <div class="score-value"><?= $responseRate ?>%</div>
                 </div>
                 <div class="summary-item">
                     <div class="streak-label">Huidige Streak</div>
-                    <div class="streak-value">7 Dagen</div>
+                    <div class="streak-value"><?= $currentStreak ?> Dagen</div>
                 </div>
             </div>
         </div>
@@ -114,6 +176,40 @@ $gender = htmlspecialchars($user->gender ?? '');
                     <div>
                         <label for="email-reports"></label>
                         <input type="checkbox" id="email-reports" name="email-reports" checked>
+                    </div>
+                </div>
+                <div class="inst-item">
+                    <div>
+                        <div class="score-label"><strong>Mijn gegevens exporteren</strong></div>
+                        <div class="score-value">Download een kopie van al je gezondheidsdata (JSON)</div>
+                    </div>
+                    <div>
+                        <button class="btn-export-data" onclick="window.location.href='../api/export-health-data.php'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 4px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Downloaden
+                        </button>
+                    </div>
+                </div>
+                <!-- Import Section -->
+                <div class="inst-item">
+                    <div>
+                        <div class="score-label"><strong>Gegevens importeren</strong></div>
+                        <div class="score-value">Herstel data vanuit een eerder gemaakte backup</div>
+                    </div>
+                    <div>
+                        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(this)">
+                        <button class="btn-export-data" style="background-color: #6366f1;" onclick="document.getElementById('importFile').click()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 4px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            Importeren
+                        </button>
                     </div>
                 </div>
                 <div class="inst-item inst-item-danger">
@@ -179,6 +275,44 @@ $gender = htmlspecialchars($user->gender ?? '');
                 alert('Er is een fout opgetreden bij het wissen van je gegevens.');
             }
         });
+
+        // Handle Import
+        async function handleImport(input) {
+            if (!input.files || input.files.length === 0) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('import_file', file);
+
+            // Show loading state (simple alert for now)
+            const confirmImport = confirm(`Weet je zeker dat je "${file.name}" wilt importeren?\nDit voegt gegevens toe aan je huidige data.`);
+            
+            if (!confirmImport) {
+                input.value = ''; // Reset input
+                return;
+            }
+
+            try {
+                const response = await fetch('../api/import-health-data.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message);
+                    window.location.reload();
+                } else {
+                    alert('Import fout: ' + (result.error || 'Onbekende fout'));
+                }
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('Er is een technische fout opgetreden tijdens het importeren.');
+            } finally {
+                input.value = ''; // Reset for next use
+            }
+        }
     </script>
 
     <!-- Edit Modal -->

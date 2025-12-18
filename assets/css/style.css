@@ -20,6 +20,25 @@
   --color-primary-lightgreen: rgba(22, 163, 74, 0.5);
 }
 
+.btn-export-data {
+  display: inline-flex;
+  align-items: center;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+}
+
+.btn-export-data:hover {
+  background-color: #2563eb;
+}
+
 /* Navbar Styling */
 .navbar {
   background: var(--color-background);
@@ -37,10 +56,45 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: space-between;
+}
+
+.navbar-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 60;
+}
+
+.navbar-toggle span {
+  width: 100%;
+  height: 3px;
+  background-color: #0f172a;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  position: relative;
+  transform-origin: center;
+}
+
+.navbar-toggle.active span:first-child {
+  transform: translateY(9px) rotate(45deg);
+}
+
+.navbar-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar-toggle.active span:last-child {
+  transform: translateY(-9px) rotate(-45deg);
 }
 
 .navbar-brand {
@@ -2367,14 +2421,96 @@
 .today-score-date {
   margin: 0;
   opacity: 0.9;
-  font-size: 14px;
 }
 
+/* Stats Row (Default Desktop) */
 .stats-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+  width: 100%;
   margin-bottom: 20px;
+  /* Keep original margin-bottom */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar-toggle {
+    display: flex;
+  }
+
+  .navbar-links {
+    display: none;
+    position: fixed;
+    /* Fixed to cover screen */
+    top: 64px;
+    /* Below navbar */
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 64px);
+    /* Full height minus navbar */
+    background-color: rgba(242, 240, 239, 0.85);
+    /* Semi-transparent background */
+    backdrop-filter: blur(12px);
+    /* Blurry background effect */
+    -webkit-backdrop-filter: blur(12px);
+    /* Safari support */
+    flex-direction: column;
+    justify-content: center;
+    /* Center links vertically */
+    align-items: center;
+    /* Center links horizontally */
+    z-index: 49;
+    gap: 30px;
+    /* More space between links */
+    transition: all 0.3s ease;
+  }
+
+  .navbar-links.active {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .nav-link {
+    padding: 10px 0;
+    border-bottom: none;
+    /* Remove separator for cleaner look */
+    width: auto;
+    font-size: 24px;
+    /* Larger text for full screen menu */
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .nav-link:hover {
+    color: #16a34a;
+    transform: scale(1.1);
+    /* Subtle zoom on hover */
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stats-card {
@@ -2658,48 +2794,112 @@
   background: #5568d3;
 }
 
-/* Custom Input Styling for Questionnaire */
+/* Button Group for Yes/No Questions */
+.button-group {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-yes,
+.btn-no {
+  flex: 1;
+  min-width: 140px;
+  max-width: 200px;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  background: var(--color-white);
+  color: var(--color-text);
+}
+
+.btn-yes:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 159, 28, 0.2);
+}
+
+.btn-no:hover {
+  background: #fee2e2;
+  border-color: var(--color-error);
+  color: var(--color-error);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.btn-yes:active {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary-dark);
+  transform: translateY(0);
+}
+
+.btn-no:active {
+  background: var(--color-error);
+  color: var(--color-white);
+  border-color: var(--color-error);
+  transform: translateY(0);
+}
+
+/* Selected button state (for previously chosen answers) */
+.btn-yes.btn-selected {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary-dark);
+}
+
+.btn-no.btn-selected {
+  background: var(--color-error);
+  color: var(--color-white);
+  border-color: var(--color-error);
+}
+
+/* Number Input Field */
+.form-input-number,
 .form-input-large {
-  width: 30%;
-  padding: 16px 20px;
-  font-size: 18px;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background-color: #ffffff;
-  color: #1f2937;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  box-sizing: border-box;
-  margin-top: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  transition: all 0.3s ease;
+  background: var(--color-white);
+  color: var(--color-text);
 }
 
-.form-input-large:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
+.form-input-number:focus,
 .form-input-large:focus {
   outline: none;
-  border-color: #16a34a;
-  /* Primary green */
-  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-opacity);
+  background: var(--color-white);
 }
 
+.form-input-number::placeholder,
 .form-input-large::placeholder {
-  color: #9ca3af;
+  color: var(--color-text-light);
 }
 
-/* Hide standard number input spinners for cleaner look */
+.form-input-number::-webkit-outer-spin-button,
+.form-input-number::-webkit-inner-spin-button,
 .form-input-large::-webkit-outer-spin-button,
 .form-input-large::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
+.form-input-number[type=number],
 .form-input-large[type=number] {
   -moz-appearance: textfield;
-  appearance: textfield;
 }
 
 /* Question Type Badge */
@@ -2716,4 +2916,17 @@
   margin-bottom: 12px;
   margin-left: 8px;
   vertical-align: middle;
+}
+
+/* Question Part Styling */
+.question-part {
+  padding: 20px 0;
+}
+
+.question-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 24px 0;
+  line-height: 1.4;
 }

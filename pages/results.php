@@ -28,19 +28,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$userId, $date]);
 $todayAnswers = $stmt->fetchAll();
 
-// Get weekly stats
-$weekAgo = date('Y-m-d', strtotime('-7 days'));
-$stmt = $pdo->prepare("
-    SELECT de.entry_date, COUNT(a.id) as answered_count 
-    FROM daily_entries de
-    LEFT JOIN answers a ON de.id = a.entry_id
-    WHERE de.user_id = ? AND de.entry_date >= ?
-    GROUP BY de.entry_date
-    ORDER BY de.entry_date ASC
-");
-$stmt->execute([$userId, $weekAgo]);
-$weeklyStats = $stmt->fetchAll();
-
 // Get total entries count
 $stmt = $pdo->prepare("
     SELECT COUNT(*) as total FROM daily_entries 
@@ -74,7 +61,7 @@ foreach ($allEntries as $entryDate) {
 $history = new UserHealthHistory($userId);
 $todayScore = $history->getTodayScore();
 $pillarScores = !empty($todayAnswers) ? $history->getPillarScores($date) : null;
-$trendData = $history->getTrendData(30);
+$trendData = $history->getTrendData(30); // Get last 30 days
 $avgScore = $history->getAverageScore(7);
 
 // Group answers by pillar
@@ -96,201 +83,347 @@ foreach ($todayAnswers as $answer) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Je Gezondheid - Gezondheidsmeter</title>
+    <title>Resultaten - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
     <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Specific overrides for a cleaner, professional look */
+        body {
+            background-color: #f8f9fa;
+        }
+        .dashboard-container {
+            max-width: 1000px;
+        }
+        .dashboard-header h1 {
+            color: #1a1a1a;
+        }
+        .status-banner {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid #16a34a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .status-content h2 {
+            font-size: 18px;
+            margin: 0 0 4px 0;
+            color: #111827;
+        }
+        .status-content p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .score-display-large {
+            text-align: center;
+            padding: 30px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .score-value-main {
+            font-size: 48px;
+            font-weight: 800;
+            color: #16a34a;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .score-label-main {
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            text-align: center;
+        }
+        .kpi-label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .chart-section {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .chart-header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 10px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin: 0;
+        }
+        
+        .details-table-container {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .details-header {
+            padding: 16px 24px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .details-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #1f2937;
+        }
+        
+        .answer-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .answer-row:last-child {
+            border-bottom: none;
+        }
+        .answer-q {
+            color: #4b5563;
+            font-weight: 500;
+        }
+        .answer-a {
+            color: #111827;
+            font-weight: 600;
+        }
+        
+        .pillar-header {
+            padding: 12px 24px;
+            background: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pillar-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+        .btn-clean {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .btn-clean-primary {
+            background-color: #16a34a;
+            color: white;
+        }
+        .btn-clean-primary:hover {
+            background-color: #15803d;
+        }
+        .btn-clean-secondary {
+            background-color: white;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+        .btn-clean-secondary:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+        
+        .empty-state-clean {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .empty-icon-clean {
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
     
     <div class="dashboard-container">
-        <div class="dashboard-header">
-            <div class="dashboard-header-left">
-                <h1>Je Gezondheid</h1>
-                <p>Bekijk je gezondheidsscores en voortgang</p>
-            </div>
-        </div>
-
+        
         <?php if (!empty($todayAnswers)): ?>
-            <!-- Success Message -->
-            <div class="success-message">
-                <div class="success-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                    </svg>
-                </div>
-                <div class="success-content">
-                    <h2>Gefeliciteerd! 🎉</h2>
-                    <p>Je hebt de vragenlijst van vandaag voltooid</p>
+            <!-- Status Banner -->
+            <div class="status-banner">
+                <div class="status-content">
+                    <h2>Meting voltooid</h2>
+                    <p>De gegevens van vandaag (<?php echo date('d-m-Y'); ?>) zijn succesvol opgeslagen.</p>
                 </div>
             </div>
 
-            <!-- Today's Score Card -->
+            <!-- Main Score -->
             <?php if ($todayScore): ?>
-            <div class="today-score-card">
-                <p class="today-score-subtitle">Vandaag's Gezondheid Score</p>
-                <div class="today-score-value">
-                    <?php echo round($todayScore['overall_score'], 1); ?>/100
-                </div>
-                <p class="today-score-date">
-                    <?php echo htmlspecialchars(date('d M Y', strtotime($todayScore['score_date']))); ?>
-                </p>
+            <div class="score-display-large">
+                <div class="score-label-main">Dagelijkse Score</div>
+                <div class="score-value-main"><?php echo round($todayScore['overall_score']); ?></div>
+                <div style="font-size: 13px; color: #9ca3af;">van de 100 punten</div>
             </div>
             <?php endif; ?>
 
-            <!-- Stats Row -->
-            <div class="stats-row">
-                <div class="stats-card">
-                    <p class="stats-label">Gemiddelde (7 dagen)</p>
-                    <p class="stats-value stats-value-average">
-                        <?php echo $avgScore ? round($avgScore, 1) : 'N/A'; ?>
-                    </p>
+            <!-- KPIs -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">7-daags Gemiddelde</div>
+                    <div class="kpi-value"><?php echo $avgScore ? round($avgScore, 1) : '-'; ?></div>
                 </div>
-                <div class="stats-card">
-                    <p class="stats-label">Huidige Streak</p>
-                    <p class="stats-value stats-value-days">
-                        <?php echo $currentStreak; ?> 🔥
-                    </p>
+                <div class="kpi-card">
+                    <div class="kpi-label">Huidige Reeks (Dagen)</div>
+                    <div class="kpi-value"><?php echo $currentStreak; ?></div>
                 </div>
-                <div class="stats-card">
-                    <p class="stats-label">Totaal Ingevuld</p>
-                    <p class="stats-value stats-value-days">
-                        <?php echo $totalEntries; ?>
-                    </p>
+                <div class="kpi-card">
+                    <div class="kpi-label">Totaal Ingevuld</div>
+                    <div class="kpi-value"><?php echo $totalEntries; ?></div>
                 </div>
             </div>
 
-            <!-- Pillar Breakdown -->
-            <?php if ($pillarScores && is_array($pillarScores)): ?>
-            <div class="pillar-section">
-                <h3 class="pillar-section-title">Score Per Categorie</h3>
-                <div class="pillar-grid">
-                    <?php foreach ($pillarScores as $pillarId => $score): ?>
-                    <div class="pillar-card">
-                        <p class="pillar-card-label">Categorie <?php echo $pillarId; ?></p>
-                        <p class="pillar-card-score"><?php echo round($score, 1); ?></p>
+            <!-- Score Trend Chart -->
+             <?php 
+                // Prepare last 7 days data for chart
+                $chartLabels = [];
+                $chartData = [];
+                // Sort trend data by date
+                $last7Days = array_slice($trendData, 0, 7); 
+                $last7Days = array_reverse($last7Days); // Oldest to newest
+                
+                foreach ($last7Days as $point) {
+                    $chartLabels[] = date('d M', strtotime($point['score_date']));
+                    $chartData[] = round($point['overall_score'], 1);
+                }
+            ?>
+            <?php if (!empty($chartData)): ?>
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3 class="chart-title">Verloop Gezondheidsscore (Laatste 7 dagen)</h3>
+                </div>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="scoreTrendChart"></canvas>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Detailed Answers -->
+            <div class="details-table-container">
+                <div class="details-header">
+                    <h3>Antwoordenoverzicht</h3>
+                </div>
+                <?php foreach ($answersByPillar as $pillarData): ?>
+                    <div class="pillar-header">
+                        <div class="pillar-indicator" style="background-color: <?php echo htmlspecialchars($pillarData['color'] ?? '#16a34a'); ?>"></div>
+                        <?php echo htmlspecialchars($pillarData['name']); ?>
                     </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <!-- Answers by Pillar -->
-            <div class="dashboard-card dashboard-card-full">
-                <div class="card-header">
-                    <h3>Jouw Antwoorden van Vandaag</h3>
-                </div>
-                <div class="pillars-grid">
-                    <?php foreach ($answersByPillar as $pillarData): ?>
-                        <div class="pillar-section" style="border-left: 4px solid <?php echo htmlspecialchars($pillarData['color']); ?>">
-                            <h4 class="pillar-title"><?php echo htmlspecialchars($pillarData['name']); ?></h4>
-                            <div class="pillar-answers">
-                                <?php foreach ($pillarData['answers'] as $answer): ?>
-                                    <div class="answer-item">
-                                        <div class="answer-question"><?php echo htmlspecialchars($answer['question_text']); ?></div>
-                                        <div class="answer-response"><?php echo htmlspecialchars($answer['answer_text']); ?></div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
+                    <?php foreach ($pillarData['answers'] as $answer): ?>
+                        <div class="answer-row">
+                            <span class="answer-q"><?php echo htmlspecialchars($answer['question_text']); ?></span>
+                            <span class="answer-a"><?php echo htmlspecialchars($answer['answer_text']); ?></span>
                         </div>
                     <?php endforeach; ?>
-                </div>
+                <?php endforeach; ?>
             </div>
-
-            <!-- Trends Section -->
-            <?php if (!empty($trendData)): ?>
-            <div class="trends-section">
-                <h3 class="trends-title">Gezondheid Trend (30 dagen)</h3>
-                <div class="trends-table">
-                    <table class="trends-chart">
-                        <thead>
-                            <tr>
-                                <th>Datum</th>
-                                <th>Score</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach (array_reverse($trendData) as $trend): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars(date('d M Y', strtotime($trend['score_date']))); ?></td>
-                                <td><?php echo round($trend['overall_score'], 1); ?>/100</td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <!-- Weekly Activity Chart -->
-            <?php if (!empty($weeklyStats)): ?>
-            <div class="dashboard-card dashboard-card-full">
-                <div class="card-header">
-                    <h3>Activiteit Afgelopen Week</h3>
-                </div>
-                <div class="chart-container">
-                    <canvas id="weeklyActivityChart"></canvas>
-                </div>
-            </div>
-            <?php endif; ?>
 
         <?php else: ?>
-            <!-- No results yet -->
-            <div class="dashboard-card dashboard-card-full">
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="8" x2="12" y2="12" />
-                            <line x1="12" y1="16" x2="12.01" y2="16" />
-                        </svg>
-                    </div>
-                    <h2>Nog geen resultaten</h2>
-                    <p>Je hebt vandaag nog geen vragenlijst ingevuld.</p>
-                    <a href="vragen-hierarchical.php" class="btn-primary">Start Vragenlijst</a>
+            <!-- Empty State -->
+            <div class="empty-state-clean">
+                <div class="empty-icon-clean">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
                 </div>
+                <h2 style="font-size: 20px; color: #1f2937; margin-bottom: 8px;">Nog geen gegevens</h2>
+                <p style="color: #6b7280; margin-bottom: 24px;">Je hebt vandaag nog geen meting gedaan.</p>
+                <a href="vragen.php" class="btn-clean btn-clean-primary" style="display: inline-block;">Start Meting</a>
+                <br><br>
+                <a href="../pages/home.php" style="color: #6b7280; text-decoration: none; font-size: 14px;">Terug naar dashboard</a>
             </div>
         <?php endif; ?>
 
         <!-- Action Buttons -->
-        <div class="action-buttons-container">
-            <a href="../pages/vragen-hierarchical.php" class="btn-action btn-action-primary">
-                Antwoord Vragen
+        <?php if (!empty($todayAnswers)): ?>
+        <div class="action-row">
+            <a href="../pages/vragen.php?reset=1" class="btn-clean btn-clean-primary" style="flex: 1;" onclick="return confirm('Weet je zeker dat je je antwoorden wilt wissen en opnieuw wilt beginnen?');">
+                Opnieuw Invullen
             </a>
-            <a href="../pages/home.php" class="btn-action btn-action-secondary">
-                Home
+            <a href="../pages/home.php" class="btn-clean btn-clean-secondary" style="flex: 1;">
+               Terug naar Dashboard
             </a>
         </div>
+        <?php endif; ?>
+
     </div>
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
-
     <script src="/js/pwa.js"></script>
-    <script src="/js/session-guard.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Weekly Activity Chart
-        const ctx = document.getElementById('weeklyActivityChart');
+        // Score Chart
+        const ctx = document.getElementById('scoreTrendChart');
         if (ctx) {
-            const weeklyData = <?php echo json_encode($weeklyStats); ?>;
-            const labels = weeklyData.map(d => {
-                const date = new Date(d.entry_date);
-                return date.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
-            });
-            const data = weeklyData.map(d => parseInt(d.answered_count));
-
             new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: labels,
+                    labels: <?php echo json_encode($chartLabels); ?>,
                     datasets: [{
-                        label: 'Beantwoorde Vragen',
-                        data: data,
-                        backgroundColor: 'rgba(22, 163, 74, 0.8)',
+                        label: 'Gezondheidsscore',
+                        data: <?php echo json_encode($chartData); ?>,
+                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
                         borderColor: '#16a34a',
                         borderWidth: 2,
-                        borderRadius: 8
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#16a34a',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.3
                     }]
                 },
                 options: {
@@ -299,13 +432,38 @@ foreach ($todayAnswers as $answer) {
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            padding: 10,
+                            bodyFont: {
+                                size: 13
+                            }
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: '#f3f4f6'
+                            },
                             ticks: {
-                                stepSize: 1
+                                font: {
+                                    size: 11
+                                },
+                                color: '#6b7280'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11
+                                },
+                                color: '#6b7280'
                             }
                         }
                     }

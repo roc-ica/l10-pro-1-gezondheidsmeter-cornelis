@@ -148,7 +148,7 @@ for ($i = 6; $i >= 0; $i--) {
             <div class="no-data">
                 <p class="no-data-title">Geen gegevens beschikbaar</p>
                 <p>Er zijn nog geen gezondheidsscores opgeslagen voor <?php echo date('d-m-Y', strtotime($scoreDate)); ?>.</p>
-                <p>Vul eerst de <a href="vragen-hierarchical.php" class="no-data-link">gezondheids vragenlijst</a> in.</p>
+                <p>Vul eerst de <a href="vragen.php" class="no-data-link">gezondheids vragenlijst</a> in.</p>
             </div>
         <?php endif; ?>
     </div>
