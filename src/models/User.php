@@ -272,23 +272,40 @@ class User
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function blockUser(int $userId, ?string $reason = null): array
+    public static function blockUser(int $userId, ?string $reason = null, ?int $adminId = null): array
     {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('UPDATE users SET is_active = 0, block_reason = ? WHERE id = ?');
         try {
             $stmt->execute([$reason, $userId]);
+            
+            // Log the action if adminId is provided
+            if ($adminId !== null) {
+                require_once __DIR__ . '/../classes/AdminActionLogger.php';
+                $logger = new AdminActionLogger();
+                $logger->logUserBlock($adminId, $userId, $reason);
+            }
+            
             return ['success' => true, 'message' => 'Gebruiker geblokkeerd.'];
         } catch (\PDOException $e) {
             return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
         }
     }
-    public static function unblockUser(int $userId): array
+
+    public static function unblockUser(int $userId, ?int $adminId = null): array
     {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('UPDATE users SET is_active = 1, block_reason = NULL WHERE id = ?');
         try {
             $stmt->execute([$userId]);
+            
+            // Log the action if adminId is provided
+            if ($adminId !== null) {
+                require_once __DIR__ . '/../classes/AdminActionLogger.php';
+                $logger = new AdminActionLogger();
+                $logger->logUserUnblock($adminId, $userId);
+            }
+            
             return ['success' => true, 'message' => 'Gebruiker gedeblokkeerd.'];
         } catch (\PDOException $e) {
             return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
