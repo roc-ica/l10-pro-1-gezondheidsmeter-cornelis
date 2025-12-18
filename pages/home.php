@@ -225,11 +225,9 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
 
             <div class="stat-card stat-card-warning">
                 <div class="stat-icon">
-                    <img src="../assets/images/icons/8722283.png" alt="Fire Icon">
-                </div>
-                <div style="display: flex; align-items: baseline; gap: 5px;">
-                    <span style="font-size: 2.5rem; font-weight: 800; color: #d97706; line-height: 1;"><?= $currentStreak ?></span>
-                    <span style="font-size: 1rem; color: #9ca3af; font-weight: 500;">dagen</span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
                 </div>
                 <div style="margin-top: 5px; font-size: 0.8rem; color: #d97706; background: #fef3c7; display: inline-block; padding: 2px 8px; border-radius: 12px; font-weight: 500;">
                     Hou vol!
