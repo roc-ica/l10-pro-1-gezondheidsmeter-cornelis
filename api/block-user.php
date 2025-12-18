@@ -46,10 +46,10 @@ if (!$action || !$userId) {
 
 if ($action === 'block') {
     $reason = trim($data['reason'] ?? '');
-    $result = User::blockUser($userId, $reason);
+    $result = User::blockUser($userId, $reason, $currentUser->id);
     echo json_encode($result);
 } elseif ($action === 'unblock') {
-    $result = User::unblockUser($userId);
+    $result = User::unblockUser($userId, $currentUser->id);
     echo json_encode($result);
 } else {
     http_response_code(400);

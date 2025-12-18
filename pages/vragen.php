@@ -254,7 +254,6 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
 
                 <form method="POST" class="question-form">
                     <input type="hidden" name="question_id" value="<?php echo $currentQuestion['id']; ?>">
-                    <input type="hidden" name="save_answer" value="1">
 
 
                     <div class="answer-section">
