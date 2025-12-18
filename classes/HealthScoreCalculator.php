@@ -169,9 +169,6 @@ class HealthScoreCalculator
                     $score = 100; // Default if not drugs
                     break;
                 case 5: // Sociaal (Social)
-                    // Scale 1-10
-                    $score = min(100, ($numValue / 10) * 100);
-                    break;
                 case 6: // Mentaal (Mental)
                     // Scale 1-10
                     $score = min(100, ($numValue / 10) * 100);
@@ -181,8 +178,18 @@ class HealthScoreCalculator
             }
         } else {
             // For non-numeric answers (yes/no, choice, etc.)
-            $answerLower = strtolower($answerValue);
-            if (in_array($answerLower, ['ja', 'yes', 'true', '1', 'veel'])) {
+            $answerLower = strtolower(trim($answerValue));
+
+            // Handle new textual scale
+            if ($answerLower === 'nee / laag') {
+                $score = 25;
+            } elseif ($answerLower === 'neutraal') {
+                $score = 50;
+            } elseif ($answerLower === 'goed') {
+                $score = 75;
+            } elseif ($answerLower === 'zeer goed') {
+                $score = 100;
+            } elseif (in_array($answerLower, ['ja', 'yes', 'true', '1', 'veel'])) {
                 $score = 50;
             } elseif (in_array($answerLower, ['nee', 'no', 'false', '0'])) {
                 $score = 100;

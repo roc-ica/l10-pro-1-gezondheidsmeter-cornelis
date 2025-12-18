@@ -639,6 +639,12 @@
     border-radius: 14px !important;
 }
 
+.stat-icon img {
+    height: 32px !important;
+    width: 32px !important;
+}
+
+
 /* ===== QUESTIONS PAGE STYLES ===== */
 
 /* Question Card */

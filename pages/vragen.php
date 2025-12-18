@@ -21,12 +21,12 @@ if (isset($_GET['reset']) && $_GET['reset'] == '1') {
     $stmt = $pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
     $stmt->execute([$userId, $today]);
     $entry = $stmt->fetch();
-    
+
     if ($entry) {
         // 2. Delete existing answers
         $stmt = $pdo->prepare("DELETE FROM answers WHERE entry_id = ?");
         $stmt->execute([$entry['id']]);
-        
+
         // 3. Reset submission status
         $stmt = $pdo->prepare("UPDATE daily_entries SET submitted_at = NULL WHERE id = ?");
         $stmt->execute([$entry['id']]);
@@ -35,10 +35,10 @@ if (isset($_GET['reset']) && $_GET['reset'] == '1') {
         $stmt = $pdo->prepare("DELETE FROM user_health_scores WHERE user_id = ? AND score_date = ?");
         $stmt->execute([$userId, $today]);
     }
-    
+
     // 5. Clear session data
     unset($_SESSION['answered_questions']);
-    
+
     // 6. Redirect to clean URL
     header("Location: " . strtok($_SERVER["REQUEST_URI"], '?'));
     exit;
@@ -53,7 +53,7 @@ $todayEntryId = $todayEntry ? $todayEntry['id'] : null;
 // Initialize session answers tracking from database
 if (!isset($_SESSION['answered_questions'])) {
     $_SESSION['answered_questions'] = [];
-    
+
     // Load today's answers from database
     if ($todayEntryId) {
         $stmt = $pdo->prepare("
@@ -68,50 +68,45 @@ if (!isset($_SESSION['answered_questions'])) {
     }
 }
 
-// Handle answer submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+// Handle previous question
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['go_back'])) {
+    $prevQuestionId = $_POST['go_back'];
+    if (isset($_SESSION['answered_questions'][$prevQuestionId])) {
+        unset($_SESSION['answered_questions'][$prevQuestionId]);
+    }
+    // Refresh page to show the previous question
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
 
-    // Handle 'Previous' action
-    if ($action === 'previous') {
-        // Remove the last answered question from session to go back
-        if (!empty($_SESSION['answered_questions'])) {
-            $lastQuestionId = array_key_last($_SESSION['answered_questions']);
-            unset($_SESSION['answered_questions'][$lastQuestionId]);
+// Handle single answer submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_answer'])) {
+    $questionId = $_POST['question_id'] ?? null;
+    $answer = $_POST['answer'] ?? null;
+
+    if ($questionId && $answer !== null) {
+        // Get or create today's entry
+        if (!$todayEntryId) {
+            $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
+            $stmt->execute([$userId, $today]);
+            $todayEntryId = $pdo->lastInsertId();
         }
+
+        // Save answer
+        $stmt = $pdo->prepare("
+            INSERT INTO answers (entry_id, question_id, answer_text)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE answer_text = VALUES(answer_text)
+        ");
+
+        $stmt->execute([$todayEntryId, $questionId, $answer]);
+
+        // Mark as answered in session
+        $_SESSION['answered_questions'][$questionId] = $answer;
+
+        // Refresh page to move to next question
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
-    }
-
-    // Handle 'Next' action
-    if ($action === 'next' || isset($_POST['save_answer'])) {
-        $questionId = $_POST['question_id'] ?? null;
-        $answer = $_POST['answer'] ?? null;
-        
-        if ($questionId && $answer !== null) {
-            // Get or create today's entry
-            if (!$todayEntryId) {
-                $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
-                $stmt->execute([$userId, $today]);
-                $todayEntryId = $pdo->lastInsertId();
-            }
-            
-            // Save answer
-            $stmt = $pdo->prepare("
-                INSERT INTO answers (entry_id, question_id, answer_text)
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE answer_text = VALUES(answer_text)
-            ");
-            
-            $stmt->execute([$todayEntryId, $questionId, $answer]);
-            
-            // Mark as answered in session
-            $_SESSION['answered_questions'][$questionId] = $answer;
-            
-            // Refresh page to move to next question
-            header("Location: " . $_SERVER['PHP_SELF']);
-            exit;
-        }
     }
 }
 
@@ -120,7 +115,7 @@ $stmt = $pdo->prepare("
     SELECT q.*, p.name as pillar_name, p.color as pillar_color
     FROM questions q
     JOIN pillars p ON q.pillar_id = p.id
-    WHERE q.active = 1 AND q.question_type = 'main' AND q.parent_question_id IS NULL
+    WHERE q.active = 1 AND q.is_main_question = 1 AND q.parent_question_id IS NULL
     ORDER BY q.id ASC
 ");
 $stmt->execute();
@@ -165,7 +160,7 @@ $allQuestionsAnswered = false;
 
 if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
     $allQuestionsAnswered = true;
-    
+
     // Mark entry as submitted if not already
     if ($todayEntryId) {
         $stmt = $pdo->prepare("
@@ -209,7 +204,8 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
         <!-- Progress Card -->
         <div class="progress-card">
             <div class="progress-label">Voortgang</div>
-            <div class="progress-count"><?php echo $answeredCount; ?> van <?php echo $totalQuestions; ?> vragensets beantwoord</div>
+            <div class="progress-count"><?php echo $answeredCount; ?> van <?php echo $totalQuestions; ?> vragensets
+                beantwoord</div>
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" style="width: <?php echo $progress; ?>%"></div>
             </div>
@@ -223,18 +219,24 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
             <div class="question-card">
                 <div class="question-badge">Score Berekend</div>
                 <h2 class="question-text">Je Gezondheid Score</h2>
-                
+
                 <div class="health-score-display-result">
                     <div class="score-number-large"><?php echo $healthScore['score']; ?>/100</div>
                     <p class="health-score-subtitle">Gebaseerd op je antwoorden van vandaag</p>
-                    
+
                     <div class="pillar-breakdown">
                         <?php if (isset($healthScore['pillar_scores']) && is_array($healthScore['pillar_scores'])): ?>
                             <?php foreach ($healthScore['pillar_scores'] as $pillarId => $score): ?>
-                            <div class="pillar-item">
-                                <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
-                                <p class="pillar-score"><?php echo round($score, 1); ?></p>
-                            </div>
+                                <div class="pillar-item">
+                                    <p class="pillar-label">
+                                        <?php echo htmlspecialchars($healthScore['pillar_names'][$pillarId] ?? "Pilaar $pillarId"); ?>
+                                    </p>
+                                    <p class="pillar-score"><?php echo round($score, 1); ?></p>
+                                </div>
+                                <div class="pillar-item">
+                                    <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
+                                    <p class="pillar-score"><?php echo round($score, 1); ?></p>
+                                </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
@@ -248,42 +250,64 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
         <?php elseif ($currentQuestion): ?>
             <!-- Two-Part Question Card -->
             <div class="question-card">
-                <div class="question-badge">Vraag <?php echo $currentQuestionIndex + 1; ?> van <?php echo $totalQuestions; ?></div>
-                
+                <div class="question-badge">Vraag <?php echo $currentQuestionIndex + 1; ?> van
+                    <?php echo $totalQuestions; ?></div>
+
                 <form method="POST" class="question-form">
                     <input type="hidden" name="question_id" value="<?php echo $currentQuestion['id']; ?>">
 
-                    <!-- Main Question -->
-                    <div class="question-part-main">
-                        <h2 class="question-text">
-                            <?php echo htmlspecialchars($currentQuestion['question_text']); ?>
-                        </h2>
-                        <div class="answer-section">
-                            <p class="answer-label">Voer antwoord in:</p>
-                            <?php
-                            $savedAnswer = '';
-                            if ($todayEntryId) {
-                                $stmt = $pdo->prepare("SELECT answer_text FROM answers WHERE entry_id = ? AND question_id = ?");
-                                $stmt->execute([$todayEntryId, $currentQuestion['id']]);
-                                $result = $stmt->fetch();
-                                if ($result) {
-                                    $savedAnswer = $result['answer_text'];
-                                }
-                            }
-                            ?>
-                            <input type="number" name="answer" class="form-input-large" placeholder="Voer getal in" value="<?php echo htmlspecialchars($savedAnswer); ?>" required>
+
+                    <div class="answer-section">
+                        <p class="answer-label">Kies een antwoord:</p>
+
+                        <?php
+                        // Determine options based on pillar
+                        $options = [];
+                        $gridClass = 'answer-grid';
+                        $unit = '';
+
+                        $val = $currentQuestion['pillar_id'];
+
+                        // Check for Drug question specific
+                        if (!empty($currentQuestion['is_drugs_question']) || $val == 4) {
+                            $options = ['Nee', 'Softdrugs', 'Harddrugs'];
+                        } else {
+                            // Unified 4-point scale for all standard questions
+                            $options = ['Nee / Laag', 'Neutraal', 'Goed', 'Zeer Goed'];
+                        }
+                        ?>
+
+                        <div class="<?php echo $gridClass; ?>">
+                            <?php foreach ($options as $opt): ?>
+                                <?php
+                                $displayValue = $opt;
+                                $submitValue = $opt;
+                                ?>
+                                <button type="submit" name="answer" value="<?php echo htmlspecialchars($submitValue); ?>"
+                                    class="answer-btn">
+                                    <?php echo htmlspecialchars($displayValue); ?>
+                                    <?php if ($unit): ?>
+                                        <span class="answer-unit"><?php echo $unit; ?></span>
+                                    <?php endif; ?>
+                                </button>
+                            <?php endforeach; ?>
                         </div>
                     </div>
 
                     <!-- Navigation -->
-                    <div class="question-nav">
+                    <div class="question-nav"
+                        style="justify-content: space-between; border:none; padding-top:10px; display: flex;">
                         <?php if ($currentQuestionIndex > 0): ?>
-                        <button type="submit" name="action" value="previous" class="nav-btn prev-btn" formnovalidate>← Vorige</button>
+                            <?php $prevQId = $flatQuestions[$currentQuestionIndex - 1]['id']; ?>
+                            <button type="submit" name="go_back" value="<?php echo $prevQId; ?>"
+                                class="nav-btn prev-btn">Vorige</button>
                         <?php else: ?>
-                        <span></span>
+                            <button type="button" class="nav-btn prev-btn" style="visibility: hidden">Vorige</button>
                         <?php endif; ?>
-                        
-                        <button type="submit" name="action" value="next" class="nav-btn next-btn">Volgende →</button>
+
+                        <a href="../pages/home.php" class="nav-btn prev-btn"
+                            style="text-decoration:none; border:none; background:none; color:#999; font-size:12px;">Stoppen
+                            en later verdergaan</a>
                     </div>
                 </form>
             </div>
@@ -414,10 +438,10 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
         // Allow only numbers in secondary answer
         const secondaryInput = document.getElementById('secondaryAnswer');
         if (secondaryInput) {
-            secondaryInput.addEventListener('keydown', function(e) {
+            secondaryInput.addEventListener('keydown', function (e) {
                 const allowedKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'];
                 const isNumber = /[0-9]/.test(e.key);
-                
+
                 if (!isNumber && !allowedKeys.includes(e.key)) {
                     e.preventDefault();
                 }
@@ -425,4 +449,5 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
         }
     </script>
 </body>
+
 </html>

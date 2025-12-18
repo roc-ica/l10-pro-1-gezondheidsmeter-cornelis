@@ -223,24 +223,20 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                 </div>
             </div>
 
-            <!-- 3. Streak (Minimal) -->
-            <div class="stat-card" style="padding: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Reeks</span>
-                </div>
-                <div style="display: flex; align-items: baseline; gap: 5px;">
-                    <span style="font-size: 2.5rem; font-weight: 800; color: #d97706; line-height: 1;"><?= $currentStreak ?></span>
-                    <span style="font-size: 1rem; color: #9ca3af; font-weight: 500;">dagen</span>
+            <div class="stat-card stat-card-warning">
+                <div class="stat-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
                 </div>
                 <div style="margin-top: 5px; font-size: 0.8rem; color: #d97706; background: #fef3c7; display: inline-block; padding: 2px 8px; border-radius: 12px; font-weight: 500;">
                     Hou vol!
                 </div>
             </div>
 
-            <!-- 4. Total (Clean Counter) -->
-            <div class="stat-card" style="padding: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Totaal</span>
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon">
+                    <img src="../assets/images/icons/pngtree-travel-vector-icon-design-illustration-png-image_9005139.png" alt="Travel Icon">
                 </div>
                 <div style="margin-bottom: 5px;">
                     <span style="font-size: 2rem; font-weight: 700; color: #1f2937;"><?= $totalQuestions ?></span>
