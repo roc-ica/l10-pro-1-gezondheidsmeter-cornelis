@@ -147,6 +147,7 @@ foreach ($allEntries as $entryDate) {
                 </div>
                 <div class="identity-info2">
                     <p><?= htmlspecialchars($email) ?></p>
+                    <p><?= htmlspecialchars($birthdate ?: 'Niet opgegeven') ?></p>
                     <p><?= htmlspecialchars($gender ?: 'Niet opgegeven') ?></p>
                 </div>
             </div>
