@@ -177,26 +177,7 @@ foreach ($allEntries as $entryDate) {
                 <h3>Instellingen</h3>
             </div>
             <div class="inst-content">
-                <div class="inst-item">
-                    <div>
-                        <div class="score-label"><strong>Dagelijkse Herinneringen</strong></div>
-                        <div class="score-value">Ontvang herinneringen om vragen in te vullen</div>
-                    </div>
-                    <div>
-                        <label for="notifications"></label>
-                        <input type="checkbox" id="notifications" name="notifications" checked>
-                    </div>
-                </div>
-                <div class="inst-item">
-                    <div>
-                        <div class="score-label"><strong>Email rapportages</strong></div>
-                        <div class="score-value">Ontvang wekelijkse gezondheids rapportages</div>
-                    </div>
-                    <div>
-                        <label for="email-reports"></label>
-                        <input type="checkbox" id="email-reports" name="email-reports" checked>
-                    </div>
-                </div>
+           
                 <div class="inst-item">
                     <div>
                         <div class="score-label"><strong>Mijn gegevens exporteren</strong></div>
