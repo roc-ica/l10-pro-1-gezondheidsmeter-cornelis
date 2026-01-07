@@ -260,6 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="close" onclick="closeBlockUserModal()">&times;</span>
             </div>
             <form id="blockUserForm" method="POST">
+                <input type="hidden" name="action" value="block_user">
                 <input type="hidden" id="block_user_id" name="user_id">
                 <div class="form-group">
                     <label for="block_reason">Reden (optioneel)</label>
@@ -281,6 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="close" onclick="closeUnblockUserModal()">&times;</span>
             </div>
             <form id="unblockUserForm" method="POST">
+                <input type="hidden" name="action" value="unblock_user">
                 <input type="hidden" id="unblock_user_id" name="user_id">
                 <p>Weet je zeker dat je deze gebruiker wilt deblokkeren?</p>
                 <div class="modal-actions">
@@ -402,31 +404,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('blockUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const userId = document.getElementById('block_user_id').value;
-            const reason = document.getElementById('block_reason').value;
-
-            const data = {
-                action: 'block',
-                user_id: userId,
-                reason: reason
-            };
+            const form = document.getElementById('blockUserForm');
+            const formData = new FormData(form);
 
             try {
-                const response = await fetch('/api/block-user.php', {
+                const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
+                    body: formData
                 });
 
-                const result = await response.json();
-
-                if (result.success) {
+                const text = await response.text();
+                
+                if (response.ok) {
                     closeBlockUserModal();
                     setTimeout(() => location.reload(), 500);
                 } else {
-                    console.error('Error:', result.message);
+                    console.error('Error:', response.status);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -448,29 +441,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('unblockUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const userId = document.getElementById('unblock_user_id').value;
-
-            const data = {
-                action: 'unblock',
-                user_id: userId
-            };
+            const form = document.getElementById('unblockUserForm');
+            const formData = new FormData(form);
 
             try {
-                const response = await fetch('/api/block-user.php', {
+                const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
+                    body: formData
                 });
 
-                const result = await response.json();
-
-                if (result.success) {
+                const text = await response.text();
+                
+                if (response.ok) {
                     closeUnblockUserModal();
                     setTimeout(() => location.reload(), 500);
                 } else {
-                    console.error('Error:', result.message);
+                    console.error('Error:', response.status);
                 }
             } catch (error) {
                 console.error('Error:', error);
