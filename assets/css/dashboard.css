@@ -639,6 +639,12 @@
     border-radius: 14px !important;
 }
 
+.stat-icon img {
+    height: 32px !important;
+    width: 32px !important;
+}
+
+
 /* ===== QUESTIONS PAGE STYLES ===== */
 
 /* Question Card */
@@ -906,7 +912,7 @@
 
 .pillar-breakdown {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     margin: 30px 0;
 }

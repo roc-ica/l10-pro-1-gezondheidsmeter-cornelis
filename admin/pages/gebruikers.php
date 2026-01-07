@@ -36,9 +36,9 @@ $users = User::getAllUsers(); // get all users
 
 // FILTER users if search is not empty
 if ($search !== '') {
-    $users = array_filter($users, function($u) use ($search) {
+    $users = array_filter($users, function ($u) use ($search) {
         return str_contains(strtolower($u['username']), strtolower($search)) ||
-               str_contains(strtolower($u['display_name'] ?? ''), strtolower($search));
+            str_contains(strtolower($u['display_name'] ?? ''), strtolower($search));
     });
 }
 
@@ -51,9 +51,69 @@ $offset = ($page - 1) * $usersPerPage;
 $paginatedUsers = array_slice($users, $offset, $usersPerPage);
 $totalPages = ceil($totalUsers / $usersPerPage);
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        // Update user
+        if ($_POST['action'] === 'update_user') {
+            $userId = $_POST['user_id'] ?? null;
+            $displayName = trim($_POST['display_name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $isAdmin = isset($_POST['is_admin']) ? 1 : 0;
+
+            if ($userId) {
+                $targetUser = User::findByIdStatic((int)$userId);
+                if ($targetUser) {
+                    $changes = [];
+                    if ($displayName) $changes['display_name'] = $displayName;
+                    if ($email) $changes['email'] = $email;
+                    if ($isAdmin !== $targetUser->is_admin) $changes['is_admin'] = $isAdmin;
+
+                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'is_admin' => $isAdmin]);
+                    if ($updateResult['success']) {
+                        $message = "Gebruiker bijgewerkt!";
+                        if (!empty($changes)) {
+                            $logger->logUserUpdate($adminUserId, (int)$userId, $changes);
+                        }
+                    } else {
+                        $error = "Fout bij bijwerken gebruiker.";
+                    }
+                }
+            }
+        }
+        // Block user
+        elseif ($_POST['action'] === 'block_user') {
+            $userId = $_POST['user_id'] ?? null;
+            $reason = trim($_POST['reason'] ?? '');
+
+            if ($userId) {
+                $stmt = $pdo->prepare("UPDATE users SET is_active = 0, block_reason = ? WHERE id = ?");
+                if ($stmt->execute([$reason, $userId])) {
+                    $message = "Gebruiker geblokkeerd.";
+                    $logger->logUserBlock($adminUserId, (int)$userId, $reason);
+                } else {
+                    $error = "Fout bij blokkeren gebruiker.";
+                }
+            }
+        }
+        // Unblock user
+        elseif ($_POST['action'] === 'unblock_user') {
+            $userId = $_POST['user_id'] ?? null;
+            if ($userId) {
+                $stmt = $pdo->prepare("UPDATE users SET is_active = 1, block_reason = NULL WHERE id = ?");
+                if ($stmt->execute([$userId])) {
+                    $message = "Gebruiker gedeblokkeerd.";
+                    $logger->logUserUnblock($adminUserId, (int)$userId);
+                } else {
+                    $error = "Fout bij deblokkeren gebruiker.";
+                }
+            }
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -89,9 +149,10 @@ $totalPages = ceil($totalUsers / $usersPerPage);
         }
     </style>
 </head>
+
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
-    
+
     <div class="dashboard-container1">
         <div class="dashboard-header">
             <div class="dashboard-header-left">
@@ -102,10 +163,10 @@ $totalPages = ceil($totalUsers / $usersPerPage);
                 <a href="./home.php" class="btn-naar-app">Naar App</a>
             </div>
         </div>
-    <form method="GET" style="margin: 20px 0; text-align: center;">
-        <input type="text" name="search" placeholder="Zoek gebruiker..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding:8px; width:250px; border-radius:5px; border:1px solid #ccc;">
-        <button type="submit" style="padding:8px 12px; border-radius:5px; background:#22c55e; color:white; border:none; cursor:pointer;">Zoeken</button>
-    </form>
+        <form method="GET" style="margin: 20px 0; text-align: center;">
+            <input type="text" name="search" placeholder="Zoek gebruiker..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding:8px; width:250px; border-radius:5px; border:1px solid #ccc;">
+            <button type="submit" style="padding:8px 12px; border-radius:5px; background:#22c55e; color:white; border:none; cursor:pointer;">Zoeken</button>
+        </form>
 
 
         <?php if ($message): ?>
@@ -120,70 +181,72 @@ $totalPages = ceil($totalUsers / $usersPerPage);
             </div>
         <?php endif; ?>
     </div>
-<div class="user-list-container">
+    <div class="user-list-container">
 
-<?php foreach ($paginatedUsers as $user): ?>
-    <!-- User Card for <?php echo htmlspecialchars($user['username']); ?> -->
-    <div class="user-card">
-        <div class="user-info-wrapper">
-            <div class="user-details">
-                <h2 class="user-name"><?php echo htmlspecialchars($user['display_name'] ?? $user['username']); ?></h2>
-                <div class="user-contact-info">
-                    <div class="contact-item">
-                        <i data-lucide="mail" class="contact-icon"></i>
-                        <span><?php echo htmlspecialchars($user['email']); ?></span>
-                    </div>
-                    <!-- <div class="contact-item">
+        <?php foreach ($paginatedUsers as $user): ?>
+            <!-- User Card for <?php echo htmlspecialchars($user['username']); ?> -->
+            <div class="user-card">
+                <div class="user-info-wrapper">
+                    <div class="user-details">
+                        <h2 class="user-name"><?php echo htmlspecialchars($user['display_name'] ?? $user['username']); ?></h2>
+                        <div class="user-contact-info">
+                            <div class="contact-item">
+                                <i data-lucide="mail" class="contact-icon"></i>
+                                <span><?php echo htmlspecialchars($user['email']); ?></span>
+                            </div>
+                            <!-- <div class="contact-item">
                         <i data-lucide="user" class="contact-icon"></i>
                         <span>@<?php echo htmlspecialchars($user['username']); ?></span>
                     </div> -->
-                    <div class="contact-item">
-                        <i data-lucide="calendar" class="contact-icon"></i>
-                        <span><?php echo $user['birthdate'] ? htmlspecialchars(date('d-m-Y', strtotime($user['birthdate']))) : 'Niet ingevuld'; ?></span>
-                    </div>
-                    <div class="contact-item">
-                        <i data-lucide="smile" class="contact-icon"></i>
-                        <span><?php echo htmlspecialchars($user['gender'] ?? 'Niet ingevuld'); ?></span>
+                            <div class="contact-item">
+                                <i data-lucide="calendar" class="contact-icon"></i>
+                                <span><?php echo $user['birthdate'] ? htmlspecialchars(date('d-m-Y', strtotime($user['birthdate']))) : 'Niet ingevuld'; ?></span>
+                            </div>
+                            <div class="contact-item">
+                                <i data-lucide="smile" class="contact-icon"></i>
+                                <span><?php echo htmlspecialchars($user['gender'] ?? 'Niet ingevuld'); ?></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <div class="user-actions-wrapper">
+                    <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER');
+                                                echo (' ');
+                                                echo htmlspecialchars($user['id']) ?></div>
+                    <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['gender'] ?? ''); ?>')">
+                        <i data-lucide="pencil"></i> Bewerken
+                    </button>
+                    <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">
+                        <i data-lucide="lock"></i> <?php echo $user['is_active'] ? 'Blokkeren' : 'Deblokkeren'; ?>
+                    </button>
+                    <button class="btn-action reset-btn" onclick="if(confirm('Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?')) { resetUserActivity(<?php echo $user['id']; ?>); }">Reset Activity</button>
+                </div>
             </div>
-        </div>
-        <div class="user-actions-wrapper">
-            <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER'); echo(' ');  echo htmlspecialchars($user['id'])?></div>
-            <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['gender'] ?? ''); ?>')">
-                <i data-lucide="pencil"></i> Bewerken
-            </button>
-            <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">
-                <i data-lucide="lock"></i> <?php echo $user['is_active'] ? 'Blokkeren' : 'Deblokkeren'; ?>
-            </button>
-            <button class="btn-action reset-btn" onclick="if(confirm('Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?')) { resetUserActivity(<?php echo $user['id']; ?>); }">Reset Activity</button>
-        </div>
+        <?php endforeach; ?>
+
     </div>
-    <?php endforeach; ?>
+    <!-- Pagination -->
+    <div class="pagination">
+        <?php
+        $searchParam = isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '';
+        ?>
 
-</div>
-<!-- Pagination -->
-<div class="pagination">
-    <?php
-    $searchParam = isset($_GET['search']) ? '&search=' . urlencode($_GET['search']) : '';
-    ?>
+        <?php if ($page > 1): ?>
+            <a class="page-btn" href="?page=<?php echo $page - 1 . $searchParam; ?>">← Vorige</a>
+        <?php endif; ?>
 
-    <?php if ($page > 1): ?>
-        <a class="page-btn" href="?page=<?php echo $page - 1 . $searchParam; ?>">← Vorige</a>
-    <?php endif; ?>
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+            <a
+                href="?page=<?php echo $i . $searchParam; ?>"
+                class="page-btn <?php echo $i === $page ? 'active' : ''; ?>">
+                <?php echo $i; ?>
+            </a>
+        <?php endfor; ?>
 
-    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-        <a 
-            href="?page=<?php echo $i . $searchParam; ?>"
-            class="page-btn <?php echo $i === $page ? 'active' : ''; ?>">
-            <?php echo $i; ?>
-        </a>
-    <?php endfor; ?>
-
-    <?php if ($page < $totalPages): ?>
-        <a class="page-btn" href="?page=<?php echo $page + 1 . $searchParam; ?>">Volgende →</a>
-    <?php endif; ?>
-</div>
+        <?php if ($page < $totalPages): ?>
+            <a class="page-btn" href="?page=<?php echo $page + 1 . $searchParam; ?>">Volgende →</a>
+        <?php endif; ?>
+    </div>
 
 
 
@@ -263,7 +326,9 @@ $totalPages = ceil($totalUsers / $usersPerPage);
     </div>
 
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script>lucide.createIcons();</script>
+    <script>
+        lucide.createIcons();
+    </script>
     <script src="/js/session-guard.js"></script>
     <script>
         function openEditUserModal(userId, email, birthdate, gender) {
@@ -339,7 +404,7 @@ $totalPages = ceil($totalUsers / $usersPerPage);
 
             const userId = document.getElementById('block_user_id').value;
             const reason = document.getElementById('block_reason').value;
-            
+
             const data = {
                 action: 'block',
                 user_id: userId,
@@ -384,7 +449,7 @@ $totalPages = ceil($totalUsers / $usersPerPage);
             e.preventDefault();
 
             const userId = document.getElementById('unblock_user_id').value;
-            
+
             const data = {
                 action: 'unblock',
                 user_id: userId
@@ -413,4 +478,5 @@ $totalPages = ceil($totalUsers / $usersPerPage);
         });
     </script>
 </body>
+
 </html>

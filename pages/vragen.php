@@ -68,7 +68,18 @@ if (!isset($_SESSION['answered_questions'])) {
     }
 }
 
-// Handle answer submission
+// Handle previous question
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['go_back'])) {
+    $prevQuestionId = $_POST['go_back'];
+    if (isset($_SESSION['answered_questions'][$prevQuestionId])) {
+        unset($_SESSION['answered_questions'][$prevQuestionId]);
+    }
+    // Refresh page to show the previous question
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// Handle single answer submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_answer'])) {
     $questionId = $_POST['question_id'] ?? null;
     $answer = $_POST['answer'] ?? null;
@@ -215,6 +226,12 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                     <div class="pillar-breakdown">
                         <?php if (isset($healthScore['pillar_scores']) && is_array($healthScore['pillar_scores'])): ?>
                             <?php foreach ($healthScore['pillar_scores'] as $pillarId => $score): ?>
+                                <div class="pillar-item">
+                                    <p class="pillar-label">
+                                        <?php echo htmlspecialchars($healthScore['pillar_names'][$pillarId] ?? "Pilaar $pillarId"); ?>
+                                    </p>
+                                    <p class="pillar-score"><?php echo round($score, 1); ?></p>
+                                </div>
                             <div class="pillar-item">
                                 <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
                                 <p class="pillar-score"><?php echo round($score, 1); ?></p>
@@ -238,26 +255,58 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
                     <input type="hidden" name="question_id" value="<?php echo $currentQuestion['id']; ?>">
                     <input type="hidden" name="save_answer" value="1">
 
-                    <!-- Main Question -->
-                    <div class="question-part-main">
-                        <h2 class="question-text">
-                            <?php echo htmlspecialchars($currentQuestion['question_text']); ?>
-                        </h2>
-                        <div class="answer-section">
-                            <p class="answer-label">Voer antwoord in:</p>
-                            <input type="number" name="answer" class="form-input-large" placeholder="Voer getal in" required>
+
+                    <div class="answer-section">
+                        <p class="answer-label">Kies een antwoord:</p>
+
+                        <?php
+                        // Determine options based on pillar
+                        $options = [];
+                        $gridClass = 'answer-grid';
+                        $unit = '';
+
+                        $val = $currentQuestion['pillar_id'];
+
+                        // Check for Drug question specific
+                        if (!empty($currentQuestion['is_drugs_question']) || $val == 4) {
+                            $options = ['Nee', 'Softdrugs', 'Harddrugs'];
+                        } else {
+                            // Unified 4-point scale for all standard questions
+                            $options = ['Nee / Laag', 'Neutraal', 'Goed', 'Zeer Goed'];
+                        }
+                        ?>
+
+                        <div class="<?php echo $gridClass; ?>">
+                            <?php foreach ($options as $opt): ?>
+                                <?php
+                                $displayValue = $opt;
+                                $submitValue = $opt;
+                                ?>
+                                <button type="submit" name="answer" value="<?php echo htmlspecialchars($submitValue); ?>"
+                                    class="answer-btn">
+                                    <?php echo htmlspecialchars($displayValue); ?>
+                                    <?php if ($unit): ?>
+                                        <span class="answer-unit"><?php echo $unit; ?></span>
+                                    <?php endif; ?>
+                                </button>
+                            <?php endforeach; ?>
                         </div>
                     </div>
 
                     <!-- Navigation -->
-                    <div class="question-nav">
+                    <div class="question-nav"
+                        style="justify-content: space-between; border:none; padding-top:10px; display: flex;">
                         <?php if ($currentQuestionIndex > 0): ?>
-                        <button type="button" class="nav-btn prev-btn" onclick="window.history.back();">← Vorige</button>
+                            <?php $prevQId = $flatQuestions[$currentQuestionIndex - 1]['id']; ?>
+                            <button type="submit" name="go_back" value="<?php echo $prevQId; ?>"
+                                class="nav-btn prev-btn">Vorige</button>
                         <?php else: ?>
-                        <span></span>
+                            <button type="button" class="nav-btn prev-btn" style="visibility: hidden">Vorige</button>
                         <?php endif; ?>
-                        
-                        <button type="submit" class="nav-btn next-btn">Volgende →</button>
+
+                        <a href="../pages/home.php" class="nav-btn prev-btn"
+                            style="text-decoration:none; border:none; background:none; color:#999; font-size:12px;">Stoppen
+                            en later verdergaan</a>
                     </div>
                 </form>
             </div>
