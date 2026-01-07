@@ -16,7 +16,7 @@ class AdminDashboardStats
      */
     public function getTotalUsers(): int
     {
-        $stmt = $this->pdo->query("SELECT COUNT(*) FROM users WHERE is_active = 1");
+        $stmt = $this->pdo->query("SELECT COUNT(*) FROM users WHERE is_admin = 0 AND is_active = 1");
         return (int) $stmt->fetchColumn();
     }
 
