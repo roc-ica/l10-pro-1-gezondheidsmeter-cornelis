@@ -1,6 +1,17 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-require_once __DIR__ . '/../config/database.php';
+$path = __DIR__ . '/../config/database.php';
+if (!file_exists($path)) {
+    die("database.php NOT found at: $path");
+}
+require_once $path;
+
+if (!class_exists('Database')) {
+    die("Class Database not found");
+}
+
 require_once __DIR__ . '/../models/User.php';
 
 class AuthController

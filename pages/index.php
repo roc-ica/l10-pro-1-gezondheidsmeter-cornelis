@@ -14,6 +14,13 @@ if (!defined('APP_BASE_PATH')) {
 }
 
 $userId = $_SESSION['user_id'] ?? null;
+
+// If user is already logged in, redirect to dashboard
+if ($userId) {
+    header('Location: home.php');
+    exit;
+}
+
 $statsModel = new DashboardStats();
 $dashboardData = $statsModel->getOverview($userId);
 

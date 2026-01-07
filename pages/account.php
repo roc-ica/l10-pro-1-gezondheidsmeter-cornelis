@@ -23,6 +23,16 @@ $email = htmlspecialchars($user->email ?? '');
 $username = htmlspecialchars($user->username ?? '');
 $birthdate = htmlspecialchars($user->birthdate ?? '');
 $gender = htmlspecialchars($user->gender ?? '');
+$profilePicture = $user->profile_picture ?? '';
+if ($profilePicture) {
+    // Ensure path is relative to pages/ directory
+    // If it starts with slash, remove it first
+    $profilePicture = ltrim($profilePicture, '/');
+    $profilePicture = '../' . $profilePicture;
+}
+// Debug output
+// echo "DEBUG: Profile Picture Value: [" . $profilePicture . "]<br>";
+$profilePicture = htmlspecialchars($profilePicture);
 
 // Initialize Database connection for stats
 $pdo = Database::getConnection();
@@ -110,14 +120,23 @@ foreach ($allEntries as $entryDate) {
             <div class="identity-card">
                 <div class="identity-info1">
                     <div class="identity-details">
-                        <div class="identity-icon">
+                        <div class="identity-icon" style="position: relative; cursor: pointer; overflow: hidden; <?php if($profilePicture) echo "background-image: url('$profilePicture?v=" . time() . "'); background-size: cover; background-position: center; padding: 0;"; ?>" onclick="document.getElementById('profilePicInput').click()">
+                            <?php if (!$profilePicture): ?>
                             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
+                            <?php endif; ?>
+                            <div class="icon-overlay">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    <circle cx="12" cy="13" r="4"></circle>
+                                </svg>
+                            </div>
                         </div>
+                        <input type="file" id="profilePicInput" accept="image/*" style="display: none;" onchange="handleProfileUpload(this)">
                         <div class="identity-username">
                             <?= htmlspecialchars($username) ?>
                         </div>
@@ -311,6 +330,43 @@ foreach ($allEntries as $entryDate) {
                 alert('Er is een technische fout opgetreden tijdens het importeren.');
             } finally {
                 input.value = ''; // Reset for next use
+            }
+        }
+
+        // Handle Profile Picture Upload
+        async function handleProfileUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('profile_picture', file);
+
+            try {
+                // Show some loading indication if desired
+                const iconDiv = document.querySelector('.identity-icon');
+                const originalOpacity = iconDiv.style.opacity;
+                iconDiv.style.opacity = '0.5';
+
+                const response = await fetch('../api/upload-profile-picture.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Refresh page to show new image
+                    location.reload();
+                } else {
+                    alert('Upload mislukt: ' + (result.message || 'Onbekende fout'));
+                    iconDiv.style.opacity = originalOpacity;
+                }
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                alert('Er is een technische fout opgetreden.');
+                document.querySelector('.identity-icon').style.opacity = '1';
+            } finally {
+                input.value = ''; // Reset input
             }
         }
     </script>

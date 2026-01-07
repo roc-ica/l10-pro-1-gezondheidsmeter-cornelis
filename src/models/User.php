@@ -16,6 +16,7 @@ class User
     public $last_login;
     public $is_active;
     public $block_reason;
+    public $profile_picture;
 
     protected $pdo;
 
@@ -36,6 +37,7 @@ class User
             $this->last_login = $data['last_login'] ?? null;
             $this->is_active = isset($data['is_active']) ? (int)$data['is_active'] : null;
             $this->block_reason = $data['block_reason'] ?? null;
+            $this->profile_picture = $data['profile_picture'] ?? null;
         }
     }
 
@@ -236,6 +238,14 @@ class User
         }
 
         if (session_status() !== PHP_SESSION_ACTIVE) {
+            // Set session cookie to live for 30 days
+            ini_set('session.gc_maxlifetime', 60 * 60 * 24 * 30);
+            session_set_cookie_params([
+                'lifetime' => 60 * 60 * 24 * 30,
+                'path' => '/',
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
             session_start();
         }
 
