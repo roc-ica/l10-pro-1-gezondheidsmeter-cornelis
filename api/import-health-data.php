@@ -97,7 +97,7 @@ try {
             }
             
             // Recalculate score for this date to ensure dashboard/history consistency
-            require_once __DIR__ . '/../classes/HealthScoreCalculator.php';
+            require_once __DIR__ . '/../../src/models/HealthScoreCalculator.php';
             $calculator = new HealthScoreCalculator($userId, $date);
             $calcResult = $calculator->calculateScore();
             

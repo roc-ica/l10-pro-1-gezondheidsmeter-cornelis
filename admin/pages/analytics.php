@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Check if user is admin
 require_once __DIR__ . '/../../src/models/User.php';
-require_once __DIR__ . '/../../classes/AdminActionLogger.php';
+require_once __DIR__ . '/../../src/models/AdminActionLogger.php';
 
 $user = \User::findByIdStatic($_SESSION['user_id']);
 

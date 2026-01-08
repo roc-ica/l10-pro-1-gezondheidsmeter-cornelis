@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../src/models/User.php';
 require_once __DIR__ . '/../../src/models/Question.php';
 require_once __DIR__ . '/../../src/models/Pillar.php';
 require_once __DIR__ . '/../../src/config/database.php';
-require_once __DIR__ . '/../../classes/AdminActionLogger.php';
+require_once __DIR__ . '/../../src/models/AdminActionLogger.php';
 
 $user = \User::findByIdStatic($_SESSION['user_id']);
 
