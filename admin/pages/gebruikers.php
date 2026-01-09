@@ -58,6 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = $_POST['user_id'] ?? null;
             $displayName = trim($_POST['display_name'] ?? '');
             $email = trim($_POST['email'] ?? '');
+            $birthdate = trim($_POST['birthdate'] ?? '');
+            $gender = trim($_POST['gender'] ?? '');
             $isAdmin = isset($_POST['is_admin']) ? 1 : 0;
 
             if ($userId) {
@@ -66,9 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $changes = [];
                     if ($displayName) $changes['display_name'] = $displayName;
                     if ($email) $changes['email'] = $email;
+                    if ($birthdate) $changes['birthdate'] = $birthdate;
+                    if ($gender) $changes['gender'] = $gender;
                     if ($isAdmin !== $targetUser->is_admin) $changes['is_admin'] = $isAdmin;
 
-                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'is_admin' => $isAdmin]);
+                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'birthdate' => $birthdate ?: null, 'gender' => $gender ?: null, 'is_admin' => $isAdmin]);
                     if ($updateResult['success']) {
                         $message = "Gebruiker bijgewerkt!";
                         if (!empty($changes)) {
@@ -357,31 +361,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('editUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const userId = document.getElementById('edit_user_id').value;
-            const formData = new FormData(document.getElementById('editUserForm'));
-            const data = {
-                user_id: userId,
-                email: formData.get('email'),
-                birthdate: formData.get('birthdate'),
-                gender: formData.get('gender')
-            };
+            const form = document.getElementById('editUserForm');
+            const formData = new FormData(form);
+            
+            // Add action field for server-side processing
+            formData.append('action', 'update_user');
 
             try {
-                const response = await fetch('/api/admin-update-user.php', {
+                const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
+                    body: formData
                 });
 
-                const result = await response.json();
-
-                if (result.success) {
+                if (response.ok) {
                     closeEditUserModal();
                     location.reload();
                 } else {
-                    console.error('Error:', result.message);
+                    console.error('Error:', response.status);
                 }
             } catch (error) {
                 console.error('Error:', error);
