@@ -11,7 +11,64 @@ if (!isset($_SESSION['user_id'])) {
 // Get user data from database
 require_once __DIR__ . '/../src/models/User.php';
 require_once __DIR__ . '/../src/config/database.php';
+require_once __DIR__ . '/../src/services/UserProfileService.php';
+require_once __DIR__ . '/../src/services/HealthDataService.php';
+
 $user = User::findByIdStatic($_SESSION['user_id']);
+
+// Handle POST requests for actions
+$action = $_POST['action'] ?? null;
+$responseData = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($action === 'update_profile') {
+        // Update profile
+        $profileService = new UserProfileService();
+        $responseData = $profileService->updateProfile($_SESSION['user_id'], $_POST);
+        
+        // Refresh user data after update
+        if ($responseData['success']) {
+            $user = User::findByIdStatic($_SESSION['user_id']);
+        }
+    } elseif ($action === 'upload_profile_picture') {
+        // Upload profile picture
+        $profileService = new UserProfileService();
+        $responseData = $profileService->uploadProfilePicture($_SESSION['user_id'], $_FILES['profile_picture'] ?? []);
+        
+        // Refresh user data after upload
+        if ($responseData['success']) {
+            $user = User::findByIdStatic($_SESSION['user_id']);
+        }
+    } elseif ($action === 'delete_health_data') {
+        // Delete all health data
+        $healthService = new HealthDataService();
+        $responseData = $healthService->deleteAllHealthData($_SESSION['user_id']);
+    } elseif ($action === 'import_health_data') {
+        // Import health data
+        if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
+            $fileContent = file_get_contents($_FILES['import_file']['tmp_name']);
+            $healthService = new HealthDataService();
+            $responseData = $healthService->importHealthData($_SESSION['user_id'], $fileContent);
+        } else {
+            $responseData = ['success' => false, 'message' => 'Geen bestand geüpload'];
+        }
+    } elseif ($action === 'export_health_data') {
+        // Export health data - handled separately at the end
+        $healthService = new HealthDataService();
+        $exportResult = $healthService->exportHealthData($_SESSION['user_id']);
+        
+        if ($exportResult['success']) {
+            // Send as JSON file download
+            $exportData = $exportResult['data'];
+            header('Content-Type: application/json');
+            header('Content-Disposition: attachment; filename="health_export_' . $_SESSION['user_id'] . '_' . date('Ymd') . '.json"');
+            echo json_encode($exportData, JSON_PRETTY_PRINT);
+            exit;
+        } else {
+            $responseData = $exportResult;
+        }
+    }
+}
 
 if (!$user) {
     // User not found, redirect to login
@@ -185,14 +242,17 @@ foreach ($allEntries as $entryDate) {
                         <div class="score-value">Download een kopie van al je gezondheidsdata (JSON)</div>
                     </div>
                     <div>
-                        <button class="btn-export-data" onclick="window.location.href='../api/export-health-data.php'">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 4px;">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Downloaden
-                        </button>
+                        <form method="POST" style="display: inline;">
+                            <input type="hidden" name="action" value="export_health_data">
+                            <button type="submit" class="btn-export-data">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 4px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Downloaden
+                            </button>
+                        </form>
                     </div>
                 </div>
                 <!-- Import Section -->
@@ -258,18 +318,28 @@ foreach ($allEntries as $entryDate) {
             }
 
             try {
-                const response = await fetch('../api/delete-health-data.php', {
+                const formData = new FormData();
+                formData.append('action', 'delete_health_data');
+
+                const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    body: formData
                 });
 
-                const data = await response.json();
-
-                if (data.success) {
-                    alert('Je gezondheidsgegevens zijn succesvol gewist.');
+                const text = await response.text();
+                
+                // Check if response is JSON (success) or redirect
+                try {
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        alert('Je gezondheidsgegevens zijn succesvol gewist.');
+                        window.location.reload();
+                    } else {
+                        alert('Er is een fout opgetreden: ' + (data.message || 'Onbekende fout'));
+                    }
+                } catch (e) {
+                    // If not JSON, it might be a redirect, just reload
                     window.location.reload();
-                } else {
-                    alert('Er is een fout opgetreden: ' + (data.message || 'Onbekende fout'));
                 }
             } catch (error) {
                 console.error('Error deleting health data:', error);
@@ -282,10 +352,6 @@ foreach ($allEntries as $entryDate) {
             if (!input.files || input.files.length === 0) return;
 
             const file = input.files[0];
-            const formData = new FormData();
-            formData.append('import_file', file);
-
-            // Show loading state (simple alert for now)
             const confirmImport = confirm(`Weet je zeker dat je "${file.name}" wilt importeren?\nDit voegt gegevens toe aan je huidige data.`);
             
             if (!confirmImport) {
@@ -294,7 +360,11 @@ foreach ($allEntries as $entryDate) {
             }
 
             try {
-                const response = await fetch('../api/import-health-data.php', {
+                const formData = new FormData();
+                formData.append('action', 'import_health_data');
+                formData.append('import_file', file);
+
+                const response = await fetch(window.location.href, {
                     method: 'POST',
                     body: formData
                 });
@@ -305,7 +375,7 @@ foreach ($allEntries as $entryDate) {
                     alert(result.message);
                     window.location.reload();
                 } else {
-                    alert('Import fout: ' + (result.error || 'Onbekende fout'));
+                    alert('Import fout: ' + (result.message || 'Onbekende fout'));
                 }
             } catch (error) {
                 console.error('Import error:', error);
@@ -320,8 +390,6 @@ foreach ($allEntries as $entryDate) {
             if (!input.files || input.files.length === 0) return;
 
             const file = input.files[0];
-            const formData = new FormData();
-            formData.append('profile_picture', file);
 
             try {
                 // Show some loading indication if desired
@@ -329,7 +397,11 @@ foreach ($allEntries as $entryDate) {
                 const originalOpacity = iconDiv.style.opacity;
                 iconDiv.style.opacity = '0.5';
 
-                const response = await fetch('../api/upload-profile-picture.php', {
+                const formData = new FormData();
+                formData.append('action', 'upload_profile_picture');
+                formData.append('profile_picture', file);
+
+                const response = await fetch(window.location.href, {
                     method: 'POST',
                     body: formData
                 });
@@ -361,6 +433,7 @@ foreach ($allEntries as $entryDate) {
                 <span class="close" onclick="closeEditModal()">&times;</span>
             </div>
             <form id="editForm" method="POST">
+                <input type="hidden" name="action" value="update_profile">
                 <div class="form-group">
                     <label for="edit_email">E-mailadres</label>
                     <input type="email" id="edit_email" name="email" value="<?= htmlspecialchars($user->email ?? '') ?>"
@@ -410,30 +483,32 @@ foreach ($allEntries as $entryDate) {
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const formData = new FormData(document.getElementById('editForm'));
-            const data = {
-                email: formData.get('email'),
-                birthdate: formData.get('birthdate'),
-                gender: formData.get('gender')
-            };
+            const form = document.getElementById('editForm');
+            const formData = new FormData(form);
 
             try {
-                const response = await fetch('/api/update-profile.php', {
+                const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
+                    body: formData
                 });
 
-                const result = await response.json();
-
-                if (result.success) {
+                // Try to parse as JSON
+                let result;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                    if (result.success) {
+                        alert('Profiel succesvol bijgewerkt!');
+                        closeEditModal();
+                        location.reload();
+                    } else {
+                        alert('Fout: ' + (result.message || 'Onbekende fout'));
+                    }
+                } else {
+                    // If not JSON, assume success and reload
                     alert('Profiel succesvol bijgewerkt!');
                     closeEditModal();
                     location.reload();
-                } else {
-                    alert('Fout: ' + (result.message || 'Onbekende fout'));
                 }
             } catch (error) {
                 console.error('Error:', error);
