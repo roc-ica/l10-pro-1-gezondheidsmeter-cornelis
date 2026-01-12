@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Totaal: <?php echo $totalUsers; ?> gebruiker<?php echo $totalUsers !== 1 ? 's' : ''; ?></p>
             </div>
             <div class="dashboard-header-right">
-                <a href="./home.php" class="btn-naar-app">Naar App</a>
+                <a href="../../pages/home.php" class="btn-naar-app">Naar App</a>
             </div>
         </div>
         <form method="GET" style="margin: 20px 0; text-align: center;">

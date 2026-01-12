@@ -51,7 +51,7 @@ $username = $_SESSION['username'] ?? 'Admin';
                 <p>Overzicht van alle gegevens</p>
             </div>
             <div class="dashboard-header-right">
-                <a href="#" class="btn-naar-app">Naar App</a>
+                <a href="../../pages/home.php" class="btn-naar-app">Naar App</a>
             </div>
         </div>
 
