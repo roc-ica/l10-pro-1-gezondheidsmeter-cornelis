@@ -178,7 +178,6 @@ foreach ($allEntries as $entryDate) {
                 <h3>Instellingen</h3>
             </div>
             <div class="inst-content">
-           
                 <div class="inst-item">
                     <div>
                         <div class="score-label"><strong>Mijn gegevens exporteren</strong></div>
