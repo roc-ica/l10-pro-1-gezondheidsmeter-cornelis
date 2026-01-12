@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once __DIR__ . '/../src/config/database.php';
-require_once __DIR__ . '/../classes/UserHealthHistory.php';
+require_once __DIR__ . '/../src/models/UserHealthHistory.php';
 
 $userId = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'User';

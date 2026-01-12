@@ -1,0 +1,250 @@
+<?php
+
+require_once __DIR__ . '/../config/database.php';
+
+class QuestionnaireService
+{
+    private $pdo;
+
+    public function __construct()
+    {
+        $this->pdo = Database::getConnection();
+    }
+
+    /**
+     * Save a single answer to a question
+     * @param int $userId User ID
+     * @param int $questionId Question ID
+     * @param string $answer Answer text
+     * @return array Success/error response
+     */
+    public function saveAnswer(int $userId, int $questionId, string $answer): array
+    {
+        try {
+            // Start transaction
+            $this->pdo->beginTransaction();
+
+            // Get or create today's daily entry
+            $today = date('Y-m-d');
+
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM daily_entries 
+                WHERE user_id = ? AND entry_date = ?
+            ");
+            $stmt->execute([$userId, $today]);
+            $entry = $stmt->fetch();
+
+            if ($entry) {
+                $entryId = $entry['id'];
+            } else {
+                // Create new daily entry
+                $stmt = $this->pdo->prepare("
+                    INSERT INTO daily_entries (user_id, entry_date, submitted_at) 
+                    VALUES (?, ?, NULL)
+                ");
+                $stmt->execute([$userId, $today]);
+                $entryId = $this->pdo->lastInsertId();
+            }
+
+            // Check if answer already exists for this question
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM answers 
+                WHERE entry_id = ? AND question_id = ?
+            ");
+            $stmt->execute([$entryId, $questionId]);
+            $existingAnswer = $stmt->fetch();
+
+            if ($existingAnswer) {
+                // Update existing answer
+                $stmt = $this->pdo->prepare("
+                    UPDATE answers 
+                    SET answer_text = ?, created_at = CURRENT_TIMESTAMP 
+                    WHERE id = ?
+                ");
+                $stmt->execute([$answer, $existingAnswer['id']]);
+            } else {
+                // Insert new answer
+                $stmt = $this->pdo->prepare("
+                    INSERT INTO answers (entry_id, question_id, answer_text, score) 
+                    VALUES (?, ?, ?, NULL)
+                ");
+                $stmt->execute([$entryId, $questionId, $answer]);
+            }
+
+            // Get total questions count and answered count
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM questions WHERE is_deleted = 0 OR is_deleted IS NULL");
+            $stmt->execute();
+            $totalQuestions = $stmt->fetchColumn();
+
+            // Count answered questions for today's entry
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(DISTINCT question_id) as count 
+                FROM answers 
+                WHERE entry_id = ?
+            ");
+            $stmt->execute([$entryId]);
+            $result = $stmt->fetch();
+            $answeredQuestions = $result['count'];
+
+            // Commit transaction
+            $this->pdo->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Antwoord opgeslagen',
+                'entry_id' => $entryId,
+                'answered_count' => $answeredQuestions,
+                'total_count' => $totalQuestions,
+                'progress_percentage' => $totalQuestions > 0 ? round(($answeredQuestions / $totalQuestions) * 100) : 0
+            ];
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Fout bij het opslaan van antwoord: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Submit/complete today's questionnaire
+     * @param int $userId User ID
+     * @return array Success/error response
+     */
+    public function submitQuestionnaire(int $userId): array
+    {
+        try {
+            // Get today's entry
+            $today = date('Y-m-d');
+
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM daily_entries 
+                WHERE user_id = ? AND entry_date = ?
+            ");
+            $stmt->execute([$userId, $today]);
+            $entry = $stmt->fetch();
+
+            if (!$entry) {
+                return [
+                    'success' => false,
+                    'message' => 'Geen vragen beantwoord vandaag.'
+                ];
+            }
+
+            $entryId = $entry['id'];
+
+            // Update the entry to mark it as submitted
+            $stmt = $this->pdo->prepare("
+                UPDATE daily_entries 
+                SET submitted_at = CURRENT_TIMESTAMP 
+                WHERE id = ?
+            ");
+            $stmt->execute([$entryId]);
+
+            return [
+                'success' => true,
+                'message' => 'Vragenlijst succesvol voltooid!',
+                'entry_id' => $entryId
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Fout bij het indienen van vragenlijst: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get today's entry ID and answer progress
+     * @param int $userId User ID
+     * @return array Entry data or empty array if no entry
+     */
+    public function getTodayEntry(int $userId): array
+    {
+        $today = date('Y-m-d');
+
+        $stmt = $this->pdo->prepare("
+            SELECT id, submitted_at FROM daily_entries 
+            WHERE user_id = ? AND entry_date = ?
+        ");
+        $stmt->execute([$userId, $today]);
+        $entry = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$entry) {
+            return [];
+        }
+
+        // Get answered questions for this entry
+        $stmt = $this->pdo->prepare("
+            SELECT question_id, answer_text, score 
+            FROM answers 
+            WHERE entry_id = ?
+            ORDER BY question_id ASC
+        ");
+        $stmt->execute([$entry['id']]);
+        $answers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $entry['answers'] = $answers;
+        $entry['answered_count'] = count($answers);
+
+        return $entry;
+    }
+
+    /**
+     * Reset today's entry (delete answers and unsubmit)
+     * @param int $userId User ID
+     * @return array Success/error response
+     */
+    public function resetTodayEntry(int $userId): array
+    {
+        try {
+            $today = date('Y-m-d');
+
+            // Get today's entry ID
+            $stmt = $this->pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
+            $stmt->execute([$userId, $today]);
+            $entry = $stmt->fetch();
+
+            if (!$entry) {
+                return ['success' => true, 'message' => 'Geen entry om te resetten'];
+            }
+
+            $entryId = $entry['id'];
+
+            // Start transaction
+            $this->pdo->beginTransaction();
+
+            // Delete existing answers
+            $stmt = $this->pdo->prepare("DELETE FROM answers WHERE entry_id = ?");
+            $stmt->execute([$entryId]);
+
+            // Reset submission status
+            $stmt = $this->pdo->prepare("UPDATE daily_entries SET submitted_at = NULL WHERE id = ?");
+            $stmt->execute([$entryId]);
+
+            // Clear calculated score for today
+            $stmt = $this->pdo->prepare("DELETE FROM user_health_scores WHERE user_id = ? AND score_date = ?");
+            $stmt->execute([$userId, $today]);
+
+            $this->pdo->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Vragen gereset'
+            ];
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Fout bij het resetten: ' . $e->getMessage()
+            ];
+        }
+    }
+}
+?>

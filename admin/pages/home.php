@@ -18,7 +18,7 @@ if (!$user || !$user->is_admin) {
 }
 
 // Load dashboard stats
-require_once __DIR__ . '/../../classes/AdminDashboardStats.php';
+require_once __DIR__ . '/../../src/models/AdminDashboardStats.php';
 $stats = new AdminDashboardStats();
 
 // Get all data

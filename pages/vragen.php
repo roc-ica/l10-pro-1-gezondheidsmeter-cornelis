@@ -8,7 +8,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once __DIR__ . '/../src/config/database.php';
-require_once __DIR__ . '/../classes/HealthScoreCalculator.php';
+require_once __DIR__ . '/../src/models/HealthScoreCalculator.php';
+require_once __DIR__ . '/../src/services/QuestionnaireService.php';
 
 $userId = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'Gebruiker';
@@ -17,31 +18,73 @@ $today = date('Y-m-d');
 
 // Handle reset request
 if (isset($_GET['reset']) && $_GET['reset'] == '1') {
-    // 1. Get today's entry ID if exists
-    $stmt = $pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
-    $stmt->execute([$userId, $today]);
-    $entry = $stmt->fetch();
-    
-    if ($entry) {
-        // 2. Delete existing answers
-        $stmt = $pdo->prepare("DELETE FROM answers WHERE entry_id = ?");
-        $stmt->execute([$entry['id']]);
-        
-        // 3. Reset submission status
-        $stmt = $pdo->prepare("UPDATE daily_entries SET submitted_at = NULL WHERE id = ?");
-        $stmt->execute([$entry['id']]);
-
-        // 4. Also clear calculated score for today to keep data consistent
-        $stmt = $pdo->prepare("DELETE FROM user_health_scores WHERE user_id = ? AND score_date = ?");
-        $stmt->execute([$userId, $today]);
-    }
-    
-    // 5. Clear session data
+    $questionnaireService = new QuestionnaireService();
+    $questionnaireService->resetTodayEntry($userId);
     unset($_SESSION['answered_questions']);
     
-    // 6. Redirect to clean URL
+    // Redirect to clean URL
     header("Location: " . strtok($_SERVER["REQUEST_URI"], '?'));
     exit;
+}
+
+// Handle POST requests for questionnaire actions
+$action = $_POST['action'] ?? null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $questionnaireService = new QuestionnaireService();
+    
+    if ($action === 'save_answer') {
+        // Save single answer
+        $questionId = (int)($_POST['question_id'] ?? 0);
+        $answer = $_POST['answer'] ?? null;
+        
+        if ($questionId && $answer !== null) {
+            $result = $questionnaireService->saveAnswer($userId, $questionId, $answer);
+            
+            if ($result['success']) {
+                // Update session
+                if (!isset($_SESSION['answered_questions'])) {
+                    $_SESSION['answered_questions'] = [];
+                }
+                $_SESSION['answered_questions'][$questionId] = $answer;
+                
+                // Return JSON for AJAX or redirect for form
+                if (!empty($_POST['ajax'])) {
+                    header('Content-Type: application/json');
+                    echo json_encode($result);
+                    exit;
+                } else {
+                    header("Location: " . $_SERVER['PHP_SELF']);
+                    exit;
+                }
+            }
+        }
+    } elseif ($action === 'submit_questionnaire') {
+        // Submit/complete today's questionnaire
+        $result = $questionnaireService->submitQuestionnaire($userId);
+        
+        if ($result['success']) {
+            unset($_SESSION['answered_questions']);
+            
+            // Return JSON for AJAX or redirect
+            if (!empty($_POST['ajax'])) {
+                header('Content-Type: application/json');
+                echo json_encode($result);
+                exit;
+            } else {
+                header("Location: " . $_SERVER['PHP_SELF']);
+                exit;
+            }
+        }
+    } elseif ($action === 'go_back') {
+        // Go back to previous question
+        $prevQuestionId = (int)($_POST['question_id'] ?? 0);
+        if (isset($_SESSION['answered_questions'][$prevQuestionId])) {
+            unset($_SESSION['answered_questions'][$prevQuestionId]);
+        }
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    }
 }
 
 // Get today's entry to check for existing answers
@@ -65,48 +108,6 @@ if (!isset($_SESSION['answered_questions'])) {
         foreach ($existingAnswers as $answer) {
             $_SESSION['answered_questions'][$answer['question_id']] = $answer['answer_text'];
         }
-    }
-}
-
-// Handle previous question
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['go_back'])) {
-    $prevQuestionId = $_POST['go_back'];
-    if (isset($_SESSION['answered_questions'][$prevQuestionId])) {
-        unset($_SESSION['answered_questions'][$prevQuestionId]);
-    }
-    // Refresh page to show the previous question
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
-}
-
-// Handle single answer submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_answer'])) {
-    $questionId = $_POST['question_id'] ?? null;
-    $answer = $_POST['answer'] ?? null;
-    
-    if ($questionId && $answer !== null) {
-        // Get or create today's entry
-        if (!$todayEntryId) {
-            $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
-            $stmt->execute([$userId, $today]);
-            $todayEntryId = $pdo->lastInsertId();
-        }
-        
-        // Save answer
-        $stmt = $pdo->prepare("
-            INSERT INTO answers (entry_id, question_id, answer_text)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE answer_text = VALUES(answer_text)
-        ");
-        
-        $stmt->execute([$todayEntryId, $questionId, $answer]);
-        
-        // Mark as answered in session
-        $_SESSION['answered_questions'][$questionId] = $answer;
-        
-        // Refresh page to move to next question
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit;
     }
 }
 
@@ -329,110 +330,17 @@ if ($answeredCount >= $totalQuestions && $totalQuestions > 0) {
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
     <script>
-        // AJAX Helper Function
-        async function sendAjax(data) {
-            try {
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: new URLSearchParams(data)
+        // Handle form submission with AJAX (optional loading states)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Answer buttons - submit form normally or via AJAX
+            const answerButtons = document.querySelectorAll('button[data-answer-value]');
+            answerButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    // Form will submit normally, but could add loading state here
+                    this.disabled = true;
                 });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const result = await response.json();
-                return result;
-            } catch (error) {
-                console.error('AJAX Error:', error);
-                showError('Er is een fout opgetreden. Probeer het opnieuw.');
-                return { success: false };
-            }
-        }
-
-        // Show error message
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        // Answer Main Question
-        async function answerMain(answer, questionId) {
-            const button = event.target;
-            button.disabled = true;
-
-            const result = await sendAjax({
-                action: 'answer_main',
-                question_id: questionId,
-                answer: answer
             });
-
-            if (result.success) {
-                setTimeout(() => {
-                    location.reload();
-                }, 300);
-            } else {
-                button.disabled = false;
-                showError('Could not save answer');
-            }
-        }
-
-        // Answer Secondary Question
-        async function answerSecondary(questionId) {
-            const input = document.getElementById('secondaryAnswer');
-            const answer = input.value.trim();
-
-            if (answer === '' || isNaN(answer)) {
-                showError('Voer een geldig getal in');
-                return;
-            }
-
-            const button = event.target;
-            button.disabled = true;
-
-            const result = await sendAjax({
-                action: 'answer_secondary',
-                question_id: questionId,
-                answer: answer
-            });
-
-            if (result.success) {
-                setTimeout(() => {
-                    location.reload();
-                }, 300);
-            } else {
-                button.disabled = false;
-                showError('Could not save answer');
-            }
-        }
-
-        // Go Previous (via AJAX)
-        async function goPrevious(currentStep) {
-            const button = event.target;
-            button.disabled = true;
-
-            const result = await sendAjax({
-                action: 'go_back',
-                current_step: currentStep
-            });
-
-            if (result.success) {
-                setTimeout(() => {
-                    location.reload();
-                }, 300);
-            } else {
-                button.disabled = false;
-                showError('Could not go back');
-            }
-        }
+        });
 
         // Allow only numbers in secondary answer
         const secondaryInput = document.getElementById('secondaryAnswer');

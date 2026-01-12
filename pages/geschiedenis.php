@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require_once __DIR__ . '/../classes/History.php';
+require_once __DIR__ . '/../src/models/History.php';
 
 $isLoggedIn = isset($_SESSION['user_id']);
 $username = $_SESSION['username'] ?? 'Gebruiker';

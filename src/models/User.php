@@ -291,7 +291,7 @@ class User
             
             // Log the action if adminId is provided
             if ($adminId !== null) {
-                require_once __DIR__ . '/../classes/AdminActionLogger.php';
+                require_once __DIR__ . '/AdminActionLogger.php';
                 $logger = new AdminActionLogger();
                 $logger->logUserBlock($adminId, $userId, $reason);
             }
@@ -311,7 +311,7 @@ class User
             
             // Log the action if adminId is provided
             if ($adminId !== null) {
-                require_once __DIR__ . '/../classes/AdminActionLogger.php';
+                require_once __DIR__ . '/AdminActionLogger.php';
                 $logger = new AdminActionLogger();
                 $logger->logUserUnblock($adminId, $userId);
             }

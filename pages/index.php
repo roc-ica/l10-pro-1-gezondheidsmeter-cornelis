@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-require_once __DIR__ . '/../classes/DashboardStats.php';
-require_once __DIR__ . '/../classes/Question.php';
+require_once __DIR__ . '/../../src/models/DashboardStats.php';
+require_once __DIR__ . '/../../src/models/Question.php';
 
 $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 $basePath = preg_replace('#/pages$#', '', $scriptDir);
