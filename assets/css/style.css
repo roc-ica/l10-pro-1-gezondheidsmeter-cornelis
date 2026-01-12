@@ -2952,3 +2952,175 @@
   margin: 0 0 24px 0;
   line-height: 1.4;
 }
+
+/* Premium Identity Card Styling */
+.identity-bar {
+  margin-bottom: 24px;
+}
+
+.identity-bar h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 20px;
+  letter-spacing: -0.025em;
+}
+
+.identity-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.identity-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.identity-info1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.identity-details {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.identity-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.identity-icon:hover {
+  border-color: #16a34a;
+  transform: scale(1.05);
+}
+
+.identity-username {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.identity-button button {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.identity-button button:hover {
+  background: #16a34a !important;
+  color: #fff !important;
+  transform: translateY(-2px);
+}
+
+.identity-info2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f3f4f6;
+  margin-left: 0 !important;
+}
+
+.identity-info2 p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Icon Overlay for camera */
+.icon-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.identity-icon:hover .icon-overlay {
+  opacity: 1;
+}
+
+/* Modal Enhancements */
+.profile-preview-container:hover div {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.modal-content {
+  border-radius: 24px !important;
+  padding: 40px !important;
+  border: none !important;
+}
+
+.form-group label {
+  margin-bottom: 8px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.form-group input,
+.form-group select {
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  border: 1px solid #e5e7eb !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.form-group input:focus {
+  border-color: #16a34a !important;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.1) !important;
+}
+
+.btn-save {
+  border-radius: 12px !important;
+  padding: 14px 28px !important;
+  background: #16a34a !important;
+  font-weight: 700 !important;
+  border: none !important;
+}
+
+.btn-cancel {
+  border-radius: 12px !important;
+  padding: 14px 28px !important;
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
