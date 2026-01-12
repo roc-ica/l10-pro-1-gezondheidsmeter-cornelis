@@ -71,18 +71,28 @@ class QuestionnaireService
                 $stmt->execute([$entryId, $questionId, $answer]);
             }
 
-            // Get total questions count and answered count
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM questions WHERE is_deleted = 0 OR is_deleted IS NULL");
+            // Get total MAIN questions count (each pair = 1 question)
+            $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM questions WHERE active = 1");
             $stmt->execute();
             $totalQuestions = $stmt->fetchColumn();
 
-            // Count answered questions for today's entry
+            // Count answered question PAIRS for today's entry
+            // A pair is complete when both main and sub_question are answered
             $stmt = $this->pdo->prepare("
-                SELECT COUNT(DISTINCT question_id) as count 
-                FROM answers 
-                WHERE entry_id = ?
+                SELECT COUNT(DISTINCT q.id) as count
+                FROM questions q
+                WHERE q.active = 1
+                AND EXISTS (
+                    SELECT 1 FROM answers a 
+                    WHERE a.entry_id = ? AND a.question_id = q.id
+                )
+                AND EXISTS (
+                    SELECT 1 FROM answers a 
+                    INNER JOIN sub_questions sq ON a.sub_question_id = sq.id
+                    WHERE a.entry_id = ? AND sq.parent_question_id = q.id
+                )
             ");
-            $stmt->execute([$entryId]);
+            $stmt->execute([$entryId, $entryId]);
             $result = $stmt->fetch();
             $answeredQuestions = $result['count'];
 
