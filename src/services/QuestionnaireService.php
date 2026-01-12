@@ -58,7 +58,7 @@ class QuestionnaireService
                 // Update existing answer
                 $stmt = $this->pdo->prepare("
                     UPDATE answers 
-                    SET answer_text = ?, created_at = CURRENT_TIMESTAMP 
+                    SET answer_text = ? 
                     WHERE id = ?
                 ");
                 $stmt->execute([$answer, $existingAnswer['id']]);
