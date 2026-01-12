@@ -47,7 +47,7 @@ CREATE TABLE `answers` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `entry_id` bigint(20) UNSIGNED NOT NULL,
   `question_id` bigint(20) UNSIGNED NOT NULL,
-  `question_parent_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `sub_question_id` bigint(20) UNSIGNED DEFAULT NULL,
   `answer_text` text DEFAULT NULL,
   `answer_sequence` int DEFAULT 1,
   `score` tinyint(3) UNSIGNED DEFAULT NULL,
@@ -193,10 +193,25 @@ CREATE TABLE `questions` (
   `input_type` enum('choice','number','boolean','text') NOT NULL DEFAULT 'choice',
   `choices` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`choices`)),
   `active` tinyint(1) DEFAULT 1,
-  `is_main_question` tinyint(1) DEFAULT 1,
   `is_drugs_question` tinyint(1) DEFAULT 0,
-  `parent_question_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `question_type` enum('main','secondary','tertiary') DEFAULT 'main',
+  `answer_type` enum('binary','number','choice','text') DEFAULT 'binary',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `sub_questions`
+--
+
+CREATE TABLE `sub_questions` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `parent_question_id` bigint(20) UNSIGNED NOT NULL,
+  `question_text` text NOT NULL,
+  `input_type` enum('choice','number','boolean','text') NOT NULL DEFAULT 'choice',
+  `choices` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`choices`)),
+  `active` tinyint(1) DEFAULT 1,
+  `question_type` enum('secondary','tertiary') DEFAULT 'secondary',
   `answer_type` enum('binary','number','choice','text') DEFAULT 'binary',
   `show_on_answer` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -206,17 +221,25 @@ CREATE TABLE `questions` (
 -- Gegevens worden geëxporteerd voor tabel `questions`
 --
 
-INSERT INTO `questions` (`id`, `pillar_id`, `question_text`, `input_type`, `choices`, `active`, `is_main_question`, `parent_question_id`, `created_at`) VALUES
-(1, 1, 'Heb je vandaag genoeg water gedronken?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
-(2, 1, 'Hoeveel glazen water heb je vandaag gedronken?', 'number', NULL, 1, 0, 1, '2025-11-17 10:34:03'),
-(3, 2, 'Heb je vandaag bewogen?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
-(4, 2, 'Hoeveel minuten heb je bewogen?', 'number', NULL, 1, 0, 3, '2025-11-17 10:34:03'),
-(5, 3, 'Heb je goed geslapen?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
-(6, 3, 'Hoeveel uur heb je geslapen?', 'number', NULL, 1, 0, 5, '2025-11-17 10:34:03'),
-(7, 4, 'Heb je alcohol of drugs gebruikt?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
-(8, 4, 'Hoeveel keer heb je alcohol of drugs gebruikt?', 'number', NULL, 1, 0, 7, '2025-11-17 10:34:03'),
-(9, 5, 'Heb je social contact gehad?', 'choice', '[\"Ja\",\"Nee\"]', 1, 1, NULL, '2025-11-17 10:34:03'),
-(10, 5, 'Hoeveel uur heb je social contact gehad?', 'number', NULL, 1, 0, 9, '2025-11-17 10:34:03');
+INSERT INTO `questions` (`id`, `pillar_id`, `question_text`, `input_type`, `choices`, `active`, `is_drugs_question`, `created_at`) VALUES
+(1, 1, 'Heb je vandaag genoeg water gedronken?', 'choice', '[\"Ja\",\"Nee\"]', 1, 0, '2025-11-17 10:34:03'),
+(3, 2, 'Heb je vandaag bewogen?', 'choice', '[\"Ja\",\"Nee\"]', 1, 0, '2025-11-17 10:34:03'),
+(5, 3, 'Heb je goed geslapen?', 'choice', '[\"Ja\",\"Nee\"]', 1, 0, '2025-11-17 10:34:03'),
+(7, 4, 'Heb je alcohol of drugs gebruikt?', 'choice', '[\"Ja\",\"Nee\"]', 1, 0, '2025-11-17 10:34:03'),
+(9, 5, 'Heb je social contact gehad?', 'choice', '[\"Ja\",\"Nee\"]', 1, 0, '2025-11-17 10:34:03');
+
+-- --------------------------------------------------------
+
+--
+-- Gegevens worden geëxporteerd voor tabel `sub_questions`
+--
+
+INSERT INTO `sub_questions` (`id`, `parent_question_id`, `question_text`, `input_type`, `choices`, `active`, `question_type`, `created_at`) VALUES
+(2, 1, 'Hoeveel glazen water heb je vandaag gedronken?', 'number', NULL, 1, 'secondary', '2025-11-17 10:34:03'),
+(4, 3, 'Hoeveel minuten heb je bewogen?', 'number', NULL, 1, 'secondary', '2025-11-17 10:34:03'),
+(6, 5, 'Hoeveel uur heb je geslapen?', 'number', NULL, 1, 'secondary', '2025-11-17 10:34:03'),
+(8, 7, 'Hoeveel keer heb je alcohol of drugs gebruikt?', 'number', NULL, 1, 'secondary', '2025-11-17 10:34:03'),
+(10, 9, 'Hoeveel uur heb je social contact gehad?', 'number', NULL, 1, 'secondary', '2025-11-17 10:34:03');
 
 -- --------------------------------------------------------
 
@@ -313,7 +336,7 @@ ALTER TABLE `admin_actions`
 ALTER TABLE `answers`
   ADD PRIMARY KEY (`id`),
   ADD KEY `question_id` (`question_id`),
-  ADD KEY `question_parent_id` (`question_parent_id`),
+  ADD KEY `sub_question_id` (`sub_question_id`),
   ADD KEY `entry_id` (`entry_id`,`question_id`);
 
 --
@@ -374,8 +397,14 @@ ALTER TABLE `pillars`
 --
 ALTER TABLE `questions`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `pillar_id` (`pillar_id`),
-  ADD KEY `fk_parent_question` (`parent_question_id`);
+  ADD KEY `pillar_id` (`pillar_id`);
+
+--
+-- Indexen voor tabel `sub_questions`
+--
+ALTER TABLE `sub_questions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `parent_question_id` (`parent_question_id`);
 
 --
 -- Indexen voor tabel `resets`
@@ -482,7 +511,13 @@ ALTER TABLE `pillars`
 -- AUTO_INCREMENT voor een tabel `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT voor een tabel `sub_questions`
+--
+ALTER TABLE `sub_questions`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT voor een tabel `resets`
@@ -524,7 +559,7 @@ ALTER TABLE `admin_actions`
 ALTER TABLE `answers`
   ADD CONSTRAINT `answers_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `daily_entries` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `answers_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `answers_ibfk_3` FOREIGN KEY (`question_parent_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `answers_ibfk_3` FOREIGN KEY (`sub_question_id`) REFERENCES `sub_questions` (`id`) ON DELETE CASCADE;
 
 --
 -- Beperkingen voor tabel `daily_entries`
@@ -560,8 +595,13 @@ ALTER TABLE `notifications`
 -- Beperkingen voor tabel `questions`
 --
 ALTER TABLE `questions`
-  ADD CONSTRAINT `questions_ibfk_1` FOREIGN KEY (`pillar_id`) REFERENCES `pillars` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `questions_ibfk_parent` FOREIGN KEY (`parent_question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `questions_ibfk_1` FOREIGN KEY (`pillar_id`) REFERENCES `pillars` (`id`) ON DELETE CASCADE;
+
+--
+-- Beperkingen voor tabel `sub_questions`
+--
+ALTER TABLE `sub_questions`
+  ADD CONSTRAINT `sub_questions_ibfk_1` FOREIGN KEY (`parent_question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE;
 
 --
 -- Beperkingen voor tabel `resets`
