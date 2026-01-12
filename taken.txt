@@ -15,7 +15,7 @@ Gijs:
 Home page
 
 Moamen:
-admin analytics
+admin analytics Frontend / backend
 gebruikers.php Frontend
 
 Micheal:
