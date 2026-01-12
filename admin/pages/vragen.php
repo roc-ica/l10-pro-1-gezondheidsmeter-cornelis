@@ -48,37 +48,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $secondary_question = trim($_POST['secondary_question'] ?? '');
             $is_drugs_question = isset($_POST['is_drugs_question']) ? 1 : 0;
 
-            $input_type = $_POST['input_type'] ?? 'number';
-
             if ($pillar_id && $main_question && $secondary_question) {
                 $pdo = Database::getConnection();
                 try {
-                    // Add main question (no parent)
+                    // Add main question (always choice type for ja/nee questions)
                     $stmt = $pdo->prepare("
                         INSERT INTO questions 
-                        (pillar_id, question_text, input_type, active, is_main_question, is_drugs_question, parent_question_id)
-                        VALUES (?, ?, ?, 1, 1, ?, NULL)
+                        (pillar_id, question_text, input_type, active, is_drugs_question)
+                        VALUES (?, ?, 'choice', 1, ?)
                     ");
                     $stmt->execute([
                         (int) $pillar_id,
                         $main_question,
-                        $input_type,
                         $is_drugs_question
                     ]);
 
                     $mainQuestionId = (int) $pdo->lastInsertId();
 
-                    // Add secondary question (linked to main via parent_question_id)
+                    // Add sub_question (always number type for follow-up questions)
                     $stmt = $pdo->prepare("
-                        INSERT INTO questions 
-                        (pillar_id, question_text, input_type, active, is_main_question, is_drugs_question, parent_question_id)
-                        VALUES (?, ?, ?, 1, 0, 0, ?)
+                        INSERT INTO sub_questions 
+                        (parent_question_id, question_text, input_type, active, question_type)
+                        VALUES (?, ?, 'number', 1, 'secondary')
                     ");
                     $stmt->execute([
-                        (int) $pillar_id,
-                        $secondary_question,
-                        $input_type,
-                        $mainQuestionId
+                        $mainQuestionId,
+                        $secondary_question
                     ]);
 
                     $secondaryQuestionId = (int) $pdo->lastInsertId();
@@ -154,18 +149,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'pillar_id' => $pillar_id
                     ]);
 
-                    // Update secondary question if it exists
+                    // Update sub_question if it exists
                     if ($secondary_question_id) {
                         $stmt = $pdo->prepare("
-                            UPDATE questions 
-                            SET question_text = ?, pillar_id = ?
+                            UPDATE sub_questions 
+                            SET question_text = ?
                             WHERE id = ?
                         ");
-                        $stmt->execute([$secondary_question_text, (int) $pillar_id, (int) $secondary_question_id]);
+                        $stmt->execute([$secondary_question_text, (int) $secondary_question_id]);
 
                         $logger->logQuestionUpdate($adminUserId, (int) $secondary_question_id, [
-                            'question_text' => $secondary_question_text,
-                            'pillar_id' => $pillar_id
+                            'question_text' => $secondary_question_text
                         ]);
                     }
 
@@ -184,23 +178,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch Pillars for Dropdown
 $pillars = Pillar::getAll();
 
-// Fetch only MAIN questions (those with no parent)
+// Fetch all main questions
 $pdo = Database::getConnection();
 $stmt = $pdo->prepare("
     SELECT q.*, p.name as pillar_name, p.color as pillar_color
     FROM questions q
     JOIN pillars p ON q.pillar_id = p.id
-    WHERE q.active = 1 AND q.is_main_question = 1 AND q.parent_question_id IS NULL
+    WHERE q.active = 1
     ORDER BY q.pillar_id, q.id
 ");
 $stmt->execute();
 $mainQuestions = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-// For each main question, fetch its linked secondary question
+// For each main question, fetch its linked sub_question
 foreach ($mainQuestions as &$mainQ) {
     $stmtSec = $pdo->prepare("
-        SELECT * FROM questions
-        WHERE parent_question_id = ? AND is_main_question = 0 AND active = 1
+        SELECT * FROM sub_questions
+        WHERE parent_question_id = ? AND active = 1
         LIMIT 1
     ");
     $stmtSec->execute([$mainQ->id]);
@@ -258,15 +252,6 @@ foreach ($mainQuestions as &$mainQ) {
                                 <option value="<?php echo $pillar->id; ?>"><?php echo htmlspecialchars($pillar->name); ?>
                                 </option>
                             <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <!-- Input Type Selection -->
-                    <div class="form-group">
-                        <label for="input_type_select" class="form-label">Type Invoer:</label>
-                        <select name="input_type" class="form-select" id="input_type_select" required>
-                            <option value="number" selected>Getal (bijv. 8, 30)</option>
-                            <option value="text">Tekst (bijv. Softdrugs/Harddrugs)</option>
                         </select>
                     </div>
 
