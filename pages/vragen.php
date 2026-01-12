@@ -41,33 +41,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ACTION: Save answer using service
         if ($action === 'answer_main' || $action === 'answer_secondary') {
             $questionId = (int)($_POST['question_id'] ?? 0);
+            $subQuestionId = (int)($_POST['sub_question_id'] ?? 0);
             $answer = $_POST['answer'] ?? null;
             
-            error_log("DEBUG: AJAX - Attempting to save answer - QuestionID: $questionId, Answer: $answer");
+            error_log("DEBUG: AJAX - Attempting to save answer - QuestionID: $questionId, SubQuestionID: $subQuestionId, Answer: $answer");
             
             if ($questionId && $answer !== null) {
                 try {
-                    $result = $questionnaireService->saveAnswer($userId, $questionId, $answer);
-                    error_log("DEBUG: Service result: " . json_encode($result));
+                    // Get or create today's daily entry
+                    $today = date('Y-m-d');
+                    $stmt = $pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
+                    $stmt->execute([$userId, $today]);
+                    $entry = $stmt->fetch();
                     
-                    // Update session state if successful
-                    if ($result['success']) {
-                        if (!isset($_SESSION['questionnaire_state']['answers'])) {
-                            $_SESSION['questionnaire_state']['answers'] = [];
-                        }
-                        $_SESSION['questionnaire_state']['answers'][$questionId] = $answer;
-                        
-                        // Update progress state
-                        if ($action === 'answer_main') {
-                            $_SESSION['questionnaire_state']['current_step'] = 'secondary';
-                        } elseif ($action === 'answer_secondary') {
-                            $_SESSION['questionnaire_state']['current_pair_idx']++;
-                            $_SESSION['questionnaire_state']['current_step'] = 'main';
-                        }
-                        error_log("DEBUG: Session state updated");
+                    if ($entry) {
+                        $entryId = $entry['id'];
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
+                        $stmt->execute([$userId, $today]);
+                        $entryId = $pdo->lastInsertId();
                     }
                     
-                    echo json_encode($result);
+                    // For main question, save answer to answers table with question_id
+                    if ($action === 'answer_main') {
+                        $stmt = $pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND question_id = ?");
+                        $stmt->execute([$entryId, $questionId]);
+                        $existingAnswer = $stmt->fetch();
+                        
+                        if ($existingAnswer) {
+                            $stmt = $pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
+                            $stmt->execute([$answer, $existingAnswer['id']]);
+                        } else {
+                            $stmt = $pdo->prepare("INSERT INTO answers (entry_id, question_id, answer_text) VALUES (?, ?, ?)");
+                            $stmt->execute([$entryId, $questionId, $answer]);
+                        }
+                    }
+                    // For sub_question, save answer with sub_question_id
+                    elseif ($action === 'answer_secondary' && $subQuestionId) {
+                        $stmt = $pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND sub_question_id = ?");
+                        $stmt->execute([$entryId, $subQuestionId]);
+                        $existingAnswer = $stmt->fetch();
+                        
+                        if ($existingAnswer) {
+                            $stmt = $pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
+                            $stmt->execute([$answer, $existingAnswer['id']]);
+                        } else {
+                            $stmt = $pdo->prepare("INSERT INTO answers (entry_id, question_id, sub_question_id, answer_text) VALUES (?, ?, ?, ?)");
+                            $stmt->execute([$entryId, $questionId, $subQuestionId, $answer]);
+                        }
+                    }
+                    
+                    // Update session state
+                    if (!isset($_SESSION['questionnaire_state']['answers'])) {
+                        $_SESSION['questionnaire_state']['answers'] = [];
+                    }
+                    $_SESSION['questionnaire_state']['answers'][$questionId] = $answer;
+                    
+                    // Update progress state
+                    if ($action === 'answer_main') {
+                        $_SESSION['questionnaire_state']['current_step'] = 'secondary';
+                    } elseif ($action === 'answer_secondary') {
+                        $_SESSION['questionnaire_state']['current_pair_idx']++;
+                        $_SESSION['questionnaire_state']['current_step'] = 'main';
+                    }
+                    
+                    error_log("DEBUG: Answer saved successfully");
+                    echo json_encode(['success' => true, 'message' => 'Antwoord opgeslagen']);
                     exit;
                 } catch (Exception $e) {
                     error_log("DEBUG: Exception caught: " . $e->getMessage());
@@ -125,33 +164,40 @@ $stmt->execute([$userId, $today]);
 $todayEntry = $stmt->fetch();
 $todayEntryId = $todayEntry ? $todayEntry['id'] : null;
 
-// Load today's existing answers from database
-if ($todayEntryId && empty($_SESSION['questionnaire_state']['answers'])) {
-    $stmt = $pdo->prepare("SELECT question_id, answer_text FROM answers WHERE entry_id = ?");
+// Load today's existing answers from database (always fetch from DB to ensure accuracy)
+if ($todayEntryId) {
+    $stmt = $pdo->prepare("SELECT question_id, sub_question_id, answer_text FROM answers WHERE entry_id = ?");
     $stmt->execute([$todayEntryId]);
     $existingAnswers = $stmt->fetchAll();
     foreach ($existingAnswers as $ans) {
-        $_SESSION['questionnaire_state']['answers'][$ans['question_id']] = $ans['answer_text'];
+        // Store main question answer
+        if ($ans['question_id']) {
+            $_SESSION['questionnaire_state']['answers'][$ans['question_id']] = $ans['answer_text'];
+        }
+        // Store sub_question answer with special key
+        if ($ans['sub_question_id']) {
+            $_SESSION['questionnaire_state']['answers']['sub_' . $ans['sub_question_id']] = $ans['answer_text'];
+        }
     }
 }
 
-// Fetch all question pairs (main + secondary)
+// Fetch all main questions
 $stmt = $pdo->prepare("
     SELECT q.*, p.name as pillar_name, p.color as pillar_color
     FROM questions q
     JOIN pillars p ON q.pillar_id = p.id
-    WHERE q.active = 1 AND q.is_main_question = 1 AND q.parent_question_id IS NULL
+    WHERE q.active = 1
     ORDER BY q.id ASC
 ");
 $stmt->execute();
 $mainQuestions = $stmt->fetchAll();
 
-// Build question pairs
+// Build question pairs (main + sub_questions)
 $questionPairs = [];
 foreach ($mainQuestions as $main) {
     $stmt = $pdo->prepare("
-        SELECT * FROM questions 
-        WHERE active = 1 AND parent_question_id = ? AND is_main_question = 0
+        SELECT * FROM sub_questions 
+        WHERE active = 1 AND parent_question_id = ?
         LIMIT 1
     ");
     $stmt->execute([$main['id']]);
@@ -176,7 +222,7 @@ $totalPairs = count($questionPairs);
 // Count answered pairs
 $answeredPairs = 0;
 foreach ($questionPairs as $pair) {
-    if (isset($answers[$pair['main']['id']]) && isset($answers[$pair['secondary']['id']])) {
+    if (isset($answers[$pair['main']['id']]) && isset($answers['sub_' . $pair['secondary']['id']])) {
         $answeredPairs++;
     }
 }
@@ -589,14 +635,14 @@ if ($allAnswered && $todayEntryId) {
                         id="secondaryAnswer" 
                         class="form-input-number" 
                         placeholder="Voer getal in"
-                        value="<?php echo isset($answers[$currentPair['secondary']['id']]) ? htmlspecialchars($answers[$currentPair['secondary']['id']]) : ''; ?>"
+                        value="<?php echo isset($answers['sub_' . $currentPair['secondary']['id']]) ? htmlspecialchars($answers['sub_' . $currentPair['secondary']['id']]) : ''; ?>"
                         min="0"
                     >
                 </div>
 
                 <div class="question-nav">
                     <button type="button" class="nav-btn prev-btn" onclick="goPrevious('secondary')">← Vorige</button>
-                    <button type="button" class="nav-btn next-btn" onclick="answerSecondary(<?php echo $currentPair['secondary']['id']; ?>)">Volgende →</button>
+                    <button type="button" class="nav-btn next-btn" onclick="answerSecondary(<?php echo $currentPair['main']['id']; ?>, <?php echo $currentPair['secondary']['id']; ?>)">Volgende →</button>
                 </div>
             </div>
 
@@ -682,11 +728,11 @@ if ($allAnswered && $todayEntryId) {
         }
 
         // Answer Secondary Question
-        async function answerSecondary(questionId) {
+        async function answerSecondary(questionId, subQuestionId) {
             const input = document.getElementById('secondaryAnswer');
             const answer = input.value.trim();
 
-            console.log("answerSecondary called with questionId:", questionId, "answer:", answer);
+            console.log("answerSecondary called with questionId:", questionId, "subQuestionId:", subQuestionId, "answer:", answer);
 
             if (answer === '' || isNaN(answer)) {
                 showError('Voer een geldig getal in');
@@ -699,6 +745,7 @@ if ($allAnswered && $todayEntryId) {
             const result = await sendAjax({
                 action: 'answer_secondary',
                 question_id: questionId,
+                sub_question_id: subQuestionId,
                 answer: answer
             });
 
