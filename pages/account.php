@@ -26,9 +26,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $profileService = new UserProfileService();
         $responseData = $profileService->updateProfile($_SESSION['user_id'], $_POST);
         
+        // Handle profile picture upload from modal if provided
+        if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+            $uploadResult = $profileService->uploadProfilePicture($_SESSION['user_id'], $_FILES['profile_picture']);
+            if ($uploadResult['success']) {
+                $responseData['message'] .= ' en profielfoto bijgewerkt';
+            } else {
+                $responseData['success'] = false;
+                $responseData['message'] .= ' maar foto upload mislukt: ' . $uploadResult['message'];
+            }
+        }
+
         // Refresh user data after update
         if ($responseData['success']) {
             $user = User::findByIdStatic($_SESSION['user_id']);
+            // Update session data
+            $_SESSION['email'] = $user->email;
+            $_SESSION['birthdate'] = $user->birthdate;
+            $_SESSION['gender'] = $user->gender;
         }
     } elseif ($action === 'upload_profile_picture') {
         // Upload profile picture
@@ -67,6 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $responseData = $exportResult;
         }
+    }
+
+    // If it's an AJAX request (has action and isn't export), return JSON
+    if ($responseData && $action !== 'export_health_data') {
+        header('Content-Type: application/json');
+        echo json_encode($responseData);
+        exit;
     }
 }
 
@@ -203,9 +225,18 @@ foreach ($allEntries as $entryDate) {
                     </div>
                 </div>
                 <div class="identity-info2">
-                    <p><?= htmlspecialchars($email) ?></p>
-                    <p><?= htmlspecialchars($birthdate ?: 'Niet opgegeven') ?></p>
-                    <p><?= htmlspecialchars($gender ?: 'Niet opgegeven') ?></p>
+                    <p>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <span><?= htmlspecialchars($email) ?></span>
+                    </p>
+                    <p>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span><?= htmlspecialchars($birthdate ?: 'Niet opgegeven') ?></span>
+                    </p>
+                    <p>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5z"></path><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path></svg>
+                        <span><?= htmlspecialchars($gender ?: 'Niet opgegeven') ?></span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -431,8 +462,15 @@ foreach ($allEntries as $entryDate) {
                 <h2>Gegevens Bewerken</h2>
                 <span class="close" onclick="closeEditModal()">&times;</span>
             </div>
-            <form id="editForm" method="POST">
+            <form id="editForm" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="update_profile">
+                <div class="form-group" style="text-align: center; margin-bottom: 20px;">
+                    <div class="profile-preview-container" style="position: relative; width: 100px; height: 100px; margin: 0 auto 10px; border-radius: 50%; overflow: hidden; border: 2px solid #e2e8f0; cursor: pointer;" onclick="document.getElementById('edit_profile_picture').click()">
+                        <img id="modal_pfp_preview" src="<?= $profilePicture ?: '../assets/images/default-avatar.png' ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 0;">Wijzigen</div>
+                    </div>
+                    <input type="file" id="edit_profile_picture" name="profile_picture" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                </div>
                 <div class="form-group">
                     <label for="edit_email">E-mailadres</label>
                     <input type="email" id="edit_email" name="email" value="<?= htmlspecialchars($user->email ?? '') ?>"
@@ -447,9 +485,9 @@ foreach ($allEntries as $entryDate) {
                     <label for="edit_gender">Geslacht</label>
                     <select id="edit_gender" name="gender">
                         <option value="">-- Selecteer --</option>
-                        <option value="Male" <?= $user->gender === 'Male' ? 'selected' : '' ?>>Man</option>
-                        <option value="Female" <?= $user->gender === 'Female' ? 'selected' : '' ?>>Vrouw</option>
-                        <option value="Other" <?= $user->gender === 'Other' ? 'selected' : '' ?>>Anders</option>
+                        <option value="male" <?= $user->gender === 'male' ? 'selected' : '' ?>>Man</option>
+                        <option value="female" <?= $user->gender === 'female' ? 'selected' : '' ?>>Vrouw</option>
+                        <option value="other" <?= $user->gender === 'other' ? 'selected' : '' ?>>Anders</option>
                     </select>
                 </div>
                 <div class="modal-actions">
@@ -468,6 +506,16 @@ foreach ($allEntries as $entryDate) {
 
         function closeEditModal() {
             document.getElementById('editModal').style.display = 'none';
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('modal_pfp_preview').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
         }
 
         // Close modal when clicking outside of it
