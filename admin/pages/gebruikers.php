@@ -53,34 +53,15 @@ $totalPages = ceil($totalUsers / $usersPerPage);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
-        // Update user
-        if ($_POST['action'] === 'update_user') {
+        // Delete user
+        if ($_POST['action'] === 'delete_user') {
             $userId = $_POST['user_id'] ?? null;
-            $displayName = trim($_POST['display_name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $birthdate = trim($_POST['birthdate'] ?? '');
-            $geslacht = trim($_POST['geslacht'] ?? '');
-            $isAdmin = isset($_POST['is_admin']) ? 1 : 0;
-
             if ($userId) {
-                $targetUser = User::findByIdStatic((int)$userId);
-                if ($targetUser) {
-                    $changes = [];
-                    if ($displayName) $changes['display_name'] = $displayName;
-                    if ($email) $changes['email'] = $email;
-                    if ($birthdate) $changes['birthdate'] = $birthdate;
-                    if ($geslacht) $changes['geslacht'] = $geslacht;
-                    if ($isAdmin !== $targetUser->is_admin) $changes['is_admin'] = $isAdmin;
-
-                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'birthdate' => $birthdate ?: null, 'geslacht' => $geslacht ?: null, 'is_admin' => $isAdmin]);
-                    if ($updateResult['success']) {
-                        $message = "Gebruiker bijgewerkt!";
-                        if (!empty($changes)) {
-                            $logger->logUserUpdate($adminUserId, (int)$userId, $changes);
-                        }
-                    } else {
-                        $error = "Fout bij bijwerken gebruiker.";
-                    }
+                $deleteResult = User::delete((int)$userId, $adminUserId);
+                if ($deleteResult['success']) {
+                    $message = "Gebruiker permanent verwijderd.";
+                } else {
+                    $error = "Fout bij verwijderen gebruiker: " . $deleteResult['message'];
                 }
             }
         }
@@ -217,8 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER');
                                                 echo (' ');
                                                 echo htmlspecialchars($user['id']) ?></div>
-                    <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['geslacht'] ?? ''); ?>')">
-                        <i data-lucide="pencil"></i> Bewerken
+                    <button class="btn-action btn-delete" style="background-color: #ef4444; color: white; border: none; margin-bottom: 5px;" onclick="openDeleteUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')">
+                        <i data-lucide="trash-2"></i> Verwijderen
                     </button>
                     <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">
                         <i data-lucide="lock"></i> <?php echo $user['is_active'] ? 'Blokkeren' : 'Deblokkeren'; ?>
@@ -297,35 +278,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- Edit User Modal -->
-    <div id="editUserModal" class="modal" style="display: none;">
+    <!-- Delete User Modal -->
+    <div id="deleteUserModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Gebruiker Bewerken</h2>
-                <span class="close" onclick="closeEditUserModal()">&times;</span>
+                <h2>Gebruiker Verwijderen</h2>
+                <span class="close" onclick="closeDeleteUserModal()">&times;</span>
             </div>
-            <form id="editUserForm" method="POST">
-                <input type="hidden" id="edit_user_id" name="user_id">
-                <div class="form-group">
-                    <label for="edit_user_email">E-mailadres</label>
-                    <input type="email" id="edit_user_email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit_user_birthdate">Geboortedatum</label>
-                    <input type="date" id="edit_user_birthdate" name="birthdate">
-                </div>
-                <div class="form-group">
-                    <label for="edit_user_geslacht">Geslacht</label>
-                    <select id="edit_user_geslacht" name="geslacht">
-                        <option value="">-- Selecteer --</option>
-                        <option value="Male">Man</option>
-                        <option value="Female">Vrouw</option>
-                        <option value="Other">Anders</option>
-                    </select>
-                </div>
+            <p>Weet je zeker dat je gebruiker <strong id="delete_username_display"></strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt!</p>
+            <form id="deleteUserForm" method="POST">
+                <input type="hidden" name="action" value="delete_user">
+                <input type="hidden" id="delete_user_id" name="user_id">
                 <div class="modal-actions">
-                    <button type="submit" class="btn-save">Opslaan</button>
-                    <button type="button" class="btn-cancel" onclick="closeEditUserModal()">Annuleren</button>
+                    <button type="submit" class="btn-delete" style="background-color: #ef4444;">Verwijderen</button>
+                    <button type="button" class="btn-cancel" onclick="closeDeleteUserModal()">Annuleren</button>
                 </div>
             </form>
         </div>
@@ -337,14 +303,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
     <script src="/js/session-guard.js"></script>
     <script>
-            document.getElementById('edit_user_id').value = userId;
-            document.getElementById('edit_user_email').value = email;
-            document.getElementById('edit_user_birthdate').value = birthdate;
-            document.getElementById('edit_user_geslacht').value = gender; // variable name from onclick arg
-            document.getElementById('editUserModal').style.display = 'block';
+        function openDeleteUserModal(userId, username) {
+            document.getElementById('delete_user_id').value = userId;
+            document.getElementById('delete_username_display').textContent = username;
+            document.getElementById('deleteUserModal').style.display = 'block';
+        }
+
+        function closeDeleteUserModal() {
+            document.getElementById('deleteUserModal').style.display = 'none';
+        }
 
         function closeEditUserModal() {
-            document.getElementById('editUserModal').style.display = 'none';
+            // No longer used, but kept for safety if there are any rogue calls
+            const modal = document.getElementById('editUserModal');
+            if (modal) modal.style.display = 'none';
         }
 
         // Close modal when clicking outside

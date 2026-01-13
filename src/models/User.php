@@ -321,4 +321,35 @@ class User
             return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
         }
     }
+
+    public static function delete(int $userId, ?int $adminId = null): array
+    {
+        $pdo = Database::getConnection();
+        
+        try {
+            // Start transaction to ensure everything is deleted correctly
+            $pdo->beginTransaction();
+
+            // The daily_entries and other tables have ON DELETE CASCADE in the schema (seen in init.sql)
+            // so deleting the user will automatically clean up related data.
+            
+            $stmt = $pdo->prepare('DELETE FROM users WHERE id = ?');
+            $stmt->execute([$userId]);
+
+            // Log the action if adminId is provided
+            if ($adminId !== null) {
+                require_once __DIR__ . '/AdminActionLogger.php';
+                $logger = new AdminActionLogger();
+                $logger->logAdminAction($adminId, 'delete_user', 'users', (string)$userId, "Gebruiker verwijderd");
+            }
+
+            $pdo->commit();
+            return ['success' => true, 'message' => 'Gebruiker permanent verwijderd.'];
+        } catch (\PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
+        }
+    }
 }
