@@ -111,6 +111,7 @@ class HealthScoreCalculator
     {
         $questionId = $answer['question_id'];
         $answerValue = $answer['score'] ?? $answer['answer_text'];
+        $subQuestionId = $answer['sub_question_id'] ?? null;
 
         // Get question details
         $stmt = $this->pdo->prepare("
@@ -126,12 +127,35 @@ class HealthScoreCalculator
             return 0;
         }
 
-        // Special handling for drugs question
+        // Check if this is a sub-question answer (has both main and sub answer)
+        if ($subQuestionId) {
+            // Get the main question answer to see if it was "Ja" or "Nee"
+            $mainAnswer = $this->getMainQuestionAnswer($answer['entry_id'], $questionId);
+            
+            // If main answer is "Nee", score should be 0 (they said no to doing the activity)
+            if ($mainAnswer && strtolower(trim($mainAnswer)) === 'nee') {
+                $score = 0;
+                $details[] = [
+                    'question' => $question['question_text'] ?? 'Unknown',
+                    'answer' => "Nee (ikke gjort)",
+                    'score' => round($score, 2)
+                ];
+                return $score;
+            }
+            
+            // Check if this is a frequency-based addiction question (Addictions pillar with numeric answer)
+            // Questions about "how many times" drug/alcohol use should be inverted (higher = worse)
+            if ($question['pillar_id'] == 4 && is_numeric($answerValue)) {
+                return $this->scoreAddictionFrequency($answerValue, $question, $details);
+            }
+        }
+
+        // Special handling for drugs/choice-based questions
         // Check if explicitly marked OR if it belongs to Addictions pillar (4)
         $isDrugs = (isset($question['is_drugs_question']) && $question['is_drugs_question']) ||
-            ($question['pillar_id'] == 4);
+            ($question['pillar_id'] == 4 && !is_numeric($answerValue));
 
-        if ($isDrugs) {
+        if ($isDrugs && !is_numeric($answerValue)) {
             return $this->scoreDrugsAnswer($answerValue, $question, $details);
         }
 
@@ -165,7 +189,7 @@ class HealthScoreCalculator
                         $score = 60;
                     }
                     break;
-                case 4: // Verslavingen (Addictions) - handled above as is_drugs_question
+                case 4: // Verslavingen (Addictions) - should not reach here if numeric
                     $score = 100; // Default if not drugs
                     break;
                 case 5: // Sociaal (Social)
@@ -192,7 +216,7 @@ class HealthScoreCalculator
             } elseif (in_array($answerLower, ['ja', 'yes', 'true', '1', 'veel'])) {
                 $score = 50;
             } elseif (in_array($answerLower, ['nee', 'no', 'false', '0'])) {
-                $score = 100;
+                $score = 0;
             } elseif (in_array($answerLower, ['softdrugs', 'softdrug'])) {
                 $score = 20;
             } elseif (in_array($answerLower, ['harddrugs', 'harddrug'])) {
@@ -212,6 +236,55 @@ class HealthScoreCalculator
         ];
 
         return $score;
+    }
+
+    /**
+     * Score addiction frequency questions (inverted: higher frequency = lower score)
+     * E.g., "How many times a day do you use drugs?" - 0 times = 100, 5+ times = 0
+     */
+    private function scoreAddictionFrequency(string $answerValue, array $question, &$details): float
+    {
+        $numValue = (float) $answerValue;
+        $score = 0;
+
+        // Inverted scaling: higher frequency = worse health
+        // 0 times = 100 (perfect)
+        // 1 time = 80
+        // 2-3 times = 50
+        // 4+ times = 0 (very bad)
+        if ($numValue == 0) {
+            $score = 100;
+        } elseif ($numValue == 1) {
+            $score = 80;
+        } elseif ($numValue <= 3) {
+            $score = 50;
+        } else {
+            $score = 0;
+        }
+
+        $details[] = [
+            'question' => $question['question_text'] ?? 'Unknown',
+            'answer' => intval($numValue) . ' keer',
+            'score' => round($score, 2)
+        ];
+
+        return max(0, min(100, $score));
+    }
+
+    /**
+     * Get the main question answer (Ja or Nee) for a given entry and question
+     */
+    private function getMainQuestionAnswer(int $entryId, int $questionId): ?string
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT answer_text 
+            FROM answers 
+            WHERE entry_id = ? AND question_id = ? AND sub_question_id IS NULL
+            LIMIT 1
+        ");
+        $stmt->execute([$entryId, $questionId]);
+        $result = $stmt->fetch();
+        return $result ? $result['answer_text'] : null;
     }
 
     /**

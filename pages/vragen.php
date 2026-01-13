@@ -75,6 +75,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt = $pdo->prepare("INSERT INTO answers (entry_id, question_id, answer_text) VALUES (?, ?, ?)");
                             $stmt->execute([$entryId, $questionId, $answer]);
                         }
+                        
+                        // If answer is "Nee", automatically set sub-question to 0
+                        if ($answer === 'Nee' && $subQuestionId) {
+                            $stmt = $pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND sub_question_id = ?");
+                            $stmt->execute([$entryId, $subQuestionId]);
+                            $existingSubAnswer = $stmt->fetch();
+                            
+                            if ($existingSubAnswer) {
+                                $stmt = $pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
+                                $stmt->execute(['0', $existingSubAnswer['id']]);
+                            } else {
+                                $stmt = $pdo->prepare("INSERT INTO answers (entry_id, question_id, sub_question_id, answer_text) VALUES (?, ?, ?, ?)");
+                                $stmt->execute([$entryId, $questionId, $subQuestionId, '0']);
+                            }
+                        }
                     }
                     // For sub_question, save answer with sub_question_id
                     elseif ($action === 'answer_secondary' && $subQuestionId) {
@@ -99,7 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Update progress state
                     if ($action === 'answer_main') {
-                        $_SESSION['questionnaire_state']['current_step'] = 'secondary';
+                        // If answer is "Nee", skip secondary and go to next pair
+                        if ($answer === 'Nee') {
+                            $_SESSION['questionnaire_state']['current_pair_idx']++;
+                            $_SESSION['questionnaire_state']['current_step'] = 'main';
+                        } else {
+                            $_SESSION['questionnaire_state']['current_step'] = 'secondary';
+                        }
                     } elseif ($action === 'answer_secondary') {
                         $_SESSION['questionnaire_state']['current_pair_idx']++;
                         $_SESSION['questionnaire_state']['current_step'] = 'main';
@@ -220,9 +241,17 @@ $currentPair = isset($questionPairs[$currentPairIdx]) ? $questionPairs[$currentP
 $totalPairs = count($questionPairs);
 
 // Count answered pairs
+// A pair is complete if:
+// 1. Main question is answered AND secondary is answered, OR
+// 2. Main question is answered with "Nee" (which skips the secondary)
 $answeredPairs = 0;
 foreach ($questionPairs as $pair) {
-    if (isset($answers[$pair['main']['id']]) && isset($answers['sub_' . $pair['secondary']['id']])) {
+    $mainAnswered = isset($answers[$pair['main']['id']]);
+    $secondaryAnswered = isset($answers['sub_' . $pair['secondary']['id']]);
+    $mainAnswerIsNee = $mainAnswered && $answers[$pair['main']['id']] === 'Nee';
+    
+    // Count as answered if: (main + secondary) OR (main is "Nee")
+    if ($mainAnswered && ($secondaryAnswered || $mainAnswerIsNee)) {
         $answeredPairs++;
     }
 }
