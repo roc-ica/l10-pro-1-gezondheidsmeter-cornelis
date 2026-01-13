@@ -11,7 +11,7 @@ class User
     public $is_admin;
     public $display_name;
     public $birthdate;
-    public $gender;
+    public $geslacht;
     public $created_at;
     public $last_login;
     public $is_active;
@@ -32,7 +32,7 @@ class User
             $this->is_admin = isset($data['is_admin']) ? (int)$data['is_admin'] : null;
             $this->display_name = $data['display_name'] ?? null;
             $this->birthdate = $data['birthdate'] ?? null;
-            $this->gender = $data['gender'] ?? null;
+            $this->geslacht = $data['geslacht'] ?? $data['gender'] ?? null;
             $this->created_at = $data['created_at'] ?? null;
             $this->last_login = $data['last_login'] ?? null;
             $this->is_active = isset($data['is_active']) ? (int)$data['is_active'] : null;
@@ -108,9 +108,9 @@ class User
             $fields[] = 'birthdate = ?';
             $values[] = $data['birthdate'];
         }
-        if (isset($data['gender'])) {
-            $fields[] = 'gender = ?';
-            $values[] = $data['gender'];
+        if (isset($data['geslacht']) || isset($data['gender'])) {
+            $fields[] = 'geslacht = ?';
+            $values[] = $data['geslacht'] ?? $data['gender'];
         }
         if (isset($data['is_active'])) {
             $fields[] = 'is_active = ?';
@@ -253,7 +253,7 @@ class User
         $_SESSION['username'] = $user->username;
         $_SESSION['email'] = $user->email;
         $_SESSION['birthdate'] = $user->birthdate;
-        $_SESSION['gender'] = $user->gender;
+        $_SESSION['geslacht'] = $user->geslacht;
 
         return ['success' => true, 'message' => 'Inloggen gelukt.', 'user' => $user];
     }

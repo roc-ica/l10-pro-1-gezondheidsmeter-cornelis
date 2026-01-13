@@ -17,7 +17,7 @@ class HealthDataService
     public function exportHealthData(int $userId): array
     {
         // 1. Fetch Profile
-        $stmt = $this->pdo->prepare("SELECT username, email, birthdate, gender, created_at FROM users WHERE id = ?");
+        $stmt = $this->pdo->prepare("SELECT username, email, birthdate, geslacht, created_at FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $profile = $stmt->fetch(PDO::FETCH_ASSOC);
 

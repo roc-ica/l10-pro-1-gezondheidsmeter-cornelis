@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $displayName = trim($_POST['display_name'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $birthdate = trim($_POST['birthdate'] ?? '');
-            $gender = trim($_POST['gender'] ?? '');
+            $geslacht = trim($_POST['geslacht'] ?? '');
             $isAdmin = isset($_POST['is_admin']) ? 1 : 0;
 
             if ($userId) {
@@ -69,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($displayName) $changes['display_name'] = $displayName;
                     if ($email) $changes['email'] = $email;
                     if ($birthdate) $changes['birthdate'] = $birthdate;
-                    if ($gender) $changes['gender'] = $gender;
+                    if ($geslacht) $changes['geslacht'] = $geslacht;
                     if ($isAdmin !== $targetUser->is_admin) $changes['is_admin'] = $isAdmin;
 
-                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'birthdate' => $birthdate ?: null, 'gender' => $gender ?: null, 'is_admin' => $isAdmin]);
+                    $updateResult = $targetUser->update(['display_name' => $displayName, 'email' => $email, 'birthdate' => $birthdate ?: null, 'geslacht' => $geslacht ?: null, 'is_admin' => $isAdmin]);
                     if ($updateResult['success']) {
                         $message = "Gebruiker bijgewerkt!";
                         if (!empty($changes)) {
@@ -208,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="contact-item">
                                 <i data-lucide="smile" class="contact-icon"></i>
-                                <span><?php echo htmlspecialchars($user['gender'] ?? 'Niet ingevuld'); ?></span>
+                                <span><?php echo htmlspecialchars($user['geslacht'] ?? 'Niet ingevuld'); ?></span>
                             </div>
                         </div>
                     </div>
@@ -217,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER');
                                                 echo (' ');
                                                 echo htmlspecialchars($user['id']) ?></div>
-                    <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['gender'] ?? ''); ?>')">
+                    <button class="btn-action btn-edit" onclick="openEditUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['email']); ?>', '<?php echo htmlspecialchars($user['birthdate'] ?? ''); ?>', '<?php echo htmlspecialchars($user['geslacht'] ?? ''); ?>')">
                         <i data-lucide="pencil"></i> Bewerken
                     </button>
                     <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">
@@ -315,8 +315,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="date" id="edit_user_birthdate" name="birthdate">
                 </div>
                 <div class="form-group">
-                    <label for="edit_user_gender">Geslacht</label>
-                    <select id="edit_user_gender" name="gender">
+                    <label for="edit_user_geslacht">Geslacht</label>
+                    <select id="edit_user_geslacht" name="geslacht">
                         <option value="">-- Selecteer --</option>
                         <option value="Male">Man</option>
                         <option value="Female">Vrouw</option>
@@ -337,13 +337,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
     <script src="/js/session-guard.js"></script>
     <script>
-        function openEditUserModal(userId, email, birthdate, gender) {
             document.getElementById('edit_user_id').value = userId;
             document.getElementById('edit_user_email').value = email;
             document.getElementById('edit_user_birthdate').value = birthdate;
-            document.getElementById('edit_user_gender').value = gender;
+            document.getElementById('edit_user_geslacht').value = gender; // variable name from onclick arg
             document.getElementById('editUserModal').style.display = 'block';
-        }
 
         function closeEditUserModal() {
             document.getElementById('editUserModal').style.display = 'none';

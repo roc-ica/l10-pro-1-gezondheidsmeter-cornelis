@@ -40,7 +40,7 @@ class UserProfileService
         $updateData = [
             'email' => $email,
             'birthdate' => !empty($data['birthdate']) ? trim($data['birthdate']) : null,
-            'gender' => !empty($data['gender']) ? trim($data['gender']) : null
+            'geslacht' => !empty($data['geslacht']) ? trim($data['geslacht']) : (!empty($data['gender']) ? trim($data['gender']) : null)
         ];
 
         // Update user

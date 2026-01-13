@@ -24,6 +24,111 @@ $logger = new AdminActionLogger();
 $logger->logAnalyticsView($_SESSION['user_id']);
 
 $username = $_SESSION['username'] ?? 'Admin';
+$pdo = Database::getConnection();
+
+// --- DATA FETCHING FOR ANALYTICS ---
+$daysToShow = 30;
+
+// 1. Get User Growth Data (Cumulative)
+$userGrowthQuery = $pdo->prepare("
+    SELECT 
+        d.date,
+        (SELECT COUNT(*) FROM users u WHERE DATE(u.created_at) <= d.date) as cumulative_users
+    FROM (
+        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a)) DAY)) as date
+        FROM (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as a
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) as b
+    ) d
+    WHERE d.date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+    ORDER BY d.date ASC
+");
+$userGrowthQuery->execute([$daysToShow - 1]);
+$growthData = $userGrowthQuery->fetchAll(PDO::FETCH_ASSOC);
+
+// 2. Get Engagement Data (Daily Entries)
+$engagementQuery = $pdo->prepare("
+    SELECT 
+        d.date,
+        COUNT(de.id) as daily_entries
+    FROM (
+        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a)) DAY)) as date
+        FROM (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as a
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) as b
+    ) d
+    LEFT JOIN daily_entries de ON d.date = de.entry_date
+    WHERE d.date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+    GROUP BY d.date
+    ORDER BY d.date ASC
+");
+$engagementQuery->execute([$daysToShow - 1]);
+$engagementData = $engagementQuery->fetchAll(PDO::FETCH_ASSOC);
+
+// 3. Get Average Score Trend
+$scoreTrendQuery = $pdo->prepare("
+    SELECT 
+        d.date,
+        IFNULL(AVG(uhs.overall_score), 0) as avg_score
+    FROM (
+        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a)) DAY)) as date
+        FROM (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as a
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) as b
+    ) d
+    LEFT JOIN user_health_scores uhs ON d.date = uhs.score_date
+    WHERE d.date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+    GROUP BY d.date
+    ORDER BY d.date ASC
+");
+$scoreTrendQuery->execute([$daysToShow - 1]);
+$scoreData = $scoreTrendQuery->fetchAll(PDO::FETCH_ASSOC);
+
+// --- SVG COORDINATE CALCULATION ---
+
+function generateSvgPoints($data, $valueKey, $width, $height, $maxVal = null) {
+    if (empty($data)) return "";
+    $count = count($data);
+    if ($maxVal === null) {
+        $maxVal = 0;
+        foreach ($data as $row) {
+            if ($row[$valueKey] > $maxVal) $maxVal = $row[$valueKey];
+        }
+    }
+    if ($maxVal == 0) $maxVal = 1;
+
+    $points = [];
+    $xPadding = 40;
+    $yPadding = 20;
+    $chartWidth = $width - ($xPadding * 2);
+    $chartHeight = $height - ($yPadding * 2);
+    $bottom = $height - 50; // Adjust for some margin at bottom
+
+    foreach ($data as $i => $row) {
+        $x = $xPadding + ($i * ($chartWidth / ($count - 1)));
+        $y = $bottom - (($row[$valueKey] / $maxVal) * ($chartHeight - 30));
+        $points[] = round($x, 1) . "," . round($y, 1);
+    }
+    return implode(" ", $points);
+}
+
+function generateSvgAreaPath($data, $valueKey, $width, $height, $maxVal = null) {
+    $points = generateSvgPoints($data, $valueKey, $width, $height, $maxVal);
+    if (empty($points)) return "";
+    
+    $pointArr = explode(" ", $points);
+    $firstX = explode(",", $pointArr[0])[0];
+    $lastX = explode(",", $pointArr[count($pointArr)-1])[0];
+    $bottom = $height - 50;
+    
+    return "M $firstX,$bottom L $points L $lastX,$bottom Z";
+}
+
+// Prepare specific strings for charts
+$growthPoints = generateSvgPoints($growthData, 'cumulative_users', 500, 250);
+$growthArea = generateSvgAreaPath($growthData, 'cumulative_users', 500, 250);
+
+$engagementPoints = generateSvgPoints($engagementData, 'daily_entries', 500, 250);
+$engagementArea = generateSvgAreaPath($engagementData, 'daily_entries', 500, 250);
+
+$scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); // Max score is 100
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -63,21 +168,21 @@ $username = $_SESSION['username'] ?? 'Admin';
                         <line x1="40" y1="200" x2="480" y2="200" stroke="#374151" stroke-width="1"/>
                         
                         <!-- Area fills -->
-                        <path d="M 40,180 L 100,175 L 160,170 L 220,165 L 280,160 L 340,155 L 400,150 L 460,145 L 460,200 L 40,200 Z" 
+                        <path d="<?= $engagementArea ?>" 
                               fill="#ff6c6c" 
                               opacity="0.6"/>
                         
-                        <path d="M 40,180 L 100,170 L 160,155 L 220,145 L 280,130 L 340,110 L 400,85 L 460,60 L 460,200 L 40,200 Z" 
+                        <path d="<?= $growthArea ?>" 
                               fill="#4ade80" 
                               opacity="0.6"/>
                         
                         <!-- Trend lines -->
-                        <polyline points="40,180 100,175 160,170 220,165 280,160 340,155 400,150 460,145" 
+                        <polyline points="<?= $engagementPoints ?>" 
                                   fill="none" 
                                   stroke="#ff6c6c" 
                                   stroke-width="1"/>
                         
-                        <polyline points="40,180 100,170 160,155 220,145 280,130 340,110 400,85 460,60" 
+                        <polyline points="<?= $growthPoints ?>" 
                                   fill="none" 
                                   stroke="#22c55e" 
                                   stroke-width="1"/>
@@ -112,24 +217,20 @@ $username = $_SESSION['username'] ?? 'Admin';
                         <line x1="40" y1="20" x2="40" y2="160" stroke="#374151" stroke-width="1"/>
                         <line x1="40" y1="160" x2="480" y2="160" stroke="#374151" stroke-width="1"/>
                         
-                        <polyline points="40,140 80,130 120,115 160,120 200,100 240,95 280,105 320,85 360,80 400,70 440,65 480,60" 
+                        <polyline points="<?= $scoreTrendPoints ?>" 
                                   fill="none" 
                                   stroke="#22c55e" 
                                   stroke-width="1.2"/>
                         
                         <!-- Smaller dots -->
-                        <circle cx="40" cy="140" r="2" fill="#22c55e"/>
-                        <circle cx="80" cy="130" r="2" fill="#22c55e"/>
-                        <circle cx="120" cy="115" r="2" fill="#22c55e"/>
-                        <circle cx="160" cy="120" r="2" fill="#22c55e"/>
-                        <circle cx="200" cy="100" r="2" fill="#22c55e"/>
-                        <circle cx="240" cy="95" r="2" fill="#22c55e"/>
-                        <circle cx="280" cy="105" r="2" fill="#22c55e"/>
-                        <circle cx="320" cy="85" r="2" fill="#22c55e"/>
-                        <circle cx="360" cy="80" r="2" fill="#22c55e"/>
-                        <circle cx="400" cy="70" r="2" fill="#22c55e"/>
-                        <circle cx="440" cy="65" r="2" fill="#22c55e"/>
-                        <circle cx="480" cy="60" r="2" fill="#22c55e"/>
+                        <?php
+                        $points = explode(" ", $scoreTrendPoints);
+                        foreach ($points as $point) {
+                            if (empty($point)) continue;
+                            $coords = explode(",", $point);
+                            echo '<circle cx="' . $coords[0] . '" cy="' . $coords[1] . '" r="2" fill="#22c55e"/>';
+                        }
+                        ?>
                     </svg>
                 </div>
                 <div class="chart-legend">

@@ -286,7 +286,7 @@ class HealthScoreCalculator
     private function getUserProfile(): ?array
     {
         $stmt = $this->pdo->prepare("
-            SELECT id, birthdate, gender 
+            SELECT id, birthdate, geslacht 
             FROM users 
             WHERE id = ?
         ");

@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Update session data
             $_SESSION['email'] = $user->email;
             $_SESSION['birthdate'] = $user->birthdate;
-            $_SESSION['gender'] = $user->gender;
+            $_SESSION['geslacht'] = $user->geslacht;
         }
     } elseif ($action === 'upload_profile_picture') {
         // Upload profile picture
@@ -101,7 +101,7 @@ if (!$user) {
 $email = htmlspecialchars($user->email ?? '');
 $username = htmlspecialchars($user->username ?? '');
 $birthdate = htmlspecialchars($user->birthdate ?? '');
-$gender = htmlspecialchars($user->gender ?? '');
+$geslacht = htmlspecialchars($user->geslacht ?? '');
 $profilePicture = $user->profile_picture ?? '';
 if ($profilePicture) {
     // Ensure path is relative to pages/ directory
@@ -235,7 +235,13 @@ foreach ($allEntries as $entryDate) {
                     </p>
                     <p>
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5z"></path><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path></svg>
-                        <span><?= htmlspecialchars($gender ?: 'Niet opgegeven') ?></span>
+                        <?php
+                            $genderDisplay = 'Niet opgegeven';
+                            if ($geslacht === 'man') $genderDisplay = 'Man';
+                            elseif ($geslacht === 'vrouw') $genderDisplay = 'Vrouw';
+                            elseif ($geslacht === 'anders') $genderDisplay = 'Anders';
+                        ?>
+                        <span><?= htmlspecialchars($genderDisplay) ?></span>
                     </p>
                 </div>
             </div>
@@ -256,7 +262,7 @@ foreach ($allEntries as $entryDate) {
                 </div>
                 <div class="summary-item">
                     <div class="streak-label">Huidige Streak</div>
-                    <div class="streak-value"><?= $currentStreak ?> Dagen</div>
+                    <div class="streak-value"><?= $currentStreak ?> Dag(en)</div>
                 </div>
             </div>
         </div>
@@ -482,12 +488,12 @@ foreach ($allEntries as $entryDate) {
                         value="<?= htmlspecialchars($user->birthdate ?? '') ?>">
                 </div>
                 <div class="form-group">
-                    <label for="edit_gender">Geslacht</label>
-                    <select id="edit_gender" name="gender">
+                    <label for="edit_geslacht">Geslacht</label>
+                    <select id="edit_geslacht" name="geslacht">
                         <option value="">-- Selecteer --</option>
-                        <option value="male" <?= $user->gender === 'male' ? 'selected' : '' ?>>Man</option>
-                        <option value="female" <?= $user->gender === 'female' ? 'selected' : '' ?>>Vrouw</option>
-                        <option value="other" <?= $user->gender === 'other' ? 'selected' : '' ?>>Anders</option>
+                        <option value="man" <?= $user->geslacht === 'man' ? 'selected' : '' ?>>Man</option>
+                        <option value="vrouw" <?= $user->geslacht === 'vrouw' ? 'selected' : '' ?>>Vrouw</option>
+                        <option value="anders" <?= $user->geslacht === 'anders' ? 'selected' : '' ?>>Anders</option>
                     </select>
                 </div>
                 <div class="modal-actions">
