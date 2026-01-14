@@ -108,6 +108,17 @@ if ($scoreData && $scoreData['total_questions'] > 0) {
     $healthScore = 0;
 }
 
+// Calculate average score across all time
+$stmt = $pdo->prepare("
+    SELECT AVG(overall_score) as avg_score
+    FROM user_health_scores
+    WHERE user_id = ?
+");
+$stmt->execute([$userId]);
+$avgScoreData = $stmt->fetch();
+$averageScore = $avgScoreData && $avgScoreData['avg_score'] ? round($avgScoreData['avg_score']) : 0;
+
+
 // Daily Focus Content (Premium/Human curated feel)
 $focusItems = [
     [
@@ -178,12 +189,13 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
         </div>
 
         <!-- Stats Overview -->
-<!-- Stats Overview (Minimal/Data-Driven Design) -->
+        <!-- Stats Overview (Minimal/Data-Driven Design) -->
         <div class="stats-row">
             <!-- 1. Health Score (Radial Chart) -->
             <div class="stat-card" style="padding: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Welzijn</span>
+                    <span
+                        style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Welzijn</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div style="position: relative; width: 64px; height: 64px;">
@@ -196,7 +208,8 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2563eb" stroke-width="3"
                                 stroke-dasharray="<?= $healthScore ?>, 100" class="radial-progress" />
                         </svg>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.9rem; font-weight: 700; color: #1f2937;">
+                        <div
+                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.9rem; font-weight: 700; color: #1f2937;">
                             <?= $healthScore ?>%
                         </div>
                     </div>
@@ -210,7 +223,8 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
             <!-- 2. Weekly Goal (Segmented Dots) -->
             <div class="stat-card" style="padding: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <span style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Weekdoel</span>
+                    <span
+                        style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Weekdoel</span>
                 </div>
                 <div style="margin-bottom: 10px;">
                     <span style="font-size: 2rem; font-weight: 700; color: #1f2937;"><?= $weeklyCompleted ?></span>
@@ -218,30 +232,65 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                 </div>
                 <div style="display: flex; gap: 6px;">
                     <?php for ($i = 0; $i < 7; $i++): ?>
-                        <div style="width: 100%; height: 6px; border-radius: 4px; background-color: <?= $i < $weeklyCompleted ? '#16a34a' : '#e5e7eb' ?>;"></div>
+                        <div
+                            style="width: 100%; height: 6px; border-radius: 4px; background-color: <?= $i < $weeklyCompleted ? '#16a34a' : '#e5e7eb' ?>;">
+                        </div>
                     <?php endfor; ?>
                 </div>
             </div>
 
-            <div class="stat-card stat-card-warning">
-                <div class="stat-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                    </svg>
+            <!-- 3. Average Score -->
+            <div class="stat-card" style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span
+                        style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Gemiddeld</span>
                 </div>
-                <div style="margin-top: 5px; font-size: 0.8rem; color: #d97706; background: #fef3c7; display: inline-block; padding: 2px 8px; border-radius: 12px; font-weight: 500;">
-                    Hou vol!
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="position: relative; width: 64px; height: 64px;">
+                        <svg width="64" height="64" viewBox="0 0 36 36">
+                            <path d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3" />
+                            <path d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f59e0b" stroke-width="3"
+                                stroke-dasharray="<?= $averageScore ?>, 100" class="radial-progress" />
+                        </svg>
+                        <div
+                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.9rem; font-weight: 700; color: #1f2937;">
+                            <?= $averageScore ?>%
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: #9ca3af;">Overall score</div>
+                        <div style="font-size: 0.75rem; color: #f59e0b; font-weight: 500;">All-time</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="stat-card stat-card-info">
-                <div class="stat-icon">
-                    <img src="../assets/images/icons/pngtree-travel-vector-icon-design-illustration-png-image_9005139.png" alt="Travel Icon">
+            <!-- 4. Total Check-ins -->
+            <div class="stat-card" style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span
+                        style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Check-ins</span>
                 </div>
-                <div style="margin-bottom: 5px;">
+                <div style="margin-bottom: 10px;">
                     <span style="font-size: 2rem; font-weight: 700; color: #1f2937;"><?= $totalQuestions ?></span>
                 </div>
-                <div style="font-size: 0.8rem; color: #9ca3af;">Check-ins voltooid</div>
+                <div style="font-size: 0.8rem; color: #9ca3af;">
+                    <?php
+                    if ($totalQuestions == 0)
+                        echo "Begin vandaag met je eerste check-in";
+                    elseif ($totalQuestions == 1)
+                        echo "Goed bezig! Je eerste check-in is binnen";
+                    elseif ($totalQuestions < 7)
+                        echo "Top! Je bent op de goede weg";
+                    elseif ($totalQuestions < 30)
+                        echo "Geweldig! Blijf zo doorgaan";
+                    else
+                        echo "Fantastisch! Je bent een held 🏆";
+                    ?>
+                </div>
             </div>
         </div>
 
@@ -287,28 +336,28 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                 $timeAgo = $diff->d . ' dagen geleden';
                             }
                             ?>
-                                    <div class="activity-item">
-                                        <div class="activity-icon activity-icon-success">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
-                                        </div>
-                                        <div class="activity-content">
-                                            <div class="activity-title">Je hebt ingecheckt bij jezelf</div>
-                                            <div class="activity-time"><?= $timeAgo ?></div>
-                                        </div>
-                                    </div>
-                                <?php
+                            <div class="activity-item">
+                                <div class="activity-icon activity-icon-success">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Je hebt ingecheckt bij jezelf</div>
+                                    <div class="activity-time"><?= $timeAgo ?></div>
+                                </div>
+                            </div>
+                            <?php
                         endforeach;
                     else:
                         ?>
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">Nog geen metingen</div>
-                                    <div class="activity-time">Zet vandaag de eerste stap!</div>
-                                </div>
+                        <div class="activity-item">
+                            <div class="activity-content">
+                                <div class="activity-title">Nog geen metingen</div>
+                                <div class="activity-time">Zet vandaag de eerste stap!</div>
                             </div>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -376,14 +425,20 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
         </div>
 
         <!-- Inspiration / Daily Focus -->
-        <div class="dashboard-card dashboard-card-full" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left: 4px solid #16a34a;">
+        <div class="dashboard-card dashboard-card-full"
+            style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left: 4px solid #16a34a;">
             <div class="card-header">
                 <h3>Inspiratie van Vandaag</h3>
             </div>
             <div class="daily-focus-content" style="padding: 0 20px 20px 20px;">
-                <span class="focus-category" style="display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #16a34a; letter-spacing: 0.05em; margin-bottom: 8px;"><?= htmlspecialchars($dailyFocus['category']) ?></span>
-                <h4 class="focus-title" style="font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 0 0 12px 0;"><?= htmlspecialchars($dailyFocus['title']) ?></h4>
-                <p class="focus-text" style="color: #4b5563; line-height: 1.6; font-size: 0.95rem; margin: 0; max-width: 800px;">
+                <span class="focus-category"
+                    style="display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #16a34a; letter-spacing: 0.05em; margin-bottom: 8px;"><?= htmlspecialchars($dailyFocus['category']) ?></span>
+                <h4 class="focus-title"
+                    style="font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 0 0 12px 0;">
+                    <?= htmlspecialchars($dailyFocus['title']) ?>
+                </h4>
+                <p class="focus-text"
+                    style="color: #4b5563; line-height: 1.6; font-size: 0.95rem; margin: 0; max-width: 800px;">
                     <?= htmlspecialchars($dailyFocus['text']) ?>
                 </p>
             </div>
