@@ -28,6 +28,18 @@ if (!isset($_SESSION['questionnaire_state'])) {
 // Handle POST requests with QuestionnaireService
 $questionnaireService = new QuestionnaireService();
 
+// Handle Reset via GET (e.g., from results.php)
+if (isset($_GET['reset']) && $_GET['reset'] === '1') {
+    $questionnaireService->resetTodayEntry($userId);
+    $_SESSION['questionnaire_state'] = [
+        'answers' => [],
+        'current_pair_idx' => 0,
+        'current_step' => 'main'
+    ];
+    header('Location: vragen.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is an AJAX request
     $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
@@ -610,7 +622,7 @@ if ($allAnswered && $todayEntryId) {
                     <div class="pillar-breakdown">
                         <?php foreach ($healthScore['pillar_scores'] as $pillarId => $score): ?>
                         <div class="pillar-item">
-                            <p class="pillar-label">Pilaar <?php echo $pillarId; ?></p>
+                            <p class="pillar-label"><?php echo htmlspecialchars($healthScore['pillar_names'][$pillarId] ?? "Pilaar $pillarId"); ?></p>
                             <p class="pillar-score"><?php echo round($score, 1); ?></p>
                         </div>
                         <?php endforeach; ?>
@@ -626,7 +638,10 @@ if ($allAnswered && $todayEntryId) {
         <?php elseif ($currentPair && $currentStep === 'main'): ?>
             <!-- Main Question -->
             <div class="question-card">
-                <div class="question-badge">Vraag <?php echo $currentPairIdx + 1; ?> van <?php echo $totalPairs; ?></div>
+                <div class="question-badge">
+                    <?php echo htmlspecialchars($currentPair['main']['pillar_name']); ?> - 
+                    Vraag <?php echo $currentPairIdx + 1; ?> van <?php echo $totalPairs; ?>
+                </div>
                 
                 <h2 class="question-text">
                     <?php echo htmlspecialchars($currentPair['main']['question_text']); ?>
@@ -652,7 +667,10 @@ if ($allAnswered && $todayEntryId) {
         <?php elseif ($currentPair && $currentStep === 'secondary'): ?>
             <!-- Secondary Question -->
             <div class="question-card">
-                <div class="question-badge">Vraag <?php echo $currentPairIdx + 1; ?> van <?php echo $totalPairs; ?> (deel 2)</div>
+                <div class="question-badge">
+                    <?php echo htmlspecialchars($currentPair['main']['pillar_name']); ?> - 
+                    Vraag <?php echo $currentPairIdx + 1; ?> van <?php echo $totalPairs; ?> (deel 2)
+                </div>
                 
                 <h2 class="question-text">
                     <?php echo htmlspecialchars($currentPair['secondary']['question_text']); ?>

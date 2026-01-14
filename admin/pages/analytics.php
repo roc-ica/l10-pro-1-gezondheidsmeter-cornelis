@@ -27,7 +27,7 @@ $username = $_SESSION['username'] ?? 'Admin';
 $pdo = Database::getConnection();
 
 // --- DATA FETCHING FOR ANALYTICS ---
-$daysToShow = 30;
+$daysToShow = 8;
 
 // 1. Get User Growth Data (Cumulative)
 $userGrowthQuery = $pdo->prepare("
@@ -136,7 +136,7 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Analytics - Gezondheidsmeter</title>
-<link rel="stylesheet" href="../../assets/css/admin.css?v=3">
+<link rel="stylesheet" href="../../assets/css/admin.css?v=4">
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
@@ -192,10 +192,16 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
                     <div class="legend-item">
                         <div class="legend-box" style="background: #ff6c6c;"></div>
                         <span style="color: #6b7280;">Engagement</span>
+                        <div class="legend-tooltip">
+                            Aantal ingevulde meters per dag
+                        </div>
                     </div>
                     <div class="legend-item">
                         <div class="legend-box" style="background: #22c55e;"></div>
                         <span style="color: #6b7280;">Gebruikers</span>
+                        <div class="legend-tooltip">
+                            Totaal aantal geregistreerde gebruikers
+                        </div>
                     </div>
                 </div>
             </div>
@@ -237,6 +243,9 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
                     <div class="legend-item">
                         <div class="legend-box" style="background: #22c55e;"></div>
                         <span style="color: #6b7280;">Gemiddelde Score</span>
+                        <div class="legend-tooltip">
+                            Gemiddelde gezondheidsscore van<br>alle gebruikers op deze dag
+                        </div>
                     </div>
                 </div>
             </div>
@@ -342,10 +351,16 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
                         <div class="legend-item">
                             <div class="legend-box green" style="background: #008000;"></div>
                             <span style="color: #6b7280;">Gemiddelde Score</span>
+                            <div class="legend-tooltip">
+                                Gemiddelde score per categorie
+                            </div>
                         </div>
                         <div class="legend-item">
                             <div class="legend-box pink" style="background: #ff8787;"></div>
                             <span style="color: #6b7280;">Trend (-/+)</span>
+                            <div class="legend-tooltip">
+                                Verschil met de vorige periode
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -55,8 +55,7 @@ class HealthScoreCalculator
         
         $overallScore = $totalPillarScore / $pillarCount;
 
-        // Apply age adjustment
-        $overallScore -= abs($ageAdjustment);
+        $ageAdjustment = 0;
         
         // Normalize to 0-100
         $overallScore = max(0, min(100, $overallScore));
@@ -214,7 +213,7 @@ class HealthScoreCalculator
             } elseif ($answerLower === 'zeer goed') {
                 $score = 100;
             } elseif (in_array($answerLower, ['ja', 'yes', 'true', '1', 'veel'])) {
-                $score = 50;
+                $score = 100;
             } elseif (in_array($answerLower, ['nee', 'no', 'false', '0'])) {
                 $score = 0;
             } elseif (in_array($answerLower, ['softdrugs', 'softdrug'])) {
@@ -304,11 +303,12 @@ class HealthScoreCalculator
             $displayStatus = 'Softdrugs (Marihuana)';
         } elseif (
             stripos($answer, 'harddrug') !== false || stripos($answer, 'cocaïne') !== false ||
-            stripos($answer, 'heroine') !== false || stripos($answer, 'ecstasy') !== false
+            stripos($answer, 'heroine') !== false || stripos($answer, 'ecstasy') !== false ||
+            $answer === 'ja'
         ) {
-            // Harddrugs: Very unhealthy
+            // Harddrugs or confirming general drug use: Very unhealthy
             $finalScore = 0;
-            $displayStatus = 'Harddrugs (Zeer schadelijk)';
+            $displayStatus = $answer === 'ja' ? 'Bevestigd middelengebruik' : 'Harddrugs (Zeer schadelijk)';
         } else {
             // No drugs or 'nee': Healthy
             $finalScore = 100;
@@ -333,24 +333,7 @@ class HealthScoreCalculator
      */
     private function calculateAgeAdjustment(array $user): float
     {
-        if (!$user['birthdate']) {
-            return 0;
-        }
-
-        $birthDate = new DateTime($user['birthdate']);
-        $today = new DateTime();
-        $age = $today->diff($birthDate)->y;
-
-        // Optimal age: 25-65
-        if ($age >= 25 && $age <= 65) {
-            return 0;
-        } elseif ($age < 25) {
-            return -2; // Young, slight boost
-        } elseif ($age > 65) {
-            return 5; // Elderly, adjust expectations
-        }
-
-        return 0;
+        return 0; // Disabled for accuracy
     }
 
     /**
