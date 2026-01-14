@@ -45,7 +45,14 @@ if (!function_exists('isActive')) {
         </button>
         <?php if (!$isAuthPage): ?>
         <div class="navbar-links">
-            <a href="<?= $isAdmin ? 'index.php' : 'home.php' ?>" class="nav-link <?= isActive($isAdmin ? 'index.php' : 'home.php', $currentPage) ?>">Dashboard</a>
+            <?php 
+            // Better isAdmin check that works for both current and new sessions
+            $sessionIsAdmin = $_SESSION['is_admin'] ?? false;
+            if ($sessionIsAdmin): ?>
+                <a href="<?= $navBasePath ?>/admin/pages/home.php" class="nav-link" style="color: #16a34a; font-weight: 700;">Admin</a>
+            <?php endif; ?>
+            
+            <a href="<?= $navBasePath ?>/pages/home.php" class="nav-link <?= isActive('home.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>
             <a href="geschiedenis.php" class="nav-link <?= isActive('geschiedenis.php', $currentPage) ?>">Geschiedenis</a>
             <?php if ($isLoggedIn): ?>

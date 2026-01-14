@@ -529,12 +529,23 @@ if ($allAnswered && $todayEntryId) {
         }
 
         .submit-btn {
+            border-color: #2ecc71;
+            color: #2ecc71;
+            background: white;
+        }
+
+        .submit-btn:hover {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .completion-card .submit-btn {
             border-color: white;
             color: white;
             background: transparent;
         }
 
-        .submit-btn:hover {
+        .completion-card .submit-btn:hover {
             background: white;
             color: #2ecc71;
         }
