@@ -27,6 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($res['errors']['password_confirm'])) {
             $fieldErrors['password_confirm'] = 'Wachtwoorden komen niet overeen.';
         }
+        if (!empty($res['errors']['password_length'])) {
+            $fieldErrors['password'] = 'Wachtwoord moet minimaal 8 tekens lang zijn.';
+        }
     }
 }
 ?>
@@ -65,8 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input id="email" name="email" type="email" required maxlength="255" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" />
                 </div>
                 <div>
+                    <?php if (!empty($fieldErrors['password'])): ?>
+                        <div class="field-error"><?= htmlspecialchars($fieldErrors['password']) ?></div>
+                    <?php endif; ?>
+                    <div id="password-length-error" class="field-error" style="display: none;">Wachtwoord moet minimaal 8 tekens lang zijn.</div>
                     <label for="password">Wachtwoord</label>
-                    <input id="password" name="password" type="password" required />
+                    <input id="password" name="password" type="password" required minlength="8" />
+                    <small style="color: #fff; font-size: 11px; display: block; margin-top: 4px;">Minimaal 8 tekens</small>
                 </div>
                 <div>
                     <?php if (!empty($fieldErrors['password_confirm'])): ?>
@@ -85,6 +93,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <?php include __DIR__ . '/../../../components/footer.php'; ?>
     <script src="/js/pwa.js"></script>
+    <script>
+        const passwordInput = document.getElementById('password');
+        const errorDiv = document.getElementById('password-length-error');
+
+        passwordInput.addEventListener('input', () => {
+            if (passwordInput.value.length > 0 && passwordInput.value.length < 8) {
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
 

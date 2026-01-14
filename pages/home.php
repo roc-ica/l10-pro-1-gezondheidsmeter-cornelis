@@ -126,62 +126,71 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
         <!-- Stats Overview (Minimal/Data-Driven Design) -->
         <div class="stats-row">
             <!-- 1. Health Score (Radial Chart) -->
-            <div class="stat-card" style="padding: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="stat-card stat-card-large" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
                     <span
                         style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Welzijn</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <div style="position: relative; width: 64px; height: 64px;">
-                        <svg width="64" height="64" viewBox="0 0 36 36">
-                            <path d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3" />
-                            <path d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2563eb" stroke-width="3"
-                                stroke-dasharray="<?= $healthScore ?>, 100" class="radial-progress" />
-                        </svg>
-                        <div
-                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.9rem; font-weight: 700; color: #1f2937;">
-                            <?= $healthScore ?>%
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 32px; width: 100%;">
+                        <div class="gauge-wrapper" style="margin: 0;">
+                            <svg class="gauge-svg" viewBox="0 0 100 55">
+                                <!-- Background Track -->
+                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f1f5f9" stroke-width="10" stroke-linecap="round" />
+                                
+                                <!-- Gauge Segments -->
+                                <path d="M 10 50 A 40 40 0 0 1 18 26" fill="none" stroke="#ef4444" stroke-width="10" />
+                                <path d="M 18 26 A 40 40 0 0 1 38 12" fill="none" stroke="#f97316" stroke-width="10" />
+                                <path d="M 38 12 A 40 40 0 0 1 62 12" fill="none" stroke="#eab308" stroke-width="10" />
+                                <path d="M 62 12 A 40 40 0 0 1 82 26" fill="none" stroke="#84cc16" stroke-width="10" />
+                                <path d="M 82 26 A 40 40 0 0 1 90 50" fill="none" stroke="#22c55e" stroke-width="10" />
+
+                                <!-- Needle -->
+                                <g class="gauge-needle" style="transform-origin: 50px 50px; transform: rotate(<?= ($healthScore * 1.8) - 90 ?>deg);">
+                                    <line x1="50" y1="50" x2="50" y2="12" stroke="#1f2937" stroke-width="3" stroke-linecap="round" />
+                                    <circle cx="50" cy="50" r="5" class="gauge-center" />
+                                </g>
+                            </svg>
+                            <div class="gauge-value-display"><?= $healthScore ?>%</div>
                         </div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: #9ca3af;">Jouw score</div>
-                        <div style="font-size: 0.75rem; color: #2563eb; font-weight: 500;">Vandaag</div>
+                        <div>
+                            <div style="font-size: 0.9rem; color: #9ca3af;">Jouw score</div>
+                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Vandaag</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- 2. Weekly Goal (Segmented Dots) -->
-            <div class="stat-card" style="padding: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="stat-card" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
                     <span
                         style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Weekdoel</span>
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <span style="font-size: 2rem; font-weight: 700; color: #1f2937;"><?= $weeklyCompleted ?></span>
-                    <span style="font-size: 1rem; color: #9ca3af; font-weight: 500;">/ 7</span>
-                </div>
-                <div style="display: flex; gap: 6px;">
-                    <?php for ($i = 0; $i < 7; $i++): ?>
-                        <div
-                            style="width: 100%; height: 6px; border-radius: 4px; background-color: <?= $i < $weeklyCompleted ? '#16a34a' : '#e5e7eb' ?>;">
-                        </div>
-                    <?php endfor; ?>
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%;">
+                    <div style="margin-bottom: 15px;">
+                        <span style="font-size: 2.5rem; font-weight: 700; color: #1f2937;"><?= $weeklyCompleted ?></span>
+                        <span style="font-size: 1.25rem; color: #9ca3af; font-weight: 500;">/ 7</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; width: 100%; max-width: 200px;">
+                        <?php for ($i = 0; $i < 7; $i++): ?>
+                            <div
+                                style="width: 100%; height: 8px; border-radius: 4px; background-color: <?= $i < $weeklyCompleted ? '#16a34a' : '#e5e7eb' ?>;">
+                            </div>
+                        <?php endfor; ?>
+                    </div>
                 </div>
             </div>
 
             <!-- 3. Average Score -->
-            <div class="stat-card" style="padding: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="stat-card" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
                     <span
                         style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Gemiddeld</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <div style="position: relative; width: 64px; height: 64px;">
-                        <svg width="64" height="64" viewBox="0 0 36 36">
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
+                    <div style="position: relative; width: 80px; height: 80px;">
+                        <svg width="80" height="80" viewBox="0 0 36 36">
                             <path d="M18 2.0845
                                 a 15.9155 15.9155 0 0 1 0 31.831
                                 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3" />
@@ -191,41 +200,18 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                 stroke-dasharray="<?= $averageScore ?>, 100" class="radial-progress" />
                         </svg>
                         <div
-                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.9rem; font-weight: 700; color: #1f2937;">
+                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; font-weight: 700; color: #1f2937;">
                             <?= $averageScore ?>%
                         </div>
                     </div>
                     <div>
-                        <div style="font-size: 0.8rem; color: #9ca3af;">Overall score</div>
-                        <div style="font-size: 0.75rem; color: #f59e0b; font-weight: 500;">All-time</div>
+                        <div style="font-size: 0.9rem; color: #9ca3af;">Overall score</div>
+                        <div style="font-size: 0.85rem; color: #f59e0b; font-weight: 600;">All-time</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. Total Check-ins -->
-            <div class="stat-card" style="padding: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <span
-                        style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Check-ins</span>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <span style="font-size: 2rem; font-weight: 700; color: #1f2937;"><?= $totalQuestions ?></span>
-                </div>
-                <div style="font-size: 0.8rem; color: #9ca3af;">
-                    <?php
-                    if ($totalQuestions == 0)
-                        echo "Begin vandaag met je eerste check-in";
-                    elseif ($totalQuestions == 1)
-                        echo "Goed bezig! Je eerste check-in is binnen";
-                    elseif ($totalQuestions < 7)
-                        echo "Top! Je bent op de goede weg";
-                    elseif ($totalQuestions < 30)
-                        echo "Geweldig! Blijf zo doorgaan";
-                    else
-                        echo "Fantastisch! Je bent een held 🏆";
-                    ?>
-                </div>
-            </div>
+
         </div>
 
         <!-- Main Content Grid -->

@@ -55,6 +55,15 @@ class AuthController
 			];
 		}
 
+		// Check password length
+		if (strlen($password) < 8) {
+			return [
+				'success' => false,
+				'message' => 'Wachtwoord moet minimaal 8 tekens lang zijn.',
+				'errors' => ['password_length' => true]
+			];
+		}
+
 		$res = User::register($username, $email, $password);
 		return $res;
 	}
@@ -69,7 +78,8 @@ class AuthController
 		}
 
 		// Gebruik User::login() om authenticatie + sessie centraal af te handelen
-		$res = User::login($username, $password);
+		$remember = !empty($data['remember']);
+		$res = User::login($username, $password, $remember);
 		return $res;
 	}
 }

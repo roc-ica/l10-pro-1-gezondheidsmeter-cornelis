@@ -653,7 +653,7 @@
     border-radius: 15px;
     padding: 30px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .question-badge {
@@ -758,6 +758,7 @@
 
 .form-input-number[type=number] {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 /* Navigation */
@@ -817,7 +818,7 @@
     border-radius: 15px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .progress-label {
@@ -934,4 +935,76 @@
     font-size: 24px;
     font-weight: 700;
     color: #3498db;
+}
+
+/* Welzijn Gauge Styles */
+.gauge-wrapper {
+    position: relative;
+    width: 220px;
+    /* Increased from 140px */
+    height: 150px;
+    /* Increased from 130px */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    /* Changed from flex-end */
+    margin-right: 15px;
+}
+
+.gauge-svg {
+    width: 220px;
+    /* Increased from 140px */
+    height: 110px;
+    /* Increased from 70px */
+    overflow: visible;
+}
+
+.gauge-needle {
+    transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gauge-center {
+    fill: #1f2937;
+}
+
+.gauge-value-display {
+    font-size: 2.25rem;
+    /* Slightly larger */
+    font-weight: 800;
+    color: #111827;
+    margin-top: -5px;
+    /* Adjusted from -25px */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Larger Stat Card */
+.stat-card-large {
+    grid-column: span 2;
+    min-height: 180px;
+}
+
+@media (max-width: 1024px) {
+    .stat-card-large {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .gauge-wrapper {
+        width: 160px;
+        height: 110px;
+        /* Increased from 100px */
+    }
+
+    .gauge-svg {
+        width: 160px;
+        height: 80px;
+    }
+
+    .gauge-value-display {
+        font-size: 1.55rem;
+        margin-top: -2px;
+        /* Adjusted from -15px */
+    }
 }

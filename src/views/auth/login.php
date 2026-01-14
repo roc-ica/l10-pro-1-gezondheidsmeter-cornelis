@@ -3,6 +3,20 @@
 $message = null;
 $errors = null;
 
+// Handle auto-login if cookie exists and no session
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
+    require_once __DIR__ . '/../../models/User.php';
+    $user = User::loginWithToken($_COOKIE['remember_me']);
+    if ($user) {
+        if (!empty($user->is_admin)) {
+            header('Location: ../../../admin/pages/home.php');
+        } else {
+            header('Location: ../../../pages/home.php');
+        }
+        exit;
+    }
+}
+
 // Handle POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/../../controllers/authcontroller.php';
@@ -62,6 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div>
                     <label for="password">Wachtwoord</label>
                     <input id="password" name="password" type="password" required />
+                </div>
+                <div class="remember-me" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                    <input type="checkbox" id="remember" name="remember" style="width: auto; margin: 0;" />
+                    <label for="remember" style="margin: 0; cursor: pointer;">Herinner mij voor 30 dagen</label>
                 </div>
                 <div>
                     <button type="submit">Inloggen</button>

@@ -230,7 +230,7 @@ class User
         return new self($row);
     }
 
-    public static function login(string $usernameOrEmail, string $password): array
+    public static function login(string $usernameOrEmail, string $password, bool $remember = false): array
     {
         $user = self::authenticate($password, $usernameOrEmail, $usernameOrEmail);
         if (!$user) {
@@ -238,10 +238,11 @@ class User
         }
 
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            // Set session cookie to live for 30 days
+            // Set session cookie to live for 30 days if remember is on
+            $lifetime = $remember ? 60 * 60 * 24 * 30 : 0;
             ini_set('session.gc_maxlifetime', 60 * 60 * 24 * 30);
             session_set_cookie_params([
-                'lifetime' => 60 * 60 * 24 * 30,
+                'lifetime' => $lifetime,
                 'path' => '/',
                 'httponly' => true,
                 'samesite' => 'Lax'
@@ -256,7 +257,70 @@ class User
         $_SESSION['birthdate'] = $user->birthdate;
         $_SESSION['geslacht'] = $user->geslacht;
 
+        if ($remember) {
+            $token = bin2hex(random_bytes(32));
+            $selector = bin2hex(random_bytes(8));
+            $cookieValue = $selector . ':' . $token;
+            
+            // Hash the token for database storage
+            $hashedToken = password_hash($token, PASSWORD_DEFAULT);
+            $expires = date('Y-m-d H:i:s', time() + 60 * 60 * 24 * 30);
+            
+            try {
+                $pdo = Database::getConnection();
+                $stmt = $pdo->prepare('UPDATE users SET remember_token = ?, remember_expires = ? WHERE id = ?');
+                $stmt->execute([$selector . ':' . $hashedToken, $expires, $user->id]);
+                
+                // Set cookie for 30 days
+                setcookie('remember_me', $cookieValue, time() + 60 * 60 * 24 * 30, '/', '', false, true);
+            } catch (\PDOException $e) {
+                // Log error if needed
+            }
+        }
+
         return ['success' => true, 'message' => 'Inloggen gelukt.', 'user' => $user];
+    }
+
+    public static function loginWithToken(string $cookieValue): ?self
+    {
+        if (strpos($cookieValue, ':') === false) return null;
+        
+        list($selector, $token) = explode(':', $cookieValue);
+        
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE remember_token LIKE ? AND remember_expires > NOW() LIMIT 1');
+        $stmt->execute([$selector . ':%']);
+        $row = $stmt->fetch();
+        
+        if (!$row || empty($row['remember_token'])) return null;
+        
+        list($storedSelector, $storedHash) = explode(':', $row['remember_token']);
+        
+        if (password_verify($token, $storedHash)) {
+            $user = new self($row);
+            
+            // Start session if not started
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+            
+            $_SESSION['user_id'] = $user->id;
+            $_SESSION['username'] = $user->username;
+            $_SESSION['email'] = $user->email;
+            $_SESSION['is_admin'] = $user->is_admin;
+            $_SESSION['birthdate'] = $user->birthdate;
+            $_SESSION['geslacht'] = $user->geslacht;
+            
+            // Update last_login
+            try {
+                $upd = $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?');
+                $upd->execute([$user->id]);
+            } catch (\PDOException $e) {}
+            
+            return $user;
+        }
+        
+        return null;
     }
 
     public static function exists($email): bool
