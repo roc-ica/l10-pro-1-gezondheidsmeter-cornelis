@@ -160,4 +160,128 @@ class UserHealthHistory
 
         return $scores;
     }
+
+    /**
+     * Get all answers for a specific date
+     */
+    public function getAnswersByDate(string $date): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT a.*, q.pillar_id, p.name as pillar_name, p.color as pillar_color, q.question_text
+            FROM answers a
+            JOIN questions q ON a.question_id = q.id
+            JOIN pillars p ON q.pillar_id = p.id
+            JOIN daily_entries de ON a.entry_id = de.id
+            WHERE de.user_id = ? AND de.entry_date = ?
+            ORDER BY q.pillar_id ASC
+        ");
+        $stmt->execute([$this->userId, $date]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Get answers grouped by pillar for a specific date
+     */
+    public function getGroupedAnswers(string $date): array
+    {
+        $answers = $this->getAnswersByDate($date);
+        $grouped = [];
+
+        foreach ($answers as $answer) {
+            $pillarId = $answer['pillar_id'];
+            if (!isset($grouped[$pillarId])) {
+                $grouped[$pillarId] = [
+                    'name' => $answer['pillar_name'],
+                    'color' => $answer['pillar_color'],
+                    'answers' => []
+                ];
+            }
+            $grouped[$pillarId]['answers'][] = $answer;
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Get total number of submitted entries
+     */
+    public function getTotalSubmittedEntries(): int
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) FROM daily_entries 
+            WHERE user_id = ? AND submitted_at IS NOT NULL
+        ");
+        $stmt->execute([$this->userId]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Get response rate (Submitted Days / Days since Signup)
+     */
+    public function getResponseRate(): int
+    {
+        // Get signup date
+        $stmt = $this->pdo->prepare("SELECT created_at FROM users WHERE id = ?");
+        $stmt->execute([$this->userId]);
+        $createdAtStr = $stmt->fetchColumn();
+        
+        if (!$createdAtStr) return 0;
+
+        $createdAt = new \DateTime($createdAtStr);
+        $now = new \DateTime();
+        $daysSinceSignup = max(1, $now->diff($createdAt)->days + 1);
+
+        $submittedEntries = $this->getTotalSubmittedEntries();
+
+        return (int)min(100, round(($submittedEntries / $daysSinceSignup) * 100));
+    }
+
+    /**
+     * Get current streak
+     * Handles the case where today is not yet done but yesterday was.
+     */
+    public function getStreak(): int
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT entry_date FROM daily_entries 
+            WHERE user_id = ? AND submitted_at IS NOT NULL
+            ORDER BY entry_date DESC
+        ");
+        $stmt->execute([$this->userId]);
+        $allEntries = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        $currentStreak = 0;
+        $checkDate = new \DateTime(); // Start checking from TODAY
+        
+        $todayStr = (new \DateTime())->format('Y-m-d');
+        $yesterdayStr = (new \DateTime('-1 day'))->format('Y-m-d');
+        
+        $hasToday = false;
+        $hasYesterday = false;
+        
+        foreach ($allEntries as $entryDate) {
+            if ($entryDate === $todayStr) $hasToday = true;
+            if ($entryDate === $yesterdayStr) $hasYesterday = true;
+        }
+
+        // If today not done and yesterday not done, streak is 0
+        if (!$hasToday && !$hasYesterday) return 0;
+        
+        // If today not done but yesterday is, we start counting from yesterday
+        if (!$hasToday && $hasYesterday) {
+            $checkDate->modify('-1 day');
+        }
+
+        foreach ($allEntries as $entryDate) {
+            $entry = new \DateTime($entryDate);
+            if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
+                $currentStreak++;
+                $checkDate->modify('-1 day');
+            } elseif ($entry->format('Y-m-d') < $checkDate->format('Y-m-d')) {
+                // Gap found
+                break;
+            }
+        }
+        return $currentStreak;
+    }
 }

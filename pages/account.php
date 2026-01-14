@@ -13,6 +13,7 @@ require_once __DIR__ . '/../src/models/User.php';
 require_once __DIR__ . '/../src/config/database.php';
 require_once __DIR__ . '/../src/services/UserProfileService.php';
 require_once __DIR__ . '/../src/services/HealthDataService.php';
+require_once __DIR__ . '/../src/models/UserHealthHistory.php';
 
 $user = User::findByIdStatic($_SESSION['user_id']);
 
@@ -113,70 +114,11 @@ if ($profilePicture) {
 // echo "DEBUG: Profile Picture Value: [" . $profilePicture . "]<br>";
 $profilePicture = htmlspecialchars($profilePicture);
 
-// Initialize Database connection for stats
-$pdo = Database::getConnection();
-
-// 1. Calculate Average Health Score (from user_health_scores)
-$stmt = $pdo->prepare("SELECT AVG(overall_score) FROM user_health_scores WHERE user_id = ?");
-$stmt->execute([$user->id]);
-$avgScore = round((float)$stmt->fetchColumn());
-
-// 2. Calculate Response Rate (Submitted Days / Days since Signup)
-$createdAt = new DateTime($user->created_at ?? 'now');
-$now = new DateTime();
-$daysSinceSignup = max(1, $now->diff($createdAt)->days + 1);
-
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM daily_entries WHERE user_id = ? AND submitted_at IS NOT NULL");
-$stmt->execute([$user->id]);
-$submittedEntries = $stmt->fetchColumn();
-
-// Calculate percentage, max 100%
-$responseRate = min(100, round(($submittedEntries / $daysSinceSignup) * 100));
-
-// 3. Calculate Current Streak
-$stmt = $pdo->prepare("
-    SELECT entry_date FROM daily_entries 
-    WHERE user_id = ? AND submitted_at IS NOT NULL
-    ORDER BY entry_date DESC
-");
-$stmt->execute([$user->id]);
-$allEntries = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-$currentStreak = 0;
-$checkDate = new DateTime(); // Today
-// Check if most recent entry is today, if not check if it was yesterday (allow 1 day grace for "current" streak display in some contexts, but strict streak means today must be done or yesterday done)
-// We will follow strict logic: Streak counts back from TODAY. If today not done but yesterday done, streak is preserved but count might not include today.
-// To handle "I haven't done it TODAY yet, but I did yesterday", we usually check if today is done. If not, check yesterday.
-// Home.php logic:
-// foreach ($allEntries as $entryDate) { ... if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) ... }
-// We will reuse that for consistency.
-
-$checkDate = new DateTime();
-$streakFoundToday = false;
-$streakFoundYesterday = false;
-
-// First loop to see if we have valid streak activity
-foreach ($allEntries as $entryDate) {
-    $entry = new DateTime($entryDate);
-    if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
-        $currentStreak++;
-        $checkDate->modify('-1 day');
-        $streakFoundToday = true;
-    } elseif ($currentStreak === 0 && $entry->format('Y-m-d') === (new DateTime('-1 day'))->format('Y-m-d')) {
-        // Allow streak to start from yesterday if today is missing
-        $currentStreak++;
-        $checkDate->modify('-1 day'); // Move check to yesterday
-        $checkDate->modify('-1 day'); // Move check to day before yesterday for next loop
-        $streakFoundYesterday = true;
-    } elseif ($currentStreak > 0 && $entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
-        $currentStreak++;
-        $checkDate->modify('-1 day');
-    } else {
-        // Gap found
-        // If we haven't started counting yet, continue searching? No, streak is continuous.
-        if ($currentStreak > 0) break;
-    }
-}
+// Use UserHealthHistory for statistics
+$history = new UserHealthHistory($user->id);
+$avgScore = round((float)($history->getAverageScore(365) ?? 0)); // Average of last year
+$responseRate = $history->getResponseRate();
+$currentStreak = $history->getStreak();
 ?>
 <!DOCTYPE html>
 <html lang="nl">

@@ -13,276 +13,107 @@ require_once __DIR__ . '/../src/services/QuestionnaireService.php';
 
 $userId = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'Gebruiker';
-$pdo = Database::getConnection();
-$today = date('Y-m-d');
+$questionnaireService = new QuestionnaireService();
 
 // Initialize session state on first visit
 if (!isset($_SESSION['questionnaire_state'])) {
     $_SESSION['questionnaire_state'] = [
         'answers' => [],
         'current_pair_idx' => 0,
-        'current_step' => 'main' // 'main' or 'secondary'
+        'current_step' => 'main' 
     ];
 }
 
-// Handle POST requests with QuestionnaireService
-$questionnaireService = new QuestionnaireService();
+// Handle AJAX Request via Service
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    header('Content-Type: application/json');
+    $action = $_POST['action'] ?? null;
+    $result = ['success' => false];
 
-// Handle Reset via GET (e.g., from results.php)
+    if ($action === 'answer_main' || $action === 'answer_secondary') {
+        $result = $questionnaireService->handleAjaxRequest($userId, $_POST);
+        
+        if ($result['success']) {
+            // Update session for immediate UI feedback
+            $qId = (int)$_POST['question_id'];
+            $_SESSION['questionnaire_state']['answers'][$qId] = $_POST['answer'];
+            
+            if ($action === 'answer_main') {
+                if ($_POST['answer'] === 'Nee') {
+                    $_SESSION['questionnaire_state']['current_pair_idx']++;
+                    $_SESSION['questionnaire_state']['current_step'] = 'main';
+                } else {
+                    $_SESSION['questionnaire_state']['current_step'] = 'secondary';
+                }
+            } else {
+                $_SESSION['questionnaire_state']['current_pair_idx']++;
+                $_SESSION['questionnaire_state']['current_step'] = 'main';
+            }
+        }
+    } elseif ($action === 'go_back') {
+        $currentStep = $_POST['current_step'] ?? 'main';
+        if ($currentStep === 'secondary') {
+            $_SESSION['questionnaire_state']['current_step'] = 'main';
+        } elseif ($currentStep === 'main' && $_SESSION['questionnaire_state']['current_pair_idx'] > 0) {
+            $_SESSION['questionnaire_state']['current_pair_idx']--;
+            $_SESSION['questionnaire_state']['current_step'] = 'secondary';
+        }
+        $result = ['success' => true];
+    } elseif ($action === 'reset') {
+        $result = $questionnaireService->resetTodayEntry($userId);
+        unset($_SESSION['questionnaire_state']);
+    }
+
+    echo json_encode($result);
+    exit;
+}
+
+// Handle Reset via GET (legacy/fallback)
 if (isset($_GET['reset']) && $_GET['reset'] === '1') {
     $questionnaireService->resetTodayEntry($userId);
-    $_SESSION['questionnaire_state'] = [
-        'answers' => [],
-        'current_pair_idx' => 0,
-        'current_step' => 'main'
-    ];
+    unset($_SESSION['questionnaire_state']);
     header('Location: vragen.php');
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Check if this is an AJAX request
-    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
-    
-    if ($isAjax) {
-        // Return JSON for AJAX
-        header('Content-Type: application/json');
-        
-        $action = $_POST['action'] ?? null;
-        
-        // ACTION: Save answer using service
-        if ($action === 'answer_main' || $action === 'answer_secondary') {
-            $questionId = (int)($_POST['question_id'] ?? 0);
-            $subQuestionId = (int)($_POST['sub_question_id'] ?? 0);
-            $answer = $_POST['answer'] ?? null;
-            
-            error_log("DEBUG: AJAX - Attempting to save answer - QuestionID: $questionId, SubQuestionID: $subQuestionId, Answer: $answer");
-            
-            if ($questionId && $answer !== null) {
-                try {
-                    // Get or create today's daily entry
-                    $today = date('Y-m-d');
-                    $stmt = $pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
-                    $stmt->execute([$userId, $today]);
-                    $entry = $stmt->fetch();
-                    
-                    if ($entry) {
-                        $entryId = $entry['id'];
-                    } else {
-                        $stmt = $pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
-                        $stmt->execute([$userId, $today]);
-                        $entryId = $pdo->lastInsertId();
-                    }
-                    
-                    // For main question, save answer to answers table with question_id
-                    if ($action === 'answer_main') {
-                        $stmt = $pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND question_id = ?");
-                        $stmt->execute([$entryId, $questionId]);
-                        $existingAnswer = $stmt->fetch();
-                        
-                        if ($existingAnswer) {
-                            $stmt = $pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
-                            $stmt->execute([$answer, $existingAnswer['id']]);
-                        } else {
-                            $stmt = $pdo->prepare("INSERT INTO answers (entry_id, question_id, answer_text) VALUES (?, ?, ?)");
-                            $stmt->execute([$entryId, $questionId, $answer]);
-                        }
-                        
-                        // If answer is "Nee", automatically set sub-question to 0
-                        if ($answer === 'Nee' && $subQuestionId) {
-                            $stmt = $pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND sub_question_id = ?");
-                            $stmt->execute([$entryId, $subQuestionId]);
-                            $existingSubAnswer = $stmt->fetch();
-                            
-                            if ($existingSubAnswer) {
-                                $stmt = $pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
-                                $stmt->execute(['0', $existingSubAnswer['id']]);
-                            } else {
-                                $stmt = $pdo->prepare("INSERT INTO answers (entry_id, question_id, sub_question_id, answer_text) VALUES (?, ?, ?, ?)");
-                                $stmt->execute([$entryId, $questionId, $subQuestionId, '0']);
-                            }
-                        }
-                    }
-                    // For sub_question, save answer with sub_question_id
-                    elseif ($action === 'answer_secondary' && $subQuestionId) {
-                        $stmt = $pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND sub_question_id = ?");
-                        $stmt->execute([$entryId, $subQuestionId]);
-                        $existingAnswer = $stmt->fetch();
-                        
-                        if ($existingAnswer) {
-                            $stmt = $pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
-                            $stmt->execute([$answer, $existingAnswer['id']]);
-                        } else {
-                            $stmt = $pdo->prepare("INSERT INTO answers (entry_id, question_id, sub_question_id, answer_text) VALUES (?, ?, ?, ?)");
-                            $stmt->execute([$entryId, $questionId, $subQuestionId, $answer]);
-                        }
-                    }
-                    
-                    // Update session state
-                    if (!isset($_SESSION['questionnaire_state']['answers'])) {
-                        $_SESSION['questionnaire_state']['answers'] = [];
-                    }
-                    $_SESSION['questionnaire_state']['answers'][$questionId] = $answer;
-                    
-                    // Update progress state
-                    if ($action === 'answer_main') {
-                        // If answer is "Nee", skip secondary and go to next pair
-                        if ($answer === 'Nee') {
-                            $_SESSION['questionnaire_state']['current_pair_idx']++;
-                            $_SESSION['questionnaire_state']['current_step'] = 'main';
-                        } else {
-                            $_SESSION['questionnaire_state']['current_step'] = 'secondary';
-                        }
-                    } elseif ($action === 'answer_secondary') {
-                        $_SESSION['questionnaire_state']['current_pair_idx']++;
-                        $_SESSION['questionnaire_state']['current_step'] = 'main';
-                    }
-                    
-                    error_log("DEBUG: Answer saved successfully");
-                    echo json_encode(['success' => true, 'message' => 'Antwoord opgeslagen']);
-                    exit;
-                } catch (Exception $e) {
-                    error_log("DEBUG: Exception caught: " . $e->getMessage());
-                    echo json_encode(['success' => false, 'message' => 'Exception: ' . $e->getMessage()]);
-                    exit;
-                }
-            }
-            error_log("DEBUG: Invalid parameters - QuestionID: $questionId, Answer: $answer");
-            echo json_encode(['success' => false, 'message' => 'Ongeldig antwoord']);
-            exit;
-        }
-        
-        // ACTION: Submit questionnaire
-        if ($action === 'submit_questionnaire') {
-            $result = $questionnaireService->submitQuestionnaire($userId);
-            if ($result['success']) {
-                unset($_SESSION['questionnaire_state']);
-            }
-            echo json_encode($result);
-            exit;
-        }
-        
-        // ACTION: Go back
-        if ($action === 'go_back') {
-            $currentStep = $_POST['current_step'] ?? 'main';
-            
-            if ($currentStep === 'secondary') {
-                $_SESSION['questionnaire_state']['current_step'] = 'main';
-            } elseif ($currentStep === 'main' && $_SESSION['questionnaire_state']['current_pair_idx'] > 0) {
-                $_SESSION['questionnaire_state']['current_pair_idx']--;
-                $_SESSION['questionnaire_state']['current_step'] = 'secondary';
-            }
-            
-            echo json_encode(['success' => true, 'message' => 'Teruggegaan naar vorige vraag']);
-            exit;
-        }
-        
-        // ACTION: Reset today
-        if ($action === 'reset') {
-            $result = $questionnaireService->resetTodayEntry($userId);
-            $_SESSION['questionnaire_state'] = [
-                'answers' => [],
-                'current_pair_idx' => 0,
-                'current_step' => 'main'
-            ];
-            echo json_encode($result);
-            exit;
-        }
+// Get Data for View
+$questionPairs = $questionnaireService->getQuestionPairs();
+$todayEntry = $questionnaireService->getTodayEntry($userId);
+
+// Sync database answers with session context
+if (!empty($todayEntry['answers'])) {
+    foreach ($todayEntry['answers'] as $ans) {
+        if ($ans['question_id']) $_SESSION['questionnaire_state']['answers'][$ans['question_id']] = $ans['answer_text'];
+        // Sub-questions are handled via parent question logic in UI/State
     }
 }
 
-// Get or create today's entry
-$stmt = $pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
-$stmt->execute([$userId, $today]);
-$todayEntry = $stmt->fetch();
-$todayEntryId = $todayEntry ? $todayEntry['id'] : null;
-
-// Load today's existing answers from database (always fetch from DB to ensure accuracy)
-if ($todayEntryId) {
-    $stmt = $pdo->prepare("SELECT question_id, sub_question_id, answer_text FROM answers WHERE entry_id = ?");
-    $stmt->execute([$todayEntryId]);
-    $existingAnswers = $stmt->fetchAll();
-    foreach ($existingAnswers as $ans) {
-        // Store main question answer
-        if ($ans['question_id']) {
-            $_SESSION['questionnaire_state']['answers'][$ans['question_id']] = $ans['answer_text'];
-        }
-        // Store sub_question answer with special key
-        if ($ans['sub_question_id']) {
-            $_SESSION['questionnaire_state']['answers']['sub_' . $ans['sub_question_id']] = $ans['answer_text'];
-        }
-    }
-}
-
-// Fetch all main questions
-$stmt = $pdo->prepare("
-    SELECT q.*, p.name as pillar_name, p.color as pillar_color
-    FROM questions q
-    JOIN pillars p ON q.pillar_id = p.id
-    WHERE q.active = 1
-    ORDER BY q.id ASC
-");
-$stmt->execute();
-$mainQuestions = $stmt->fetchAll();
-
-// Build question pairs (main + sub_questions)
-$questionPairs = [];
-foreach ($mainQuestions as $main) {
-    $stmt = $pdo->prepare("
-        SELECT * FROM sub_questions 
-        WHERE active = 1 AND parent_question_id = ?
-        LIMIT 1
-    ");
-    $stmt->execute([$main['id']]);
-    $secondary = $stmt->fetch();
-    
-    if ($secondary) {
-        $questionPairs[] = [
-            'main' => $main,
-            'secondary' => $secondary
-        ];
-    }
-}
-
-// Calculate current display state
 $currentPairIdx = $_SESSION['questionnaire_state']['current_pair_idx'] ?? 0;
 $currentStep = $_SESSION['questionnaire_state']['current_step'] ?? 'main';
 $answers = $_SESSION['questionnaire_state']['answers'] ?? [];
 
-$currentPair = isset($questionPairs[$currentPairIdx]) ? $questionPairs[$currentPairIdx] : null;
+$currentPair = $questionPairs[$currentPairIdx] ?? null;
 $totalPairs = count($questionPairs);
 
-// Count answered pairs
-// A pair is complete if:
-// 1. Main question is answered AND secondary is answered, OR
-// 2. Main question is answered with "Nee" (which skips the secondary)
+// Count progress
 $answeredPairs = 0;
 foreach ($questionPairs as $pair) {
-    $mainAnswered = isset($answers[$pair['main']['id']]);
-    $secondaryAnswered = isset($answers['sub_' . $pair['secondary']['id']]);
-    $mainAnswerIsNee = $mainAnswered && $answers[$pair['main']['id']] === 'Nee';
-    
-    // Count as answered if: (main + secondary) OR (main is "Nee")
-    if ($mainAnswered && ($secondaryAnswered || $mainAnswerIsNee)) {
-        $answeredPairs++;
+    if (isset($answers[$pair['main']['id']])) {
+        if ($answers[$pair['main']['id']] === 'Nee' || isset($todayEntry['answers'])) { // Simple check
+             $answeredPairs++; // This is a rough estimation for UI
+        }
     }
 }
+$allAnswered = ($currentPairIdx >= $totalPairs);
+$progress = $totalPairs > 0 ? min(100, round(($currentPairIdx / $totalPairs) * 100)) : 0;
 
-// Check if all answered
-$allAnswered = ($answeredPairs === $totalPairs && $totalPairs > 0);
-$progress = $totalPairs > 0 ? ($answeredPairs / $totalPairs * 100) : 0;
-
-// Calculate health score if all answered
+// Final Health Score Calculation if done
 $healthScore = null;
-if ($allAnswered && $todayEntryId) {
-    $stmt = $pdo->prepare("UPDATE daily_entries SET submitted_at = NOW() WHERE id = ? AND submitted_at IS NULL");
-    $stmt->execute([$todayEntryId]);
-    
-    $calculator = new HealthScoreCalculator($userId, $today);
+if ($allAnswered) {
+    $questionnaireService->submitQuestionnaire($userId);
+    $calculator = new HealthScoreCalculator($userId, date('Y-m-d'));
     $scoreResult = $calculator->calculateScore();
-    if ($scoreResult['success']) {
-        $healthScore = $scoreResult;
-    }
+    if ($scoreResult['success']) $healthScore = $scoreResult;
 }
 ?>
 <!DOCTYPE html>
@@ -294,307 +125,7 @@ if ($allAnswered && $todayEntryId) {
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
-    <style>
-        /* Question Card */
-        .question-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .question-badge {
-            display: inline-block;
-            background: #f0f0f0;
-            color: #666;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .question-text {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333;
-            margin: 20px 0;
-            line-height: 1.4;
-        }
-
-        .answer-section {
-            margin: 30px 0;
-        }
-
-        /* Button Styling */
-        .button-group {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            margin: 20px 0;
-        }
-
-        .btn-yes,
-        .btn-no {
-            flex: 1;
-            min-width: 140px;
-            padding: 16px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-yes {
-            color: #2ecc71;
-            border-color: #2ecc71;
-        }
-
-        .btn-yes:hover {
-            background: #e8f8f0;
-            border-color: #27ae60;
-        }
-
-        .btn-yes.selected {
-            background: #2ecc71;
-            color: white;
-            border-color: #27ae60;
-        }
-
-        .btn-no {
-            color: #e74c3c;
-            border-color: #e74c3c;
-        }
-
-        .btn-no:hover {
-            background: #fae8e6;
-            border-color: #c0392b;
-        }
-
-        .btn-no.selected {
-            background: #e74c3c;
-            color: white;
-            border-color: #c0392b;
-        }
-
-        /* Input Field */
-        .form-input-number {
-            width: 100%;
-            padding: 14px 16px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .form-input-number:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        /* Remove number input spinners */
-        .form-input-number::-webkit-outer-spin-button,
-        .form-input-number::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        .form-input-number[type=number] {
-            -moz-appearance: textfield;
-        }
-
-        /* Navigation */
-        .question-nav {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            margin-top: 30px;
-        }
-
-        .nav-btn {
-            flex: 1;
-            padding: 14px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            border: 2px solid #3498db;
-            border-radius: 10px;
-            background: white;
-            color: #3498db;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn:hover {
-            background: #3498db;
-            color: white;
-        }
-
-        .nav-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .next-btn {
-            border-color: #2ecc71;
-            color: #2ecc71;
-        }
-
-        .next-btn:hover {
-            background: #2ecc71;
-            color: white;
-        }
-
-        .prev-btn {
-            border-color: #95a5a6;
-            color: #95a5a6;
-        }
-
-        .prev-btn:hover {
-            background: #95a5a6;
-            color: white;
-        }
-
-        /* Progress */
-        .progress-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .progress-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-
-        .progress-count {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 12px;
-        }
-
-        .progress-bar-container {
-            width: 100%;
-            height: 8px;
-            background: #ecf0f1;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3498db, #2ecc71);
-            transition: width 0.3s ease;
-        }
-
-        /* Error Message */
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        /* Completion Card */
-        .completion-card {
-            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-        }
-
-        .completion-card h2 {
-            font-size: 32px;
-            margin: 20px 0;
-        }
-
-        .completion-card p {
-            font-size: 16px;
-            opacity: 0.9;
-            margin-bottom: 30px;
-        }
-
-        .submit-btn {
-            border-color: #2ecc71;
-            color: #2ecc71;
-            background: white;
-        }
-
-        .submit-btn:hover {
-            background: #2ecc71;
-            color: white;
-        }
-
-        .completion-card .submit-btn {
-            border-color: white;
-            color: white;
-            background: transparent;
-        }
-
-        .completion-card .submit-btn:hover {
-            background: white;
-            color: #2ecc71;
-        }
-
-        /* Health Score Display */
-        .health-score-display-result {
-            text-align: center;
-            padding: 30px 0;
-        }
-
-        .score-number-large {
-            font-size: 64px;
-            font-weight: 700;
-            color: #2ecc71;
-            margin: 20px 0;
-        }
-
-        .health-score-subtitle {
-            font-size: 16px;
-            color: #666;
-            margin-bottom: 30px;
-        }
-
-        .pillar-breakdown {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 16px;
-            margin: 30px 0;
-        }
-
-        .pillar-item {
-            background: #f8f9fa;
-            padding: 16px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .pillar-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
-        }
-
-        .pillar-score {
-            font-size: 24px;
-            font-weight: 700;
-            color: #3498db;
-        }
-    </style>
+    <link rel="stylesheet" href="../assets/css/vragen.css">
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>

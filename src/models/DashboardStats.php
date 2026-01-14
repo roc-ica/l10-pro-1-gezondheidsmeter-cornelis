@@ -146,6 +146,92 @@ class DashboardStats
         return array_slice($sorted, 0, 3);
     }
 
+    public function getTotalCheckins(int $userId): int
+    {
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM daily_entries WHERE user_id = ? AND submitted_at IS NOT NULL");
+        $stmt->execute([$userId]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    public function getStreak(int $userId): int
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT entry_date FROM daily_entries 
+            WHERE user_id = ? AND submitted_at IS NOT NULL
+            ORDER BY entry_date DESC
+        ");
+        $stmt->execute([$userId]);
+        $allEntries = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        $currentStreak = 0;
+        $checkDate = new \DateTime();
+        
+        foreach ($allEntries as $entryDate) {
+            $entry = new \DateTime($entryDate);
+            if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
+                $currentStreak++;
+                $checkDate->modify('-1 day');
+            } else {
+                break;
+            }
+        }
+        return $currentStreak;
+    }
+
+    public function getWeeklyProgress(int $userId): array
+    {
+        $weekAgo = date('Y-m-d', strtotime('-7 days'));
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) 
+            FROM daily_entries 
+            WHERE user_id = ? AND entry_date >= ? AND submitted_at IS NOT NULL
+        ");
+        $stmt->execute([$userId, $weekAgo]);
+        $completed = (int)$stmt->fetchColumn();
+        
+        return [
+            'completed' => $completed,
+            'total' => 7,
+            'percentage' => round(($completed / 7) * 100)
+        ];
+    }
+
+    public function getRecentActivity(int $userId, int $limit = 4): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT de.entry_date, de.submitted_at, COUNT(a.id) as answer_count
+            FROM daily_entries de
+            LEFT JOIN answers a ON de.id = a.entry_id
+            WHERE de.user_id = ? AND de.submitted_at IS NOT NULL
+            GROUP BY de.id
+            ORDER BY de.submitted_at DESC
+            LIMIT ?
+        ");
+        $stmt->execute([$userId, $limit]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function getHealthScorePercentage(int $userId): int
+    {
+        $weekAgo = date('Y-m-d', strtotime('-7 days'));
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(DISTINCT a.question_id) as answered,
+                (SELECT COUNT(*) FROM questions WHERE active = 1) as total_questions
+            FROM daily_entries de
+            LEFT JOIN answers a ON de.id = a.entry_id
+            WHERE de.user_id = ? AND de.entry_date >= ?
+            GROUP BY de.user_id
+        ");
+        $stmt->execute([$userId, $weekAgo]);
+        $scoreData = $stmt->fetch();
+
+        if ($scoreData && $scoreData['total_questions'] > 0) {
+            $healthScore = round(($scoreData['answered'] / ($scoreData['total_questions'] * 7)) * 100);
+            return (int)min(100, $healthScore);
+        }
+        return 0;
+    }
+
     private function toPercent(float $avgScore): int
     {
         if (self::MAX_SCORE <= 0) {
@@ -155,6 +241,38 @@ class DashboardStats
         $percent = ($avgScore / self::MAX_SCORE) * 100;
 
         return (int) max(0, min(100, round($percent)));
+    }
+
+    public function getAverageScore(int $userId): int
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT AVG(overall_score) as avg_score
+            FROM user_health_scores
+            WHERE user_id = ?
+        ");
+        $stmt->execute([$userId]);
+        $avgScore = $stmt->fetchColumn();
+        return $avgScore ? (int)round($avgScore) : 0;
+    }
+
+    public function getWeeklyCheckinData(int $userId): array
+    {
+        $chartData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-$i days"));
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) as count 
+                FROM daily_entries 
+                WHERE user_id = ? AND entry_date = ? AND submitted_at IS NOT NULL
+            ");
+            $stmt->execute([$userId, $date]);
+            $count = $stmt->fetch()['count'];
+            $chartData[] = [
+                'date' => $date,
+                'count' => $count
+            ];
+        }
+        return $chartData;
     }
 }
 

@@ -7,12 +7,13 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$username = $_SESSION['username'] ?? 'Gebruiker';
-$userId = $_SESSION['user_id'];
-
-// Database connection
 require_once __DIR__ . '/../src/config/database.php';
-$pdo = Database::getConnection();
+require_once __DIR__ . '/../src/models/DashboardStats.php';
+
+$userId = $_SESSION['user_id'];
+$username = $_SESSION['username'] ?? 'Gebruiker';
+
+$statsModel = new DashboardStats();
 
 // Time-based greeting
 $hour = date('H');
@@ -36,88 +37,21 @@ $quotes = [
 ];
 $randomQuote = $quotes[array_rand($quotes)];
 
-// Get current date
-$currentDate = date('l j F Y'); // Note: For localized Dutch date, setlocale() would be needed, or a mapping array.
 // Simple Dutch date mapping for "human" feel
 $days = ['Monday' => 'Maandag', 'Tuesday' => 'Dinsdag', 'Wednesday' => 'Woensdag', 'Thursday' => 'Donderdag', 'Friday' => 'Vrijdag', 'Saturday' => 'Zaterdag', 'Sunday' => 'Zondag'];
 $months = ['January' => 'januari', 'February' => 'februari', 'March' => 'maart', 'April' => 'april', 'May' => 'mei', 'June' => 'juni', 'July' => 'juli', 'August' => 'augustus', 'September' => 'september', 'October' => 'oktober', 'November' => 'november', 'December' => 'december'];
-$dayName = $days[date('l')];
-$monthName = $months[date('F')];
-$dayNum = date('j');
-$year = date('Y');
-$dutchDate = "$dayName $dayNum $monthName $year";
+$dutchDate = $days[date('l')] . ' ' . date('j') . ' ' . $months[date('F')] . ' ' . date('Y');
 
-
-// Get total completed questionnaires
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as total 
-    FROM daily_entries 
-    WHERE user_id = ? AND submitted_at IS NOT NULL
-");
-$stmt->execute([$userId]);
-$totalQuestions = $stmt->fetch()['total'];
-
-// Calculate current streak
-$stmt = $pdo->prepare("
-    SELECT entry_date FROM daily_entries 
-    WHERE user_id = ? AND submitted_at IS NOT NULL
-    ORDER BY entry_date DESC
-");
-$stmt->execute([$userId]);
-$allEntries = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-$currentStreak = 0;
-$checkDate = new DateTime();
-foreach ($allEntries as $entryDate) {
-    $entry = new DateTime($entryDate);
-    if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
-        $currentStreak++;
-        $checkDate->modify('-1 day');
-    } else {
-        break;
-    }
-}
-
-// Get weekly progress (last 7 days)
-$weekAgo = date('Y-m-d', strtotime('-7 days'));
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as count 
-    FROM daily_entries 
-    WHERE user_id = ? AND entry_date >= ? AND submitted_at IS NOT NULL
-");
-$stmt->execute([$userId, $weekAgo]);
-$weeklyCompleted = $stmt->fetch()['count'];
-$weeklyProgress = round(($weeklyCompleted / 7) * 100);
-
-// Calculate health score (average based on completed questionnaires)
-$stmt = $pdo->prepare("
-    SELECT COUNT(DISTINCT a.question_id) as answered,
-           (SELECT COUNT(*) FROM questions WHERE active = 1) as total_questions
-    FROM daily_entries de
-    LEFT JOIN answers a ON de.id = a.entry_id
-    WHERE de.user_id = ? AND de.entry_date >= ?
-    GROUP BY de.user_id
-");
-$stmt->execute([$userId, $weekAgo]);
-$scoreData = $stmt->fetch();
-
-if ($scoreData && $scoreData['total_questions'] > 0) {
-    $healthScore = round(($scoreData['answered'] / ($scoreData['total_questions'] * 7)) * 100);
-    $healthScore = min(100, $healthScore); // Cap at 100%
-} else {
-    $healthScore = 0;
-}
-
-// Calculate average score across all time
-$stmt = $pdo->prepare("
-    SELECT AVG(overall_score) as avg_score
-    FROM user_health_scores
-    WHERE user_id = ?
-");
-$stmt->execute([$userId]);
-$avgScoreData = $stmt->fetch();
-$averageScore = $avgScoreData && $avgScoreData['avg_score'] ? round($avgScoreData['avg_score']) : 0;
-
+// Fetch Stats via Model
+$totalQuestions = $statsModel->getTotalCheckins($userId);
+$currentStreak = $statsModel->getStreak($userId);
+$weeklyProgressData = $statsModel->getWeeklyProgress($userId);
+$weeklyCompleted = $weeklyProgressData['completed'];
+$weeklyProgress = $weeklyProgressData['percentage'];
+$healthScore = $statsModel->getHealthScorePercentage($userId);
+$averageScore = $statsModel->getAverageScore($userId);
+$recentActivity = $statsModel->getRecentActivity($userId);
+$weeklyChartData = $statsModel->getWeeklyCheckinData($userId);
 
 // Daily Focus Content (Premium/Human curated feel)
 $focusItems = [
@@ -303,22 +237,8 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                     <a href="results.php" class="card-link">Alles bekijken →</a>
                 </div>
                 <div class="activity-list">
-                    <?php
-                    // Get recent activities
-                    $stmt = $pdo->prepare("
-                        SELECT de.entry_date, de.submitted_at, COUNT(a.id) as answer_count
-                        FROM daily_entries de
-                        LEFT JOIN answers a ON de.id = a.entry_id
-                        WHERE de.user_id = ? AND de.submitted_at IS NOT NULL
-                        GROUP BY de.id
-                        ORDER BY de.submitted_at DESC
-                        LIMIT 4
-                    ");
-                    $stmt->execute([$userId]);
-                    $activities = $stmt->fetchAll();
-
-                    if (count($activities) > 0):
-                        foreach ($activities as $activity):
+                    <?php if (count($recentActivity) > 0): ?>
+                        <?php foreach ($recentActivity as $activity): 
                             $timeAgo = '';
                             $submitted = new DateTime($activity['submitted_at']);
                             $now = new DateTime();
@@ -335,11 +255,10 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                             } else {
                                 $timeAgo = $diff->d . ' dagen geleden';
                             }
-                            ?>
+                        ?>
                             <div class="activity-item">
                                 <div class="activity-icon activity-icon-success">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </div>
@@ -348,10 +267,8 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                     <div class="activity-time"><?= $timeAgo ?></div>
                                 </div>
                             </div>
-                            <?php
-                        endforeach;
-                    else:
-                        ?>
+                        <?php endforeach; ?>
+                    <?php else: ?>
                         <div class="activity-item">
                             <div class="activity-content">
                                 <div class="activity-title">Nog geen metingen</div>
@@ -454,26 +371,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
         // Weekly Chart with real data
         const ctx = document.getElementById('weeklyChart');
         if (ctx) {
-            <?php
-            // Get data for last 7 days
-            $chartData = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $date = date('Y-m-d', strtotime("-$i days"));
-                $stmt = $pdo->prepare("
-                    SELECT COUNT(*) as count 
-                    FROM daily_entries 
-                    WHERE user_id = ? AND entry_date = ? AND submitted_at IS NOT NULL
-                ");
-                $stmt->execute([$userId, $date]);
-                $count = $stmt->fetch()['count'];
-                $chartData[] = [
-                    'date' => $date,
-                    'count' => $count
-                ];
-            }
-            ?>
-
-            const weeklyData = <?= json_encode($chartData) ?>;
+            const weeklyData = <?= json_encode($weeklyChartData) ?>;
             const labels = weeklyData.map(d => {
                 const date = new Date(d.date);
                 return date.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' });

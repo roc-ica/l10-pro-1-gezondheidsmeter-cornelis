@@ -27,7 +27,6 @@ $totalAnswers = $stats->getTotalAnswers();
 $averageScore = $stats->getAverageScore();
 $activeThisWeek = $stats->getActiveThisWeek();
 $weeklyActivityData = $stats->getWeeklyActivityWithHeights();
-$trendDataWithCoords = $stats->getTrendDataWithCoordinates();
 $recentAdminActions = $stats->getRecentAdminActions();
 
 $username = $_SESSION['username'] ?? 'Admin';
@@ -151,39 +150,6 @@ $username = $_SESSION['username'] ?? 'Admin';
             </div>
         </div>
 
-        <!-- Trend Row -->
-        <div class="trend-row">
-            <div class="chart-block trend-block">
-                <h3 class="chart-title">Gemiddelde Score Trend</h3>
-                <div class="trend-chart">
-                    <svg class="trend-svg" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet">
-                        <!-- Axes -->
-                        <line x1="10" y1="10" x2="10" y2="100" stroke="#000" stroke-width="1"/>
-                        <line x1="10" y1="100" x2="290" y2="100" stroke="#000" stroke-width="1"/>
-                        
-                        <!-- Trend line -->
-                        <?php if (!empty($trendDataWithCoords['points'])): ?>
-                        <polyline 
-                            points="<?= $trendDataWithCoords['points'] ?>"
-                            fill="none"
-                            stroke="#008000"
-                            stroke-width="0.5"
-                        />
-                        
-                        <!-- Data points -->
-                        <?php foreach ($trendDataWithCoords['coordinates'] as $coord): ?>
-                        <circle cx="<?= $coord['x'] ?>" cy="<?= $coord['y'] ?>" r="1" fill="#008000"/>
-                        <?php endforeach; ?>
-                        <?php else: ?>
-                        <text x="150" y="50" text-anchor="middle" fill="#999">Geen gegevens beschikbaar</text>
-                        <?php endif; ?>
-                    </svg>
-                </div>
-                <div class="trend-legend">
-                    <span class="trend-label">Gemiddelde Score</span>
-                </div>
-            </div>
-        </div>
     </div>
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>

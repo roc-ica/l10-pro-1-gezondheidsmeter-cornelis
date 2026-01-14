@@ -13,70 +13,21 @@ $userId = $_SESSION['user_id'];
 $username = $_SESSION['username'] ?? 'Gebruiker';
 $date = $_GET['date'] ?? date('Y-m-d');
 
-$pdo = Database::getConnection();
-
-// Get today's answers with pillar info
-$stmt = $pdo->prepare("
-    SELECT a.*, q.pillar_id, p.name as pillar_name, p.color as pillar_color, q.question_text
-    FROM answers a
-    JOIN questions q ON a.question_id = q.id
-    JOIN pillars p ON q.pillar_id = p.id
-    JOIN daily_entries de ON a.entry_id = de.id
-    WHERE de.user_id = ? AND de.entry_date = ?
-    ORDER BY q.pillar_id ASC
-");
-$stmt->execute([$userId, $date]);
-$todayAnswers = $stmt->fetchAll();
-
-// Get total entries count
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as total FROM daily_entries 
-    WHERE user_id = ? AND submitted_at IS NOT NULL
-");
-$stmt->execute([$userId]);
-$totalEntries = $stmt->fetch()['total'];
-
-// Calculate current streak
-$stmt = $pdo->prepare("
-    SELECT entry_date FROM daily_entries 
-    WHERE user_id = ? AND submitted_at IS NOT NULL
-    ORDER BY entry_date DESC
-");
-$stmt->execute([$userId]);
-$allEntries = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-$currentStreak = 0;
-$checkDate = new DateTime();
-foreach ($allEntries as $entryDate) {
-    $entry = new DateTime($entryDate);
-    if ($entry->format('Y-m-d') === $checkDate->format('Y-m-d')) {
-        $currentStreak++;
-        $checkDate->modify('-1 day');
-    } else {
-        break;
-    }
-}
-
-// Get today's score
 $history = new UserHealthHistory($userId);
+
+// Fetch Stats via Model (Refactored)
+$todayAnswers = $history->getAnswersByDate($date);
+$totalEntries = $history->getTotalSubmittedEntries();
+$currentStreak = $history->getStreak();
+
+// Get today's score and trend data
 $todayScore = $history->getTodayScore();
 $pillarScores = !empty($todayAnswers) ? $history->getPillarScores($date) : null;
-$trendData = $history->getTrendData(30); // Get last 30 days
+$trendData = $history->getTrendData(30); 
 $avgScore = $history->getAverageScore(7);
 
-// Group answers by pillar
-$answersByPillar = [];
-foreach ($todayAnswers as $answer) {
-    $pillarId = $answer['pillar_id'];
-    if (!isset($answersByPillar[$pillarId])) {
-        $answersByPillar[$pillarId] = [
-            'name' => $answer['pillar_name'],
-            'color' => $answer['pillar_color'],
-            'answers' => []
-        ];
-    }
-    $answersByPillar[$pillarId]['answers'][] = $answer;
-}
+// Group answers by pillar via Model
+$answersByPillar = $history->getGroupedAnswers($date);
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -88,204 +39,7 @@ foreach ($todayAnswers as $answer) {
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Specific overrides for a cleaner, professional look */
-        body {
-            background-color: #f8f9fa;
-        }
-        .dashboard-container {
-            max-width: 1000px;
-        }
-        .dashboard-header h1 {
-            color: #1a1a1a;
-        }
-        .status-banner {
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-left: 4px solid #16a34a;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .status-content h2 {
-            font-size: 18px;
-            margin: 0 0 4px 0;
-            color: #111827;
-        }
-        .status-content p {
-            margin: 0;
-            color: #6b7280;
-            font-size: 14px;
-        }
-        
-        .score-display-large {
-            text-align: center;
-            padding: 30px;
-            background: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .score-value-main {
-            font-size: 48px;
-            font-weight: 800;
-            color: #16a34a;
-            line-height: 1;
-            margin-bottom: 8px;
-        }
-        .score-label-main {
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b7280;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .kpi-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-            text-align: center;
-        }
-        .kpi-label {
-            font-size: 13px;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-        .kpi-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1f2937;
-        }
-        
-        .chart-section {
-            background: white;
-            padding: 24px;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .chart-header {
-            margin-bottom: 20px;
-            border-bottom: 1px solid #f3f4f6;
-            padding-bottom: 10px;
-        }
-        .chart-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #374151;
-            margin: 0;
-        }
-        
-        .details-table-container {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .details-header {
-            padding: 16px 24px;
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .details-header h3 {
-            margin: 0;
-            font-size: 16px;
-            color: #1f2937;
-        }
-        
-        .answer-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 16px 24px;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        .answer-row:last-child {
-            border-bottom: none;
-        }
-        .answer-q {
-            color: #4b5563;
-            font-weight: 500;
-        }
-        .answer-a {
-            color: #111827;
-            font-weight: 600;
-        }
-        
-        .pillar-header {
-            padding: 12px 24px;
-            background: #f3f4f6;
-            color: #374151;
-            font-weight: 600;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .pillar-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .action-row {
-            display: flex;
-            gap: 12px;
-            margin-top: 32px;
-        }
-        .btn-clean {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 500;
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .btn-clean-primary {
-            background-color: #16a34a;
-            color: white;
-        }
-        .btn-clean-primary:hover {
-            background-color: #15803d;
-        }
-        .btn-clean-secondary {
-            background-color: white;
-            border: 1px solid #d1d5db;
-            color: #374151;
-        }
-        .btn-clean-secondary:hover {
-            background-color: #f9fafb;
-            border-color: #9ca3af;
-        }
-        
-        .empty-state-clean {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-        .empty-icon-clean {
-            color: #d1d5db;
-            margin-bottom: 16px;
-        }
-    </style>
+    <link rel="stylesheet" href="../assets/css/results.css">
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>

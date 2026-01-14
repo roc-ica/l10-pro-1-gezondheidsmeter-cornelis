@@ -208,6 +208,131 @@ class QuestionnaireService
      * @param int $userId User ID
      * @return array Success/error response
      */
+    public function getQuestionPairs(): array
+    {
+        // 1. Fetch all active main questions
+        $stmt = $this->pdo->prepare("
+            SELECT q.*, p.name as pillar_name, p.color as pillar_color
+            FROM questions q
+            JOIN pillars p ON q.pillar_id = p.id
+            WHERE q.active = 1
+            ORDER BY q.id ASC
+        ");
+        $stmt->execute();
+        $mainQuestions = $stmt->fetchAll();
+
+        // 2. Build question pairs (main + secondary)
+        $questionPairs = [];
+        foreach ($mainQuestions as $main) {
+            $stmt = $this->pdo->prepare("
+                SELECT * FROM sub_questions 
+                WHERE active = 1 AND parent_question_id = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$main['id']]);
+            $secondary = $stmt->fetch();
+            
+            if ($secondary) {
+                $questionPairs[] = [
+                    'main' => $main,
+                    'secondary' => $secondary
+                ];
+            }
+        }
+        return $questionPairs;
+    }
+
+    /**
+     * Handle the AJAX answer saving logic previously in vragen.php
+     */
+    public function handleAjaxRequest(int $userId, array $postData): array
+    {
+        $action = $postData['action'] ?? null;
+        
+        if ($action === 'answer_main' || $action === 'answer_secondary') {
+            $questionId = (int)($postData['question_id'] ?? 0);
+            $subQuestionId = (int)($postData['sub_question_id'] ?? 0);
+            $answer = $postData['answer'] ?? null;
+            
+            if (!$questionId || $answer === null) {
+                return ['success' => false, 'message' => 'Ongeldige parameters'];
+            }
+
+            try {
+                // Get or create today's daily entry
+                $today = date('Y-m-d');
+                $stmt = $this->pdo->prepare("SELECT id FROM daily_entries WHERE user_id = ? AND entry_date = ?");
+                $stmt->execute([$userId, $today]);
+                $entry = $stmt->fetch();
+                
+                if ($entry) {
+                    $entryId = $entry['id'];
+                } else {
+                    $stmt = $this->pdo->prepare("INSERT INTO daily_entries (user_id, entry_date) VALUES (?, ?)");
+                    $stmt->execute([$userId, $today]);
+                    $entryId = $this->pdo->lastInsertId();
+                }
+                
+                // For main question, save answer to answers table
+                if ($action === 'answer_main') {
+                    $stmt = $this->pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND question_id = ?");
+                    $stmt->execute([$entryId, $questionId]);
+                    $existingAnswer = $stmt->fetch();
+                    
+                    if ($existingAnswer) {
+                        $stmt = $this->pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
+                        $stmt->execute([$answer, $existingAnswer['id']]);
+                    } else {
+                        $stmt = $this->pdo->prepare("INSERT INTO answers (entry_id, question_id, answer_text) VALUES (?, ?, ?)");
+                        $stmt->execute([$entryId, $questionId, $answer]);
+                    }
+                    
+                    // If answer is "Nee", automatically set sub-question to 0 if it exists
+                    if ($answer === 'Nee' && $subQuestionId) {
+                        $stmt = $this->pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND sub_question_id = ?");
+                        $stmt->execute([$entryId, $subQuestionId]);
+                        $existingSubAnswer = $stmt->fetch();
+                        
+                        if ($existingSubAnswer) {
+                            $stmt = $this->pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
+                            $stmt->execute(['0', $existingSubAnswer['id']]);
+                        } else {
+                            $stmt = $this->pdo->prepare("INSERT INTO answers (entry_id, question_id, sub_question_id, answer_text) VALUES (?, ?, ?, ?)");
+                            $stmt->execute([$entryId, $questionId, $subQuestionId, '0']);
+                        }
+                    }
+                }
+                // For sub_question, save answer with sub_question_id
+                elseif ($action === 'answer_secondary' && $subQuestionId) {
+                    $stmt = $this->pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND sub_question_id = ?");
+                    $stmt->execute([$entryId, $subQuestionId]);
+                    $existingAnswer = $stmt->fetch();
+                    
+                    if ($existingAnswer) {
+                        $stmt = $this->pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
+                        $stmt->execute([$answer, $existingAnswer['id']]);
+                    } else {
+                        $stmt = $this->pdo->prepare("INSERT INTO answers (entry_id, question_id, sub_question_id, answer_text) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([$entryId, $questionId, $subQuestionId, $answer]);
+                    }
+                }
+
+                // Update Progress State (Session management is done in the Page/Controller)
+                return [
+                    'success' => true, 
+                    'message' => 'Antwoord opgeslagen',
+                    'action' => $action,
+                    'answer' => $answer
+                ];
+
+            } catch (Exception $e) {
+                return ['success' => false, 'message' => 'Database fout: ' . $e->getMessage()];
+            }
+        }
+        
+        return ['success' => false, 'message' => 'Onbekende actie'];
+    }
+
     public function resetTodayEntry(int $userId): array
     {
         try {
