@@ -112,37 +112,7 @@ foreach ($weeklyStats as $dayStat) {
             </div>
         </div>
 
-        <!-- Detailed Statistics Table -->
-        <div class="dashboard-card dashboard-card-full">
-            <div class="card-header">
-                <h3>Gedetailleerde Statistieken</h3>
-            </div>
-            <div class="table-responsive">
-                <table class="stats-table">
-                    <thead>
-                        <tr>
-                            <th>Dag</th>
-                            <th>Slaap</th>
-                            <th>Voeding</th>
-                            <th>Beweging</th>
-                            <th>Stress</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($weeklyStats as $stat): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($stat['day_name']); ?></td>
-                            <td><?php echo $stat['scores']['Slaap'] ?? '-'; ?></td>
-                            <td><?php echo $stat['scores']['Voeding'] ?? '-'; ?></td>
-                            <td><?php echo $stat['scores']['Beweging'] ?? '-'; ?></td>
-                            <td><?php echo $stat['scores']['Stress'] ?? '-'; ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
+       
     </div>
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
