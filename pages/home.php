@@ -155,8 +155,8 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                             <div class="gauge-value-display"><?= $averageScore ?>%</div>
                         </div>
                         <div>
-                            <div style="font-size: 0.9rem; color: #9ca3af;">Jouw score</div>
-                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Vandaag</div>
+                            <div style="font-size: 0.9rem; color: #9ca3af;">Jouw gemiddelde score</div>
+                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen 7 dagen</div>
                         </div>
                     </div>
                 </div>

@@ -58,7 +58,7 @@ class History
         // Fill in the stats
         foreach ($results as $row) {
             $date = $row['score_date'];
-            $pillarScores = json_decode($row['pillar_scores'], true);
+            $pillarScores = $row['pillar_scores'] ? json_decode($row['pillar_scores'], true) : [];
 
             if (isset($stats[$date]) && is_array($pillarScores)) {
                 // Map pillar IDs to names
