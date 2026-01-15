@@ -146,12 +146,12 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                 <path d="M 82 26 A 40 40 0 0 1 90 50" fill="none" stroke="#22c55e" stroke-width="10" />
 
                                 <!-- Needle -->
-                                <g class="gauge-needle" style="transform-origin: 50px 50px; transform: rotate(<?= ($healthScore * 1.8) - 90 ?>deg);">
+                                <g class="gauge-needle" style="transform-origin: 50px 50px; transform: rotate(<?= ($averageScore * 1.8) - 90 ?>deg);">
                                     <line x1="50" y1="50" x2="50" y2="12" stroke="#1f2937" stroke-width="3" stroke-linecap="round" />
                                     <circle cx="50" cy="50" r="5" class="gauge-center" />
                                 </g>
                             </svg>
-                            <div class="gauge-value-display"><?= $healthScore ?>%</div>
+                            <div class="gauge-value-display"><?= $averageScore ?>%</div>
                         </div>
                         <div>
                             <div style="font-size: 0.9rem; color: #9ca3af;">Jouw score</div>
@@ -162,7 +162,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
             </div>
 
             <!-- 2. Weekly Goal (Segmented Dots) -->
-            <div class="stat-card" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
+            <div class="stat-card stat-card-large" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
                 <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
                     <span
                         style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Weekdoel</span>
@@ -182,34 +182,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                 </div>
             </div>
 
-            <!-- 3. Average Score -->
-            <div class="stat-card" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
-                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
-                    <span
-                        style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Gemiddeld</span>
-                </div>
-                <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
-                    <div style="position: relative; width: 80px; height: 80px;">
-                        <svg width="80" height="80" viewBox="0 0 36 36">
-                            <path d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3" />
-                            <path d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f59e0b" stroke-width="3"
-                                stroke-dasharray="<?= $averageScore ?>, 100" class="radial-progress" />
-                        </svg>
-                        <div
-                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; font-weight: 700; color: #1f2937;">
-                            <?= $averageScore ?>%
-                        </div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.9rem; color: #9ca3af;">Overall score</div>
-                        <div style="font-size: 0.85rem; color: #f59e0b; font-weight: 600;">All-time</div>
-                    </div>
-                </div>
-            </div>
+
 
 
         </div>
