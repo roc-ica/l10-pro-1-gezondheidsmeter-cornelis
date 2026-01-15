@@ -274,5 +274,63 @@ class DashboardStats
         }
         return $chartData;
     }
+
+    public function getWeeklyProgressComparison(int $userId): array
+    {
+        // This week (last 7 days)
+        $thisWeekStart = date('Y-m-d', strtotime('-7 days'));
+        $thisWeekEnd = date('Y-m-d');
+        
+        // Previous week (8-14 days ago)
+        $lastWeekStart = date('Y-m-d', strtotime('-14 days'));
+        $lastWeekEnd = date('Y-m-d', strtotime('-8 days'));
+        
+        // Get check-ins for this week
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) as count
+            FROM daily_entries
+            WHERE user_id = ? AND entry_date >= ? AND entry_date <= ? AND submitted_at IS NOT NULL
+        ");
+        $stmt->execute([$userId, $thisWeekStart, $thisWeekEnd]);
+        $thisWeekCheckins = (int)$stmt->fetchColumn();
+        
+        // Get check-ins for last week
+        $stmt->execute([$userId, $lastWeekStart, $lastWeekEnd]);
+        $lastWeekCheckins = (int)$stmt->fetchColumn();
+        
+        // Get average score for this week
+        $stmt = $this->pdo->prepare("
+            SELECT AVG(uhs.overall_score) as avg_score
+            FROM user_health_scores uhs
+            WHERE uhs.user_id = ? AND uhs.score_date >= ? AND uhs.score_date <= ?
+        ");
+        $stmt->execute([$userId, $thisWeekStart, $thisWeekEnd]);
+        $thisWeekScore = $stmt->fetchColumn();
+        $thisWeekScore = $thisWeekScore ? (int)round($thisWeekScore) : 0;
+        
+        // Get average score for last week
+        $stmt->execute([$userId, $lastWeekStart, $lastWeekEnd]);
+        $lastWeekScore = $stmt->fetchColumn();
+        $lastWeekScore = $lastWeekScore ? (int)round($lastWeekScore) : 0;
+        
+        // Calculate differences
+        $checkinsDiff = $thisWeekCheckins - $lastWeekCheckins;
+        $scoreDiff = $thisWeekScore - $lastWeekScore;
+        
+        return [
+            'this_week' => [
+                'checkins' => $thisWeekCheckins,
+                'score' => $thisWeekScore
+            ],
+            'last_week' => [
+                'checkins' => $lastWeekCheckins,
+                'score' => $lastWeekScore
+            ],
+            'difference' => [
+                'checkins' => $checkinsDiff,
+                'score' => $scoreDiff
+            ]
+        ];
+    }
 }
 
