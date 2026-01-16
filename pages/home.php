@@ -52,6 +52,7 @@ $healthScore = $statsModel->getHealthScorePercentage($userId);
 $averageScore = $statsModel->getAverageScore($userId);
 $recentActivity = $statsModel->getRecentActivity($userId);
 $weeklyChartData = $statsModel->getWeeklyCheckinData($userId);
+$progressComparison = $statsModel->getWeeklyProgressComparison($userId);
 
 // Daily Focus Content (Premium/Human curated feel)
 $focusItems = [
@@ -157,11 +158,11 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                     <circle cx="50" cy="50" r="5" class="gauge-center" />
                                 </g>
                             </svg>
-                            <div class="gauge-value-display"><?= $healthScore ?>%</div>
+                            <div class="gauge-value-display"><?= $averageScore ?>%</div>
                         </div>
                         <div>
-                            <div style="font-size: 0.9rem; color: #9ca3af;">Jouw score</div>
-                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Vandaag</div>
+                            <div style="font-size: 0.9rem; color: #9ca3af;">Jouw gemiddelde score</div>
+                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen 7 dagen</div>
                         </div>
                     </div>
                 </div>
@@ -343,13 +344,93 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
             </div>
         </div>
 
-        <!-- Weekly Overview Chart -->
+        <!-- Progress Overview: This Week vs Last Week -->
         <div class="dashboard-card dashboard-card-full">
             <div class="card-header">
-                <h3>Jouw week in beeld</h3>
+                <h3>Jouw Voortgang</h3>
+                <p style="font-size: 0.875rem; color: #6b7280; margin: 4px 0 0 0;">Deze week vs vorige week</p>
             </div>
-            <div class="chart-container">
-                <canvas id="weeklyChart"></canvas>
+            <div style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+                
+                <!-- Check-ins Comparison -->
+                <div style="background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #3b82f6;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #3b82f6; display: flex; align-items: center; justify-content: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.05em;">Check-ins</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;"><?= $progressComparison['this_week']['checkins'] ?></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                        <span style="font-size: 0.875rem; color: #6b7280;">Vorige week: <?= $progressComparison['last_week']['checkins'] ?></span>
+                        <?php if ($progressComparison['difference']['checkins'] > 0): ?>
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #16a34a; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                </svg>
+                                +<?= $progressComparison['difference']['checkins'] ?>
+                            </span>
+                        <?php elseif ($progressComparison['difference']['checkins'] < 0): ?>
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #ef4444; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                                <?= $progressComparison['difference']['checkins'] ?>
+                            </span>
+                        <?php else: ?>
+                            <span style="font-size: 0.875rem; color: #9ca3af; font-weight: 600;">
+                                Gelijk
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Average Score Comparison -->
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #ffffff 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #f59e0b;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #f59e0b; display: flex; align-items: center; justify-content: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+                                <path d="M12 20V10"></path>
+                                <path d="M18 20V4"></path>
+                                <path d="M6 20v-6"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.05em;">Gemiddelde Score</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;"><?= $progressComparison['this_week']['score'] ?>%</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                        <span style="font-size: 0.875rem; color: #6b7280;">Vorige week: <?= $progressComparison['last_week']['score'] ?>%</span>
+                        <?php if ($progressComparison['difference']['score'] > 0): ?>
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #16a34a; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                </svg>
+                                +<?= $progressComparison['difference']['score'] ?>%
+                            </span>
+                        <?php elseif ($progressComparison['difference']['score'] < 0): ?>
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #ef4444; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                                <?= $progressComparison['difference']['score'] ?>%
+                            </span>
+                        <?php else: ?>
+                            <span style="font-size: 0.875rem; color: #9ca3af; font-weight: 600;">
+                                Gelijk
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -378,61 +459,6 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
 
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Weekly Chart with real data
-        const ctx = document.getElementById('weeklyChart');
-        if (ctx) {
-            const weeklyData = <?= json_encode($weeklyChartData) ?>;
-            const labels = weeklyData.map(d => {
-                const date = new Date(d.date);
-                return date.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' });
-            });
-            const data = weeklyData.map(d => d.count);
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Check-ins',
-                        data: data,
-                        borderColor: '#16a34a',
-                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    </script>
 </body>
 
 </html>
