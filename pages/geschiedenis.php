@@ -13,20 +13,42 @@ $isLoggedIn = isset($_SESSION['user_id']);
 $username = $_SESSION['username'] ?? 'Gebruiker';
 $userId = $_SESSION['user_id'];
 
+// Get the period parameter (default to 'week')
+$period = $_GET['period'] ?? 'week';
+$validPeriods = ['week', 'month', 'year'];
+if (!in_array($period, $validPeriods)) {
+    $period = 'week';
+}
+
 $history = new History();
-$weeklyStats = $history->getWeeklyStats($userId);
+
+// Get stats based on period
+switch ($period) {
+    case 'month':
+        $stats = $history->getMonthlyStats($userId);
+        $periodLabel = 'maand';
+        break;
+    case 'year':
+        $stats = $history->getYearlyStats($userId);
+        $periodLabel = 'jaar';
+        break;
+    default:
+        $stats = $history->getWeeklyStats($userId);
+        $periodLabel = 'week';
+}
+
 $summaryStats = $history->getSummaryStats($userId);
 
 // Prepare data for Chart.js
-$chartLabels = array_column($weeklyStats, 'day_name');
+$chartLabels = array_column($stats, 'day_name');
 $chartData = [
     'Voeding' => [],
     'Beweging' => [],
     'Slaap' => [],
-    'Stress' => [] // Mapped from Mentaal/Stress
+    'Stress' => []
 ];
 
-foreach ($weeklyStats as $dayStat) {
+foreach ($stats as $dayStat) {
     $chartData['Voeding'][] = $dayStat['scores']['Voeding'] ?? 0;
     $chartData['Beweging'][] = $dayStat['scores']['Beweging'] ?? 0;
     $chartData['Slaap'][] = $dayStat['scores']['Slaap'] ?? 0;
@@ -41,9 +63,50 @@ foreach ($weeklyStats as $dayStat) {
     <title>Geschiedenis - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../assets/css/popup.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .period-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .period-btn {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .period-btn:hover {
+            border-color: #16a34a;
+            color: #16a34a;
+            transform: translateY(-1px);
+        }
+
+        .period-btn.active {
+            background: #16a34a;
+            border-color: #16a34a;
+            color: white;
+            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+        }
+
+        .period-btn.active:hover {
+            background: #15803d;
+            border-color: #15803d;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../components/navbar.php'; ?>
@@ -52,7 +115,7 @@ foreach ($weeklyStats as $dayStat) {
         <div class="dashboard-header">
             <div class="dashboard-header-left">
                 <h1>Jouw Gezondheidsgeschiedenis</h1>
-                <p>Bekijk je voortgang en trends van de afgelopen week.</p>
+                <p>Bekijk je voortgang en trends van de afgelopen <?php echo $periodLabel; ?>.</p>
             </div>
         </div>
 
@@ -84,10 +147,23 @@ foreach ($weeklyStats as $dayStat) {
             </div>
         </div>
 
+        <!-- Period Selector -->
+        <div class="period-selector">
+            <a href="?period=week" class="period-btn <?php echo $period === 'week' ? 'active' : ''; ?>">
+                Week
+            </a>
+            <a href="?period=month" class="period-btn <?php echo $period === 'month' ? 'active' : ''; ?>">
+                Maand
+            </a>
+            <a href="?period=year" class="period-btn <?php echo $period === 'year' ? 'active' : ''; ?>">
+                Jaar
+            </a>
+        </div>
+
         <!-- Weekly Progress Chart -->
         <div class="dashboard-card dashboard-card-full">
             <div class="card-header">
-                <h3>Wekelijkse Voortgang</h3>
+                <h3><?php echo ucfirst($periodLabel); ?>lijkse Voortgang</h3>
                 <div class="chart-legend">
                     <div class="legend-item">
                         <div class="legend-dot" style="background: #22c55e;"></div>
@@ -117,6 +193,7 @@ foreach ($weeklyStats as $dayStat) {
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
     <script src="/js/pwa.js"></script>
+    <script src="../assets/js/popup.js"></script>
     <script>
         // Chart.js Configuration
         const ctx = document.getElementById('weeklyChart').getContext('2d');

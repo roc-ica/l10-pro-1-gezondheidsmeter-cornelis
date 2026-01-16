@@ -30,18 +30,23 @@ class AdminDashboardStats
     }
 
     /**
-     * Get overall average score (0-10 scale)
+     * Get overall average score (0-100 scale)
+     * Uses user_health_scores which contains calculated overall scores
      */
     public function getAverageScore(): int
     {
-        $stmt = $this->pdo->query("SELECT AVG(score) FROM answers WHERE score IS NOT NULL");
+        $stmt = $this->pdo->query("
+            SELECT AVG(overall_score) 
+            FROM user_health_scores 
+            WHERE overall_score IS NOT NULL
+        ");
         $avgScore = $stmt->fetchColumn();
 
         if ($avgScore === false || $avgScore === null) {
             return 0;
         }
 
-        // Convert to 0-10 scale (assuming scores are 0-10)
+        // Return as integer rounded (0-100 scale)
         return (int) round((float) $avgScore);
     }
 

@@ -37,6 +37,7 @@ $answersByPillar = $history->getGroupedAnswers($date);
     <title>Resultaten - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../assets/css/popup.css">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="../assets/css/results.css">
@@ -145,7 +146,7 @@ $answersByPillar = $history->getGroupedAnswers($date);
         <!-- Action Buttons -->
         <?php if (!empty($todayAnswers)): ?>
         <div class="action-row">
-            <a href="../pages/vragen.php?reset=1" class="btn-clean btn-clean-primary" style="flex: 1;" onclick="return confirm('Weet je zeker dat je je antwoorden wilt wissen en opnieuw wilt beginnen?');">
+            <a href="#" class="btn-clean btn-clean-primary" style="flex: 1;" onclick="event.preventDefault(); confirmReset();">
                 Opnieuw Invullen
             </a>
             <a href="../pages/home.php" class="btn-clean btn-clean-secondary" style="flex: 1;">
@@ -158,7 +159,19 @@ $answersByPillar = $history->getGroupedAnswers($date);
 
     <?php include __DIR__ . '/../components/footer.php'; ?>
     <script src="/js/pwa.js"></script>
+    <script src="../assets/js/popup.js"></script>
     <script>
+        // Confirm reset function
+        function confirmReset() {
+            showConfirm(
+                'Weet je zeker dat je je antwoorden wilt wissen en opnieuw wilt beginnen?',
+                'Opnieuw Beginnen',
+                function() {
+                    window.location.href = '../pages/vragen.php?reset=1';
+                }
+            );
+        }
+        
         // Score Chart
         const ctx = document.getElementById('scoreTrendChart');
         if (ctx) {

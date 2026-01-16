@@ -210,4 +210,151 @@ class History
         ];
         return $map[$englishDay] ?? $englishDay;
     }
+
+    /**
+     * Get monthly statistics for the user
+     * Returns daily averages for each pillar for the last 30 days
+     */
+    public function getMonthlyStats(int $userId): array
+    {
+        return $this->getStatsForDays($userId, 30);
+    }
+
+    /**
+     * Get yearly statistics for the user
+     * Returns weekly averages for each pillar for the last 52 weeks
+     */
+    public function getYearlyStats(int $userId): array
+    {
+        $weeks = [];
+        for ($i = 51; $i >= 0; $i--) {
+            $weeks[] = date('Y-m-d', strtotime("-$i weeks"));
+        }
+
+        $stats = [];
+        foreach ($weeks as $weekStart) {
+            $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+            $weekLabel = 'Week ' . date('W', strtotime($weekStart));
+
+            $stats[] = [
+                'day_name' => $weekLabel,
+                'date' => $weekStart,
+                'scores' => $this->getAverageScoresForPeriod($userId, $weekStart, $weekEnd)
+            ];
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Helper method to get stats for a specific number of days
+     */
+    private function getStatsForDays(int $userId, int $days): array
+    {
+        $dates = [];
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $dates[] = date('Y-m-d', strtotime("-$i days"));
+        }
+
+        $stats = [];
+        foreach ($dates as $date) {
+            $stats[$date] = [
+                'day_name' => $this->getFormattedDate($date, $days),
+                'date' => $date,
+                'scores' => [
+                    'Voeding' => 0,
+                    'Beweging' => 0,
+                    'Slaap' => 0,
+                    'Stress' => 0,
+                    'Mentaal' => 0
+                ]
+            ];
+        }
+
+        $sql = "
+            SELECT score_date, pillar_scores
+            FROM user_health_scores
+            WHERE user_id = :user_id
+            AND score_date BETWEEN :start_date AND :end_date
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':start_date' => $dates[0],
+            ':end_date' => end($dates)
+        ]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($results as $row) {
+            $date = $row['score_date'];
+            $pillarScores = $row['pillar_scores'] ? json_decode($row['pillar_scores'], true) : [];
+
+            if (isset($stats[$date]) && is_array($pillarScores)) {
+                if (isset($pillarScores[1])) $stats[$date]['scores']['Voeding'] = $pillarScores[1];
+                if (isset($pillarScores[2])) $stats[$date]['scores']['Beweging'] = $pillarScores[2];
+                if (isset($pillarScores[3])) $stats[$date]['scores']['Slaap'] = $pillarScores[3];
+                if (isset($pillarScores[6])) {
+                    $stats[$date]['scores']['Mentaal'] = $pillarScores[6];
+                    $stats[$date]['scores']['Stress'] = $pillarScores[6];
+                }
+            }
+        }
+
+        return array_values($stats);
+    }
+
+    /**
+     * Get average scores for a date range
+     */
+    private function getAverageScoresForPeriod(int $userId, string $startDate, string $endDate): array
+    {
+        $sql = "
+            SELECT pillar_scores
+            FROM user_health_scores
+            WHERE user_id = :user_id
+            AND score_date BETWEEN :start_date AND :end_date
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $totals = ['Voeding' => 0, 'Beweging' => 0, 'Slaap' => 0, 'Stress' => 0];
+        $counts = ['Voeding' => 0, 'Beweging' => 0, 'Slaap' => 0, 'Stress' => 0];
+
+        foreach ($results as $row) {
+            $pillarScores = $row['pillar_scores'] ? json_decode($row['pillar_scores'], true) : [];
+            
+            if (isset($pillarScores[1])) { $totals['Voeding'] += $pillarScores[1]; $counts['Voeding']++; }
+            if (isset($pillarScores[2])) { $totals['Beweging'] += $pillarScores[2]; $counts['Beweging']++; }
+            if (isset($pillarScores[3])) { $totals['Slaap'] += $pillarScores[3]; $counts['Slaap']++; }
+            if (isset($pillarScores[6])) { $totals['Stress'] += $pillarScores[6]; $counts['Stress']++; }
+        }
+
+        return [
+            'Voeding' => $counts['Voeding'] > 0 ? round($totals['Voeding'] / $counts['Voeding']) : 0,
+            'Beweging' => $counts['Beweging'] > 0 ? round($totals['Beweging'] / $counts['Beweging']) : 0,
+            'Slaap' => $counts['Slaap'] > 0 ? round($totals['Slaap'] / $counts['Slaap']) : 0,
+            'Stress' => $counts['Stress'] > 0 ? round($totals['Stress'] / $counts['Stress']) : 0,
+        ];
+    }
+
+    /**
+     * Get formatted date label based on period
+     */
+    private function getFormattedDate(string $date, int $period): string
+    {
+        if ($period <= 7) {
+            return $this->getDayName($date);
+        } elseif ($period <= 31) {
+            return date('d M', strtotime($date));
+        } else {
+            return date('M Y', strtotime($date));
+        }
+    }
 }

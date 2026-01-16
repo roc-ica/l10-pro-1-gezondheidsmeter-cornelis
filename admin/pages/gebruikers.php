@@ -104,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Gebruikers - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../../assets/css/admin.css">
+    <link rel="stylesheet" href="../../assets/css/popup.css">
     <style>
         /*PAGINATION VOOR GEBRUIKERS ADMIN*/
         .pagination {
@@ -204,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">
                         <i data-lucide="lock"></i> <?php echo $user['is_active'] ? 'Blokkeren' : 'Deblokkeren'; ?>
                     </button>
-                    <button class="btn-action reset-btn" onclick="if(confirm('Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?')) { resetUserActivity(<?php echo $user['id']; ?>); }">Reset Activity</button>
+                    <button class="btn-action reset-btn" onclick="confirmResetActivity(<?php echo $user['id']; ?>)">Reset Activity</button>
                 </div>
             </div>
         <?php endforeach; ?>
@@ -302,7 +303,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         lucide.createIcons();
     </script>
     <script src="/js/session-guard.js"></script>
+    <script src="../../assets/js/popup.js"></script>
     <script>
+        // Reset activity function
+        function confirmResetActivity(userId) {
+            showConfirm(
+                'Weet je zeker dat je de activiteit van deze gebruiker wilt resetten?',
+                'Activiteit Resetten',
+                function() {
+                    // Implement reset functionality here
+                    showInfo('Deze functie wordt binnenkort geïmplementeerd', 'Nog niet beschikbaar');
+                }
+            );
+        }
+
         function openDeleteUserModal(userId, username) {
             document.getElementById('delete_user_id').value = userId;
             document.getElementById('delete_username_display').textContent = username;
