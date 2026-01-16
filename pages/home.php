@@ -126,18 +126,22 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
         <!-- Stats Overview (Minimal/Data-Driven Design) -->
         <div class="stats-row">
             <!-- 1. Health Score (Radial Chart) -->
-            <div class="stat-card stat-card-large" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
-                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
+            <div class="stat-card stat-card-large"
+                style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
+                <div
+                    style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
                     <span
                         style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Welzijn</span>
                 </div>
-                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                <div
+                    style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 32px; width: 100%;">
                         <div class="gauge-wrapper" style="margin: 0;">
                             <svg class="gauge-svg" viewBox="0 0 100 55">
                                 <!-- Background Track -->
-                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f1f5f9" stroke-width="10" stroke-linecap="round" />
-                                
+                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f1f5f9" stroke-width="10"
+                                    stroke-linecap="round" />
+
                                 <!-- Gauge Segments -->
                                 <path d="M 10 50 A 40 40 0 0 1 18 26" fill="none" stroke="#ef4444" stroke-width="10" />
                                 <path d="M 18 26 A 40 40 0 0 1 38 12" fill="none" stroke="#f97316" stroke-width="10" />
@@ -146,8 +150,10 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                 <path d="M 82 26 A 40 40 0 0 1 90 50" fill="none" stroke="#22c55e" stroke-width="10" />
 
                                 <!-- Needle -->
-                                <g class="gauge-needle" style="transform-origin: 50px 50px; transform: rotate(<?= ($healthScore * 1.8) - 90 ?>deg);">
-                                    <line x1="50" y1="50" x2="50" y2="12" stroke="#1f2937" stroke-width="3" stroke-linecap="round" />
+                                <g class="gauge-needle"
+                                    style="transform-origin: 50px 50px; transform: rotate(<?= ($healthScore * 1.8) - 90 ?>deg);">
+                                    <line x1="50" y1="50" x2="50" y2="12" stroke="#1f2937" stroke-width="3"
+                                        stroke-linecap="round" />
                                     <circle cx="50" cy="50" r="5" class="gauge-center" />
                                 </g>
                             </svg>
@@ -163,13 +169,16 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
 
             <!-- 2. Weekly Goal (Segmented Dots) -->
             <div class="stat-card" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
-                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
+                <div
+                    style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
                     <span
                         style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Weekdoel</span>
                 </div>
-                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%;">
+                <div
+                    style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%;">
                     <div style="margin-bottom: 15px;">
-                        <span style="font-size: 2.5rem; font-weight: 700; color: #1f2937;"><?= $weeklyCompleted ?></span>
+                        <span
+                            style="font-size: 2.5rem; font-weight: 700; color: #1f2937;"><?= $weeklyCompleted ?></span>
                         <span style="font-size: 1.25rem; color: #9ca3af; font-weight: 500;">/ 7</span>
                     </div>
                     <div style="display: flex; gap: 8px; width: 100%; max-width: 200px;">
@@ -184,11 +193,27 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
 
             <!-- 3. Average Score -->
             <div class="stat-card" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
-                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
+                <div
+                    style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
                     <span
                         style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Gemiddeld</span>
                 </div>
-                <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
+                <div
+                    style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
+                    <?php
+                    // Determine color based on score (Red -> Orange -> Yellow -> Green)
+                    if ($averageScore >= 80) {
+                        $scoreColor = '#22c55e'; // Groen (80-100%)
+                    } elseif ($averageScore >= 60) {
+                        $scoreColor = '#84cc16'; // Lichtgroen (60-79%)
+                    } elseif ($averageScore >= 40) {
+                        $scoreColor = '#eab308'; // Geel (40-59%)
+                    } elseif ($averageScore >= 20) {
+                        $scoreColor = '#f97316'; // Oranje (20-39%)
+                    } else {
+                        $scoreColor = '#ef4444'; // Rood (0-19%)
+                    }
+                    ?>
                     <div style="position: relative; width: 80px; height: 80px;">
                         <svg width="80" height="80" viewBox="0 0 36 36">
                             <path d="M18 2.0845
@@ -196,7 +221,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3" />
                             <path d="M18 2.0845
                                 a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f59e0b" stroke-width="3"
+                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="<?= $scoreColor ?>" stroke-width="3"
                                 stroke-dasharray="<?= $averageScore ?>, 100" class="radial-progress" />
                         </svg>
                         <div
@@ -206,7 +231,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                     </div>
                     <div>
                         <div style="font-size: 0.9rem; color: #9ca3af;">Overall score</div>
-                        <div style="font-size: 0.85rem; color: #f59e0b; font-weight: 600;">All-time</div>
+                        <div style="font-size: 0.85rem; color: <?= $scoreColor ?>; font-weight: 600;">All-time</div>
                     </div>
                 </div>
             </div>
@@ -224,7 +249,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                 </div>
                 <div class="activity-list">
                     <?php if (count($recentActivity) > 0): ?>
-                        <?php foreach ($recentActivity as $activity): 
+                        <?php foreach ($recentActivity as $activity):
                             $timeAgo = '';
                             $submitted = new DateTime($activity['submitted_at']);
                             $now = new DateTime();
@@ -241,10 +266,11 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                             } else {
                                 $timeAgo = $diff->d . ' dagen geleden';
                             }
-                        ?>
+                            ?>
                             <div class="activity-item">
                                 <div class="activity-icon activity-icon-success">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                 </div>
