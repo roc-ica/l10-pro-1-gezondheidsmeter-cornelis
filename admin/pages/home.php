@@ -107,10 +107,6 @@ $username = $_SESSION['username'] ?? 'Admin';
                             <div class="legend-box green"></div>
                             <span>Nieuwe gebruikers</span>
                         </div>
-                        <div class="legend-item">
-                            <div class="legend-box pink"></div>
-                            <span>Vragen beantwoord</span>
-                        </div>
                     </div>
                 </div>
             </div>

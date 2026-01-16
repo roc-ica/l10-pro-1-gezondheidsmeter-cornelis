@@ -94,6 +94,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
     <title>Jouw Dashboard - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../assets/css/popup.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -156,7 +157,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                         </div>
                         <div>
                             <div style="font-size: 0.9rem; color: #9ca3af;">Jouw gemiddelde score</div>
-                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen 7 dagen</div>
+                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen week</div>
                         </div>
                     </div>
                 </div>
@@ -406,6 +407,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
 
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
+    <script src="../assets/js/popup.js"></script>
 </body>
 
 </html>

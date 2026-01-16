@@ -128,6 +128,7 @@ $currentStreak = $history->getStreak();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/../assets/css/style.css'); ?>">
+    <link rel="stylesheet" href="../assets/css/popup.css">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/images/icons/gm192x192.png">
 </head>
@@ -279,21 +280,27 @@ $currentStreak = $history->getStreak();
 
     <script src="/js/pwa.js"></script>
     <script src="/js/session-guard.js"></script>
+    <script src="../assets/js/popup.js"></script>
     <script>
         // Delete health data handler
         document.getElementById('deleteHealthDataBtn').addEventListener('click', async function () {
-            const confirmed = confirm('Weet je zeker dat je al je gezondheidsgegevens wilt wissen?\n\nDit omvat:\n- Alle ingevulde vragenlijsten\n- Je antwoorden\n- Je voortgang en streak\n\nDeze actie kan NIET ongedaan worden gemaakt!');
+            showConfirm(
+                'Weet je zeker dat je al je gezondheidsgegevens wilt wissen?\n\nDit omvat:\n- Alle ingevulde vragenlijsten\n- Je antwoorden\n- Je voortgang en streak\n\nDeze actie kan NIET ongedaan worden gemaakt!',
+                'Gezondheidsgegevens Wissen',
+                async function() {
+                    // Double confirmation for safety
+                    showConfirm(
+                        'LAATSTE WAARSCHUWING!\n\nAlle data wordt permanent verwijderd.\n\nKlik OK om definitief te wissen.',
+                        'Definitief Wissen',
+                        async function() {
+                            await deleteHealthData();
+                        }
+                    );
+                }
+            );
+        });
 
-            if (!confirmed) {
-                return;
-            }
-
-            // Double confirmation for safety
-            const doubleConfirm = confirm('LAATSTE WAARSCHUWING!\n\nAlle data wordt permanent verwijderd.\n\nKlik OK om definitief te wissen.');
-
-            if (!doubleConfirm) {
-                return;
-            }
+        async function deleteHealthData() {
 
             try {
                 const formData = new FormData();
@@ -310,10 +317,11 @@ $currentStreak = $history->getStreak();
                 try {
                     const data = JSON.parse(text);
                     if (data.success) {
-                        alert('Je gezondheidsgegevens zijn succesvol gewist.');
-                        window.location.reload();
+                        showSuccess('Je gezondheidsgegevens zijn succesvol gewist.', 'Gelukt!', () => {
+                            window.location.reload();
+                        });
                     } else {
-                        alert('Er is een fout opgetreden: ' + (data.message || 'Onbekende fout'));
+                        showError('Er is een fout opgetreden: ' + (data.message || 'Onbekende fout'));
                     }
                 } catch (e) {
                     // If not JSON, it might be a redirect, just reload
@@ -321,21 +329,30 @@ $currentStreak = $history->getStreak();
                 }
             } catch (error) {
                 console.error('Error deleting health data:', error);
-                alert('Er is een fout opgetreden bij het wissen van je gegevens.');
+                showError('Er is een fout opgetreden bij het wissen van je gegevens.');
             }
-        });
+        }
 
         // Handle Import
         async function handleImport(input) {
             if (!input.files || input.files.length === 0) return;
 
             const file = input.files[0];
-            const confirmImport = confirm(`Weet je zeker dat je "${file.name}" wilt importeren?\nDit voegt gegevens toe aan je huidige data.`);
             
-            if (!confirmImport) {
-                input.value = ''; // Reset input
-                return;
-            }
+            showConfirm(
+                `Weet je zeker dat je "${file.name}" wilt importeren?\nDit voegt gegevens toe aan je huidige data.`,
+                'Gegevens Importeren',
+                async function() {
+                    await performImport(file);
+                },
+                function() {
+                    input.value = ''; // Reset input on cancel
+                }
+            );
+        }
+
+        async function performImport(file) {
+            const input = document.getElementById('importFile');
 
             try {
                 const formData = new FormData();
@@ -350,14 +367,15 @@ $currentStreak = $history->getStreak();
                 const result = await response.json();
 
                 if (result.success) {
-                    alert(result.message);
-                    window.location.reload();
+                    showSuccess(result.message, 'Import Gelukt!', () => {
+                        window.location.reload();
+                    });
                 } else {
-                    alert('Import fout: ' + (result.message || 'Onbekende fout'));
+                    showError('Import fout: ' + (result.message || 'Onbekende fout'));
                 }
             } catch (error) {
                 console.error('Import error:', error);
-                alert('Er is een technische fout opgetreden tijdens het importeren.');
+                showError('Er is een technische fout opgetreden tijdens het importeren.');
             } finally {
                 input.value = ''; // Reset for next use
             }
@@ -390,12 +408,12 @@ $currentStreak = $history->getStreak();
                     // Refresh page to show new image
                     location.reload();
                 } else {
-                    alert('Upload mislukt: ' + (result.message || 'Onbekende fout'));
+                    showError('Upload mislukt: ' + (result.message || 'Onbekende fout'));
                     iconDiv.style.opacity = originalOpacity;
                 }
             } catch (error) {
                 console.error('Error uploading profile picture:', error);
-                alert('Er is een technische fout opgetreden.');
+                showError('Er is een technische fout opgetreden.');
                 document.querySelector('.identity-icon').style.opacity = '1';
             } finally {
                 input.value = ''; // Reset input
@@ -493,21 +511,23 @@ $currentStreak = $history->getStreak();
                 if (contentType && contentType.includes('application/json')) {
                     result = await response.json();
                     if (result.success) {
-                        alert('Profiel succesvol bijgewerkt!');
-                        closeEditModal();
-                        location.reload();
+                        showSuccess('Profiel succesvol bijgewerkt!', 'Gelukt!', () => {
+                            closeEditModal();
+                            location.reload();
+                        });
                     } else {
-                        alert('Fout: ' + (result.message || 'Onbekende fout'));
+                        showError('Fout: ' + (result.message || 'Onbekende fout'));
                     }
                 } else {
                     // If not JSON, assume success and reload
-                    alert('Profiel succesvol bijgewerkt!');
-                    closeEditModal();
-                    location.reload();
+                    showSuccess('Profiel succesvol bijgewerkt!', 'Gelukt!', () => {
+                        closeEditModal();
+                        location.reload();
+                    });
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Er is een fout opgetreden.');
+                showError('Er is een fout opgetreden.');
             }
         });
     </script>
