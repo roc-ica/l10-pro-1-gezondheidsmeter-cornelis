@@ -163,12 +163,7 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                         </div>
                         <div>
                             <div style="font-size: 0.9rem; color: #9ca3af;">Jouw gemiddelde score</div>
-<<<<<<< HEAD
                             <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen week</div>
-=======
-                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen 7 dagen
-                            </div>
->>>>>>> beaf19bef061d68c0325c4ef90c853a95cd001a2
                         </div>
                     </div>
                 </div>
