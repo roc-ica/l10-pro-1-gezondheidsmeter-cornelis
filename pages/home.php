@@ -151,19 +151,19 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                                 <path d="M 82 26 A 40 40 0 0 1 90 50" fill="none" stroke="#22c55e" stroke-width="10" />
 
                                 <!-- Needle -->
+                                <!-- Needle -->
                                 <g class="gauge-needle"
-                                    style="transform-origin: 50px 50px; transform: rotate(<?= ($averageScore * 1.8) - 90 ?>deg);">
+                                    style="transform-origin: 50px 50px; transform: rotate(<?= ($progressComparison['this_week']['score'] * 1.8) - 90 ?>deg);">
                                     <line x1="50" y1="50" x2="50" y2="12" stroke="#1f2937" stroke-width="3"
                                         stroke-linecap="round" />
                                     <circle cx="50" cy="50" r="5" class="gauge-center" />
                                 </g>
                             </svg>
-                            <div class="gauge-value-display"><?= $averageScore ?>%</div>
+                            <div class="gauge-value-display"><?= $progressComparison['this_week']['score'] ?>%</div>
                         </div>
                         <div>
                             <div style="font-size: 0.9rem; color: #9ca3af;">Jouw gemiddelde score</div>
-                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen 7 dagen
-                            </div>
+                            <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Van de afgelopen 7 dagen</div>
                         </div>
                     </div>
                 </div>
@@ -193,50 +193,6 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                 </div>
             </div>
 
-            <!-- 3. Average Score -->
-            <div class="stat-card" style="padding: 24px; display: flex; flex-direction: column; align-items: center;">
-                <div
-                    style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%;">
-                    <span
-                        style="font-size: 0.85rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Gemiddeld</span>
-                </div>
-                <div
-                    style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%;">
-                    <?php
-                    // Determine color based on score (Red -> Orange -> Yellow -> Green)
-                    if ($averageScore >= 80) {
-                        $scoreColor = '#22c55e'; // Groen (80-100%)
-                    } elseif ($averageScore >= 60) {
-                        $scoreColor = '#84cc16'; // Lichtgroen (60-79%)
-                    } elseif ($averageScore >= 40) {
-                        $scoreColor = '#eab308'; // Geel (40-59%)
-                    } elseif ($averageScore >= 20) {
-                        $scoreColor = '#f97316'; // Oranje (20-39%)
-                    } else {
-                        $scoreColor = '#ef4444'; // Rood (0-19%)
-                    }
-                    ?>
-                    <div style="position: relative; width: 80px; height: 80px;">
-                        <svg width="80" height="80" viewBox="0 0 36 36">
-                            <path d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" stroke-width="3" />
-                            <path d="M18 2.0845
-                                a 15.9155 15.9155 0 0 1 0 31.831
-                                a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="<?= $scoreColor ?>"
-                                stroke-width="3" stroke-dasharray="<?= $averageScore ?>, 100" class="radial-progress" />
-                        </svg>
-                        <div
-                            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; font-weight: 700; color: #1f2937;">
-                            <?= $averageScore ?>%
-                        </div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.9rem; color: #9ca3af;">Overall score</div>
-                        <div style="font-size: 0.85rem; color: <?= $scoreColor ?>; font-weight: 600;">All-time</div>
-                    </div>
-                </div>
-            </div>
 
 
         </div>
@@ -351,48 +307,35 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                 <h3>Jouw Voortgang</h3>
                 <p style="font-size: 0.875rem; color: #6b7280; margin: 4px 0 0 0;">Deze week vs vorige week</p>
             </div>
-            <div
-                style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-
+            <div style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+                
                 <!-- Check-ins Comparison -->
-                <div
-                    style="background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #3b82f6;">
+                <div style="background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #3b82f6;">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                        <div
-                            style="width: 48px; height: 48px; border-radius: 12px; background: #3b82f6; display: flex; align-items: center; justify-content: center;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff"
-                                stroke-width="2">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #3b82f6; display: flex; align-items: center; justify-content: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
                             </svg>
                         </div>
                         <div>
-                            <div
-                                style="font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.05em;">
-                                Check-ins</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">
-                                <?= $progressComparison['this_week']['checkins'] ?></div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.05em;">Check-ins</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;"><?= $progressComparison['this_week']['checkins'] ?></div>
                         </div>
                     </div>
-
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                        <span style="font-size: 0.875rem; color: #6b7280;">Vorige week:
-                            <?= $progressComparison['last_week']['checkins'] ?></span>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                        <span style="font-size: 0.875rem; color: #6b7280;">Vorige week: <?= $progressComparison['last_week']['checkins'] ?></span>
                         <?php if ($progressComparison['difference']['checkins'] > 0): ?>
-                            <span
-                                style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #16a34a; font-weight: 600;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #16a34a; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="18 15 12 9 6 15"></polyline>
                                 </svg>
                                 +<?= $progressComparison['difference']['checkins'] ?>
                             </span>
                         <?php elseif ($progressComparison['difference']['checkins'] < 0): ?>
-                            <span
-                                style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #ef4444; font-weight: 600;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #ef4444; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
                                 <?= $progressComparison['difference']['checkins'] ?>
@@ -406,45 +349,33 @@ $dailyFocus = $focusItems[array_rand($focusItems)];
                 </div>
 
                 <!-- Average Score Comparison -->
-                <div
-                    style="background: linear-gradient(135deg, #fef3c7 0%, #ffffff 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #f59e0b;">
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #ffffff 100%); border-radius: 12px; padding: 24px; border-left: 4px solid #f59e0b;">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                        <div
-                            style="width: 48px; height: 48px; border-radius: 12px; background: #f59e0b; display: flex; align-items: center; justify-content: center;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff"
-                                stroke-width="2">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #f59e0b; display: flex; align-items: center; justify-content: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
                                 <path d="M12 20V10"></path>
                                 <path d="M18 20V4"></path>
                                 <path d="M6 20v-6"></path>
                             </svg>
                         </div>
                         <div>
-                            <div
-                                style="font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.05em;">
-                                Gemiddelde Score</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">
-                                <?= $progressComparison['this_week']['score'] ?>%</div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.05em;">Gemiddelde Score</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;"><?= $progressComparison['this_week']['score'] ?>%</div>
                         </div>
                     </div>
-
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                        <span style="font-size: 0.875rem; color: #6b7280;">Vorige week:
-                            <?= $progressComparison['last_week']['score'] ?>%</span>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                        <span style="font-size: 0.875rem; color: #6b7280;">Vorige week: <?= $progressComparison['last_week']['score'] ?>%</span>
                         <?php if ($progressComparison['difference']['score'] > 0): ?>
-                            <span
-                                style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #16a34a; font-weight: 600;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #16a34a; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="18 15 12 9 6 15"></polyline>
                                 </svg>
                                 +<?= $progressComparison['difference']['score'] ?>%
                             </span>
                         <?php elseif ($progressComparison['difference']['score'] < 0): ?>
-                            <span
-                                style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #ef4444; font-weight: 600;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
+                            <span style="display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: #ef4444; font-weight: 600;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
                                 <?= $progressComparison['difference']['score'] ?>%
