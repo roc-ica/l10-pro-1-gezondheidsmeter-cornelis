@@ -980,7 +980,6 @@
 
 /* Larger Stat Card */
 .stat-card-large {
-    grid-column: span 2;
     min-height: 180px;
 }
 
