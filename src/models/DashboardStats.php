@@ -179,23 +179,31 @@ class DashboardStats
     }
 
     public function getWeeklyProgress(int $userId): array
-    {
-        $weekAgo = date('Y-m-d', strtotime('-7 days'));
-        $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) 
-            FROM daily_entries 
-            WHERE user_id = ? AND entry_date >= ? AND submitted_at IS NOT NULL
-        ");
-        $stmt->execute([$userId, $weekAgo]);
-        $completed = (int)$stmt->fetchColumn();
-        
-        return [
-            'completed' => $completed,
-            'total' => 7,
-            'percentage' => round(($completed / 7) * 100)
-        ];
-    }
-
+{
+    // Get the last 7 days (not including today if it makes 8 days)
+    $weekAgo = date('Y-m-d', strtotime('-6 days')); // Changed from -7 to -6 to get exactly 7 days
+    $today = date('Y-m-d');
+    
+    $stmt = $this->pdo->prepare("
+        SELECT COUNT(*) 
+        FROM daily_entries 
+        WHERE user_id = ? 
+          AND entry_date >= ? 
+          AND entry_date <= ?
+          AND submitted_at IS NOT NULL
+    ");
+    $stmt->execute([$userId, $weekAgo, $today]);
+    $completed = (int)$stmt->fetchColumn();
+    
+    // Cap at 7 maximum
+    $completed = min($completed, 7);
+    
+    return [
+        'completed' => $completed,
+        'total' => 7,
+        'percentage' => round(($completed / 7) * 100)
+    ];
+}
     public function getRecentActivity(int $userId, int $limit = 4): array
     {
         $stmt = $this->pdo->prepare("

@@ -51,16 +51,77 @@ class AdminDashboardStats
     }
 
     /**
-     * Get count of active users this week (last 7 days)
+     * Get count of active users in a specific period
      */
-    public function getActiveThisWeek(): int
+    public function getActiveInPeriod(string $period = 'week'): int
     {
+        $interval = match($period) {
+            'month' => 30,
+            'year' => 365,
+            default => 7
+        };
+        
         $stmt = $this->pdo->prepare(
             "SELECT COUNT(DISTINCT user_id) FROM daily_entries 
-             WHERE entry_date >= CURDATE() - INTERVAL 7 DAY"
+             WHERE entry_date >= CURDATE() - INTERVAL $interval DAY"
         );
         $stmt->execute();
         return (int) $stmt->fetchColumn();
+    }
+    
+    /**
+     * Get total answers in a specific period
+     */
+    public function getTotalAnswersInPeriod(string $period = 'week'): int
+    {
+        $interval = match($period) {
+            'month' => 30,
+            'year' => 365,
+            default => 7
+        };
+        
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM answers a
+             INNER JOIN daily_entries de ON a.entry_id = de.id
+             WHERE de.entry_date >= CURDATE() - INTERVAL $interval DAY"
+        );
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+    
+    /**
+     * Get average score for a specific period
+     */
+    public function getAverageScoreInPeriod(string $period = 'week'): int
+    {
+        $interval = match($period) {
+            'month' => 30,
+            'year' => 365,
+            default => 7
+        };
+        
+        $stmt = $this->pdo->prepare("
+            SELECT AVG(overall_score) 
+            FROM user_health_scores 
+            WHERE overall_score IS NOT NULL
+              AND score_date >= CURDATE() - INTERVAL $interval DAY
+        ");
+        $stmt->execute();
+        $avgScore = $stmt->fetchColumn();
+
+        if ($avgScore === false || $avgScore === null) {
+            return 0;
+        }
+
+        return (int) round((float) $avgScore);
+    }
+    
+    /**
+     * Backward compatibility
+     */
+    public function getActiveThisWeek(): int
+    {
+        return $this->getActiveInPeriod('week');
     }
 
     /**

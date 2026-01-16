@@ -23,11 +23,26 @@ if (!$user || !$user->is_admin) {
 $logger = new AdminActionLogger();
 $logger->logAnalyticsView($_SESSION['user_id']);
 
+// Get period from URL parameter (default to 'week')
+$period = $_GET['period'] ?? 'week';
+$validPeriods = ['week', 'month', 'year'];
+if (!in_array($period, $validPeriods)) {
+    $period = 'week';
+}
+
+// Get period labels and days to show
+$periodConfig = [
+    'week' => ['label' => 'Week', 'days' => 8],
+    'month' => ['label' => 'Maand', 'days' => 31],
+    'year' => ['label' => 'Jaar', 'days' => 366]
+];
+$periodLabel = $periodConfig[$period]['label'];
+$daysToShow = $periodConfig[$period]['days'];
+
 $username = $_SESSION['username'] ?? 'Admin';
 $pdo = Database::getConnection();
 
 // --- DATA FETCHING FOR ANALYTICS ---
-$daysToShow = 8;
 
 // 1. Get User Growth Data (Cumulative)
 $userGrowthQuery = $pdo->prepare("
@@ -35,9 +50,10 @@ $userGrowthQuery = $pdo->prepare("
         d.date,
         (SELECT COUNT(*) FROM users u WHERE DATE(u.created_at) <= d.date) as cumulative_users
     FROM (
-        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a)) DAY)) as date
+        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a) + (100 * c.a)) DAY)) as date
         FROM (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as a
-        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) as b
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as b
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) as c
     ) d
     WHERE d.date >= DATE_SUB(NOW(), INTERVAL ? DAY)
     ORDER BY d.date ASC
@@ -51,9 +67,10 @@ $engagementQuery = $pdo->prepare("
         d.date,
         COUNT(de.id) as daily_entries
     FROM (
-        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a)) DAY)) as date
+        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a) + (100 * c.a)) DAY)) as date
         FROM (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as a
-        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) as b
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as b
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) as c
     ) d
     LEFT JOIN daily_entries de ON d.date = de.entry_date
     WHERE d.date >= DATE_SUB(NOW(), INTERVAL ? DAY)
@@ -69,9 +86,10 @@ $scoreTrendQuery = $pdo->prepare("
         d.date,
         IFNULL(AVG(uhs.overall_score), 0) as avg_score
     FROM (
-        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a)) DAY)) as date
+        SELECT DATE(DATE_SUB(NOW(), INTERVAL (a.a + (10 * b.a) + (100 * c.a)) DAY)) as date
         FROM (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as a
-        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) as b
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) as b
+        CROSS JOIN (SELECT 0 as a UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) as c
     ) d
     LEFT JOIN user_health_scores uhs ON d.date = uhs.score_date
     WHERE d.date >= DATE_SUB(NOW(), INTERVAL ? DAY)
@@ -80,6 +98,21 @@ $scoreTrendQuery = $pdo->prepare("
 ");
 $scoreTrendQuery->execute([$daysToShow - 1]);
 $scoreData = $scoreTrendQuery->fetchAll(PDO::FETCH_ASSOC);
+
+// 4. Get Pillar Score Averages for Weekly Activity Chart
+$pillarScoresQuery = $pdo->prepare("
+    SELECT 
+        p.id as pillar_id,
+        p.name as pillar_name,
+        ROUND(AVG(JSON_EXTRACT(uhs.pillar_scores, CONCAT('$.', p.id))), 2) as avg_score
+    FROM pillars p
+    LEFT JOIN user_health_scores uhs ON JSON_EXTRACT(uhs.pillar_scores, CONCAT('$.', p.id)) IS NOT NULL
+        AND uhs.score_date >= DATE_SUB(NOW(), INTERVAL ? DAY)
+    GROUP BY p.id, p.name
+    ORDER BY p.id
+");
+$pillarScoresQuery->execute([$daysToShow - 1]);
+$pillarScores = $pillarScoresQuery->fetchAll(PDO::FETCH_ASSOC);
 
 // --- SVG COORDINATE CALCULATION ---
 
@@ -99,7 +132,7 @@ function generateSvgPoints($data, $valueKey, $width, $height, $maxVal = null) {
     $yPadding = 20;
     $chartWidth = $width - ($xPadding * 2);
     $chartHeight = $height - ($yPadding * 2);
-    $bottom = $height - 50; // Adjust for some margin at bottom
+    $bottom = $height - 50;
 
     foreach ($data as $i => $row) {
         $x = $xPadding + ($i * ($chartWidth / ($count - 1)));
@@ -136,7 +169,104 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Analytics - Gezondheidsmeter</title>
-<link rel="stylesheet" href="../../assets/css/admin.css?v=4">
+    <link rel="stylesheet" href="../../assets/css/admin.css?v=5">
+    <style>
+        /* Responsive improvements for analytics */
+        @media (max-width: 768px) {
+            .dashboard-container1 {
+                margin: 0 auto !important;
+                padding: 20px 16px !important;
+                max-width: 100% !important;
+            }
+            
+            .dashboard-header {
+                flex-direction: column !important;
+                gap: 16px !important;
+                align-items: flex-start !important;
+            }
+            
+            .dashboard-header-right {
+                width: 100%;
+            }
+            
+            .btn-naar-app {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .analytics-chart-block {
+                padding: 16px !important;
+            }
+            
+            .chart-title {
+                font-size: 16px !important;
+            }
+            
+            .period-selector {
+                flex-direction: column !important;
+                width: 100%;
+            }
+            
+            .period-btn {
+                width: 100% !important;
+                text-align: center !important;
+            }
+            
+            .area-chart-svg,
+            .line-chart-svg {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+        
+        /* Period selector styling */
+        .period-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .period-btn {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .period-btn:hover {
+            border-color: #16a34a;
+            color: #16a34a;
+            transform: translateY(-1px);
+        }
+        
+        .period-btn.active {
+            background: #16a34a;
+            border-color: #16a34a;
+            color: white;
+            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+        }
+        
+        .period-btn.active:hover {
+            background: #15803d;
+            border-color: #15803d;
+        }
+        
+        .period-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
@@ -150,6 +280,23 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
             <div class="dashboard-header-right">
                 <a href="../../pages/home.php" class="btn-naar-app">Naar App</a>
             </div>
+        </div>
+
+        <!-- Period Selector -->
+        <div class="period-selector">
+            <a href="?period=week" class="period-btn <?php echo $period === 'week' ? 'active' : ''; ?>">
+                Week
+            </a>
+            <a href="?period=month" class="period-btn <?php echo $period === 'month' ? 'active' : ''; ?>">
+                Maand
+            </a>
+            <a href="?period=year" class="period-btn <?php echo $period === 'year' ? 'active' : ''; ?>">
+                Jaar
+            </a>
+        </div>
+        
+        <div class="period-info">
+            Data van de afgelopen <strong><?= strtolower($periodLabel) ?></strong>
         </div>
 
         <div class="analytics-row">
@@ -192,16 +339,10 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
                     <div class="legend-item">
                         <div class="legend-box" style="background: #ff6c6c;"></div>
                         <span style="color: #6b7280;">Engagement</span>
-                        <div class="legend-tooltip">
-                            Aantal ingevulde meters per dag
-                        </div>
                     </div>
                     <div class="legend-item">
                         <div class="legend-box" style="background: #22c55e;"></div>
                         <span style="color: #6b7280;">Gebruikers</span>
-                        <div class="legend-tooltip">
-                            Totaal aantal geregistreerde gebruikers
-                        </div>
                     </div>
                 </div>
             </div>
@@ -243,124 +384,46 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
                     <div class="legend-item">
                         <div class="legend-box" style="background: #22c55e;"></div>
                         <span style="color: #6b7280;">Gemiddelde Score</span>
-                        <div class="legend-tooltip">
-                            Gemiddelde gezondheidsscore van<br>alle gebruikers op deze dag
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Wekelijkse Activiteit Chart -->
+        <!-- Wekelijkse Activiteit per Categorie Chart -->
         <div class="analytics-row">
             <div class="chart-block analytics-chart-block">
-                <h3 class="chart-title">Wekelijkse Activiteit</h3>
+                <h3 class="chart-title">Gemiddelde Scores per Categorie</h3>
                 <div class="weekly-activity">
                     <div class="chart-area">
                         <div class="y-axis">
-                            <div class="y-axis-label">90</div>
-                            <div class="y-axis-label">60</div>
-                            <div class="y-axis-label">30</div>
+                            <div class="y-axis-label">100</div>
+                            <div class="y-axis-label">75</div>
+                            <div class="y-axis-label">50</div>
+                            <div class="y-axis-label">25</div>
                             <div class="y-axis-label">0</div>
-                            <div class="y-axis-label">-30</div>
                         </div>
                         <div class="bars-container">
-                            <!-- Slaap -->
-                            <div class="bar-group">
+                            <?php foreach ($pillarScores as $pillar): 
+                                $score = $pillar['avg_score'] ?? 0;
+                                $height = ($score / 100) * 120; // Max height 120px
+                            ?>
+                            <div class="bar-group" title="<?= htmlspecialchars($pillar['pillar_name']) ?>: <?= number_format($score, 1) ?>">
                                 <div class="day-bars">
-                                    <div class="bar green" style="height: 50px;"></div>
-                                    <div class="bar pink" style="height: 8px; margin-top: auto; margin-bottom: -4px; transform: translateY(4px); background: #ff6b6b;" title="Trend: -5"></div>
-                                </div>
-                                <div class="bar-tooltip">
-                                    <strong>Slaap</strong><br>
-                                    Score: 50<br>
-                                    Trend: -5
+                                    <div class="bar green" style="height: <?= $height ?>px;"></div>
                                 </div>
                             </div>
-                            <!-- Voeding -->
-                            <div class="bar-group">
-                                <div class="day-bars">
-                                    <div class="bar green" style="height: 35px;"></div>
-                                    <div class="bar pink" style="height: 5px; background: #4ade80;" title="Trend: +3"></div>
-                                </div>
-                                <div class="bar-tooltip">
-                                    <strong>Voeding</strong><br>
-                                    Score: 35<br>
-                                    Trend: +3
-                                </div>
-                            </div>
-                            <!-- Beweging -->
-                            <div class="bar-group">
-                                <div class="day-bars">
-                                    <div class="bar green" style="height: 25px;"></div>
-                                    <div class="bar pink" style="height: 40px; background: #ff8787;" title="Trend: +38"></div>
-                                </div>
-                                <div class="bar-tooltip">
-                                    <strong>Beweging</strong><br>
-                                    Score: 25<br>
-                                    Trend: +38
-                                </div>
-                            </div>
-                            <!-- Stress -->
-                            <div class="bar-group">
-                                <div class="day-bars">
-                                    <div class="bar green" style="height: 38px;"></div>
-                                    <div class="bar pink" style="height: 8px; background: #ff8787;" title="Trend: +6"></div>
-                                </div>
-                                <div class="bar-tooltip">
-                                    <strong>Stress</strong><br>
-                                    Score: 38<br>
-                                    Trend: +6
-                                </div>
-                            </div>
-                            <!-- Hydratatie -->
-                            <div class="bar-group">
-                                <div class="day-bars">
-                                    <div class="bar green" style="height: 28px;"></div>
-                                    <div class="bar pink" style="height: 12px; margin-top: auto; margin-bottom: -6px; transform: translateY(6px); background: #ff6b6b;" title="Trend: -10"></div>
-                                </div>
-                                <div class="bar-tooltip">
-                                    <strong>Hydratatie</strong><br>
-                                    Score: 28<br>
-                                    Trend: -10
-                                </div>
-                            </div>
-                            <!-- Mentaal -->
-                            <div class="bar-group">
-                                <div class="day-bars">
-                                    <div class="bar green" style="height: 45px;"></div>
-                                    <div class="bar pink" style="height: 10px; background: #ff8787;" title="Trend: +8"></div>
-                                </div>
-                                <div class="bar-tooltip">
-                                    <strong>Mentaal</strong><br>
-                                    Score: 45<br>
-                                    Trend: +8
-                                </div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                     <div class="x-axis">
-                        <div class="x-axis-label">Slaap</div>
-                        <div class="x-axis-label">Voeding</div>
-                        <div class="x-axis-label">Beweging</div>
-                        <div class="x-axis-label">Stress</div>
-                        <div class="x-axis-label">Hydratatie</div>
-                        <div class="x-axis-label">Mentaal</div>
+                        <?php foreach ($pillarScores as $pillar): ?>
+                        <div class="x-axis-label"><?= htmlspecialchars($pillar['pillar_name']) ?></div>
+                        <?php endforeach; ?>
                     </div>
                     <div class="chart-legend">
                         <div class="legend-item">
                             <div class="legend-box green" style="background: #008000;"></div>
-                            <span style="color: #6b7280;">Gemiddelde Score</span>
-                            <div class="legend-tooltip">
-                                Gemiddelde score per categorie
-                            </div>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-box pink" style="background: #ff8787;"></div>
-                            <span style="color: #6b7280;">Trend (-/+)</span>
-                            <div class="legend-tooltip">
-                                Verschil met de vorige periode
-                            </div>
+                            <span style="color: #6b7280;">Gemiddelde Score per Categorie</span>
                         </div>
                     </div>
                 </div>
