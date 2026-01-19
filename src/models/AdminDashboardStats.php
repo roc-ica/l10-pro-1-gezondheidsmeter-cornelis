@@ -131,17 +131,15 @@ class AdminDashboardStats
      */
     public function getWeeklyActivity(): array
     {
-        // Get current week's Monday
-        $today = new \DateTime();
-        $mondayOfWeek = (clone $today)->modify('Monday this week');
-        
         $weeklyData = [];
-        $dayNames = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
+        $dayNames = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
         
-        // Get 7 days starting from Monday
-        for ($i = 0; $i < 7; $i++) {
-            $currentDate = (clone $mondayOfWeek)->modify("+$i days");
+        // Get last 7 days including today
+        for ($i = 6; $i >= 0; $i--) {
+            $currentDate = new \DateTime();
+            $currentDate->modify("-$i days");
             $dateString = $currentDate->format('Y-m-d');
+            $dayOfWeek = (int) $currentDate->format('w');
             
             // Count submitted entries for this day
             $stmt = $this->pdo->prepare(
@@ -160,7 +158,7 @@ class AdminDashboardStats
             $incomplete = (int) $stmt->fetchColumn();
             
             $weeklyData[] = [
-                'day' => $dayNames[$i],
+                'day' => $dayNames[$dayOfWeek],
                 'date' => $dateString,
                 'submitted' => $submitted,
                 'incomplete' => $incomplete,
@@ -216,27 +214,29 @@ class AdminDashboardStats
         // Find max value to scale properly
         $maxValue = 0;
         foreach ($weeklyData as $day) {
-            if ($day['submitted'] > $maxValue) {
-                $maxValue = $day['submitted'];
-            }
-            if ($day['incomplete'] > $maxValue) {
-                $maxValue = $day['incomplete'];
-            }
+            $maxValue = max($maxValue, $day['submitted'], $day['incomplete']);
         }
         
-        // If no data, set default max
-        if ($maxValue === 0) {
-            $maxValue = 1;
-        }
+        // Round max value up to nearest 5 or 10 for better y-axis labels
+        if ($maxValue <= 5) $maxValue = 5;
+        elseif ($maxValue <= 10) $maxValue = 10;
+        elseif ($maxValue <= 20) $maxValue = 20;
+        else $maxValue = ceil($maxValue / 10) * 10;
         
-        // Scale to pixels (max 120px)
-        $maxPixels = 120;
+        // Scale to pixels (max 220px to fit in 260px container)
+        $maxPixels = 220;
         foreach ($weeklyData as &$day) {
             $day['submitted_height'] = (int) round(($day['submitted'] / $maxValue) * $maxPixels);
             $day['incomplete_height'] = (int) round(($day['incomplete'] / $maxValue) * $maxPixels);
+            // Ensure tiny bars are visible if value > 0
+            if ($day['submitted'] > 0 && $day['submitted_height'] < 3) $day['submitted_height'] = 3;
+            if ($day['incomplete'] > 0 && $day['incomplete_height'] < 3) $day['incomplete_height'] = 3;
         }
         
-        return $weeklyData;
+        return [
+            'days' => $weeklyData,
+            'max' => $maxValue
+        ];
     }
 
     /**

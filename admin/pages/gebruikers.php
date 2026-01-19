@@ -44,8 +44,8 @@ if ($search !== '') {
 
 $totalUsers = count($users);
 
-// Pagination 10 per page
-$usersPerPage = 10;
+// Pagination 6 per page
+$usersPerPage = 6;
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($page - 1) * $usersPerPage;
 $paginatedUsers = array_slice($users, $offset, $usersPerPage);
@@ -105,35 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Admin Gebruikers - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../../assets/css/admin.css">
     <link rel="stylesheet" href="../../assets/css/popup.css">
-    <style>
-        /*PAGINATION VOOR GEBRUIKERS ADMIN*/
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin: 40px 0;
-            flex-wrap: wrap;
-        }
-
-        .page-btn {
-            padding: 8px 14px;
-            border-radius: 6px;
-            background-color: #ffffff;
-            color: #0f172a;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .page-btn:hover {
-            background-color: #e2e8f0;
-        }
-
-        .page-btn.active {
-            background-color: #22c55e;
-            color: white;
-        }
-    </style>
 </head>
 
 <body class="auth-page">
@@ -149,9 +120,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="../../pages/home.php" class="btn-naar-app">Naar App</a>
             </div>
         </div>
-        <form method="GET" style="margin: 20px 0; text-align: center;">
-            <input type="text" name="search" placeholder="Zoek gebruiker..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>" style="padding:8px; width:250px; border-radius:5px; border:1px solid #ccc;">
-            <button type="submit" style="padding:8px 12px; border-radius:5px; background:#22c55e; color:white; border:none; cursor:pointer;">Zoeken</button>
+        <form method="GET" class="user-search-form">
+            <input type="text" name="search" class="search-input" placeholder="Zoek gebruiker..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+            <button type="submit" class="btn-search">Zoeken</button>
         </form>
 
 
@@ -199,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER');
                                                 echo (' ');
                                                 echo htmlspecialchars($user['id']) ?></div>
-                    <button class="btn-action btn-delete" style="background-color: #ef4444; color: white; border: none; margin-bottom: 5px;" onclick="openDeleteUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')">
+                    <button class="btn-action btn-danger" onclick="openDeleteUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')">
                         <i data-lucide="trash-2"></i> Verwijderen
                     </button>
                     <button class="btn-action btn-delete" onclick="<?php echo $user['is_active'] ? "openBlockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" : "openUnblockUserModal(" . $user['id'] . ", '" . htmlspecialchars($user['username']) . "')" ?>">

@@ -53,114 +53,6 @@ $username = $_SESSION['username'] ?? 'Admin';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../../assets/css/admin.css">
-    <style>
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-            .stats-row {
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 12px !important;
-            }
-            
-            .charts-row {
-                grid-template-columns: 1fr !important;
-            }
-            
-            .dashboard-header {
-                flex-direction: column !important;
-                gap: 16px !important;
-                align-items: flex-start !important;
-            }
-            
-            .dashboard-header-right {
-                width: 100%;
-            }
-            
-            .btn-naar-app {
-                width: 100%;
-                text-align: center;
-            }
-            
-            .stat-block {
-                padding: 16px !important;
-            }
-            
-            .stat-number {
-                font-size: 1.75rem !important;
-            }
-            
-            .period-selector {
-                flex-direction: column !important;
-                width: 100%;
-            }
-            
-            .period-btn {
-                width: 100% !important;
-                text-align: center !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .stats-row {
-                grid-template-columns: 1fr !important;
-            }
-            
-            .stat-number {
-                font-size: 1.5rem !important;
-            }
-            
-            .dashboard-container {
-                padding: 16px !important;
-            }
-        }
-        
-        /* Period selector styling */
-        .period-selector {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .period-btn {
-            background: #ffffff;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 10px 24px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .period-btn:hover {
-            border-color: #16a34a;
-            color: #16a34a;
-            transform: translateY(-1px);
-        }
-        
-        .period-btn.active {
-            background: #16a34a;
-            border-color: #16a34a;
-            color: white;
-            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
-        }
-        
-        .period-btn.active:hover {
-            background: #15803d;
-            border-color: #15803d;
-        }
-        
-        .period-info {
-            text-align: center;
-            margin-bottom: 16px;
-            color: #6b7280;
-            font-size: 14px;
-        }
-    </style>
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
@@ -225,15 +117,18 @@ $username = $_SESSION['username'] ?? 'Admin';
                 <div class="weekly-activity">
                     <div class="chart-area">
                         <div class="y-axis">
-                            <div class="y-axis-label">180</div>
-                            <div class="y-axis-label">135</div>
-                            <div class="y-axis-label">90</div>
-                            <div class="y-axis-label">45</div>
+                            <?php 
+                            $maxVal = $weeklyActivityData['max'];
+                            ?>
+                            <div class="y-axis-label"><?= $maxVal ?></div>
+                            <div class="y-axis-label"><?= round($maxVal * 0.75) ?></div>
+                            <div class="y-axis-label"><?= round($maxVal * 0.5) ?></div>
+                            <div class="y-axis-label"><?= round($maxVal * 0.25) ?></div>
                             <div class="y-axis-label">0</div>
                         </div>
                         <div class="bars-container">
-                            <?php foreach ($weeklyActivityData as $dayData): ?>
-                            <div class="day-bars" title="<?= $dayData['day'] ?>: <?= $dayData['submitted'] ?> nieuwe gebruikers">
+                            <?php foreach ($weeklyActivityData['days'] as $dayData): ?>
+                            <div class="day-bars" title="<?= $dayData['day'] ?>: <?= $dayData['submitted'] ?> afgerond, <?= $dayData['incomplete'] ?> incompleet">
                                 <div class="bar green" style="height: <?= $dayData['submitted_height'] ?>px;"></div>
                                 <div class="bar pink" style="height: <?= $dayData['incomplete_height'] ?>px;"></div>
                             </div>
@@ -241,14 +136,18 @@ $username = $_SESSION['username'] ?? 'Admin';
                         </div>
                     </div>
                     <div class="x-axis">
-                        <?php foreach ($weeklyActivityData as $dayData): ?>
-                        <div class="x-axis-label"><?= substr($dayData['day'], 0, 2) ?></div>
+                        <?php foreach ($weeklyActivityData['days'] as $dayData): ?>
+                        <div class="x-axis-label"><?= $dayData['day'] ?></div>
                         <?php endforeach; ?>
                     </div>
                     <div class="chart-legend">
                         <div class="legend-item">
                             <div class="legend-box green"></div>
-                            <span>Nieuwe gebruikers</span>
+                            <span>Afgerond</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box pink"></div>
+                            <span>Incompleet</span>
                         </div>
                     </div>
                 </div>

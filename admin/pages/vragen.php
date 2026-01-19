@@ -240,7 +240,7 @@ foreach ($mainQuestions as &$mainQ) {
             <!-- Add Question Form -->
             <div class="card">
                 <h2 class="card-title">Nieuwe vraag toevoegen?</h2>
-                <form method="POST" action="" id="questionForm">
+                <form method="POST" action="" id="questionForm" class="add-form">
                     <input type="hidden" name="action" value="add_question">
 
                     <!-- Category Selection -->

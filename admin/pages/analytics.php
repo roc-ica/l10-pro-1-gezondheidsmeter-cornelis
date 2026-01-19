@@ -161,7 +161,7 @@ $growthArea = generateSvgAreaPath($growthData, 'cumulative_users', 500, 250);
 $engagementPoints = generateSvgPoints($engagementData, 'daily_entries', 500, 250);
 $engagementArea = generateSvgAreaPath($engagementData, 'daily_entries', 500, 250);
 
-$scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); // Max score is 100
+$scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 250, 100); // Max score is 100
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -169,104 +169,7 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Analytics - Gezondheidsmeter</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css?v=5">
-    <style>
-        /* Responsive improvements for analytics */
-        @media (max-width: 768px) {
-            .dashboard-container1 {
-                margin: 0 auto !important;
-                padding: 20px 16px !important;
-                max-width: 100% !important;
-            }
-            
-            .dashboard-header {
-                flex-direction: column !important;
-                gap: 16px !important;
-                align-items: flex-start !important;
-            }
-            
-            .dashboard-header-right {
-                width: 100%;
-            }
-            
-            .btn-naar-app {
-                width: 100%;
-                text-align: center;
-            }
-            
-            .analytics-chart-block {
-                padding: 16px !important;
-            }
-            
-            .chart-title {
-                font-size: 16px !important;
-            }
-            
-            .period-selector {
-                flex-direction: column !important;
-                width: 100%;
-            }
-            
-            .period-btn {
-                width: 100% !important;
-                text-align: center !important;
-            }
-            
-            .area-chart-svg,
-            .line-chart-svg {
-                max-width: 100%;
-                height: auto;
-            }
-        }
-        
-        /* Period selector styling */
-        .period-selector {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .period-btn {
-            background: #ffffff;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 10px 24px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .period-btn:hover {
-            border-color: #16a34a;
-            color: #16a34a;
-            transform: translateY(-1px);
-        }
-        
-        .period-btn.active {
-            background: #16a34a;
-            border-color: #16a34a;
-            color: white;
-            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
-        }
-        
-        .period-btn.active:hover {
-            background: #15803d;
-            border-color: #15803d;
-        }
-        
-        .period-info {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #6b7280;
-            font-size: 14px;
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/admin.css?v=6">
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
@@ -353,7 +256,7 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
             <div class="chart-block analytics-chart-block">
                 <h3 class="chart-title">Gemiddelde Score Trend</h3>
                 <div class="line-chart-container">
-                    <svg class="line-chart-svg" viewBox="0 0 500 200" preserveAspectRatio="xMidYMid meet">
+                    <svg class="line-chart-svg" viewBox="0 0 500 250" preserveAspectRatio="xMidYMid meet">
                         <!-- Grid lines -->
                         <line x1="40" y1="160" x2="480" y2="160" stroke="#f3f4f6" stroke-width="0.75"/>
                         <line x1="40" y1="120" x2="480" y2="120" stroke="#f3f4f6" stroke-width="0.75"/>
@@ -361,8 +264,8 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 200, 100); /
                         <line x1="40" y1="40" x2="480" y2="40" stroke="#f3f4f6" stroke-width="0.75"/>
                         
                         <!-- Axes -->
-                        <line x1="40" y1="20" x2="40" y2="160" stroke="#374151" stroke-width="1"/>
-                        <line x1="40" y1="160" x2="480" y2="160" stroke="#374151" stroke-width="1"/>
+                        <line x1="40" y1="20" x2="40" y2="200" stroke="#374151" stroke-width="1"/>
+                        <line x1="40" y1="200" x2="480" y2="200" stroke="#374151" stroke-width="1"/>
                         
                         <polyline points="<?= $scoreTrendPoints ?>" 
                                   fill="none" 
