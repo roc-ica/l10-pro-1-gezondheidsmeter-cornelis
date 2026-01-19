@@ -16,6 +16,14 @@ function isActive($page, $current) {
             <span class="brand-text">Admin <span class="brand-meter">CMS</span></span>
         </div>
         <?php if ($isLoggedIn): ?>
+        <!-- Hamburger Menu Button (Mobile Only) -->
+        <button class="navbar-toggle" aria-label="Toggle navigation" onclick="this.classList.toggle('active'); document.querySelector('.navbar-links').classList.toggle('active');">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        
+        <!-- Navigation Links -->
         <div class="navbar-links">
             <a href="home.php" class="nav-link <?= isActive('home.php', $currentPage) ?>">Dashboard</a>
             <a href="vragen.php" class="nav-link <?= isActive('vragen.php', $currentPage) ?>">Vragen</a>

@@ -217,10 +217,10 @@ foreach ($mainQuestions as &$mainQ) {
 
     <div class="dashboard-container">
         <div class="vragen-container">
-            <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <div>
-                    <h1 class="page-title" style="margin: 0;">Vragen Beheer</h1>
-                    <p class="page-subtitle" style="margin: 0;">Beheer de dagelijkse gezondheids vragen</p>
+            <div class="dashboard-header">
+                <div class="dashboard-header-left">
+                    <h1>Vragen Beheer</h1>
+                    <p>Beheer de dagelijkse gezondheids vragen</p>
                 </div>
                 <div class="dashboard-header-right">
                     <a href="../../pages/home.php" class="btn-naar-app">Naar App</a>
