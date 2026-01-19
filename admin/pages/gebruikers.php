@@ -26,42 +26,23 @@ $adminUserId = $_SESSION['user_id'];
 $pdo = Database::getConnection();
 
 $username = $_SESSION['username'] ?? 'Admin';
-$message = '';
-$error = '';
 
-// Get all users from database using User model
-$search = trim($_GET['search'] ?? ''); // get search input
-
-$users = User::getAllUsers(); // get all users
-
-// FILTER users if search is not empty
-if ($search !== '') {
-    $users = array_filter($users, function ($u) use ($search) {
-        return str_contains(strtolower($u['username']), strtolower($search)) ||
-            str_contains(strtolower($u['display_name'] ?? ''), strtolower($search));
-    });
-}
-
-$totalUsers = count($users);
-
-// Pagination 6 per page
-$usersPerPage = 6;
-$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$offset = ($page - 1) * $usersPerPage;
-$paginatedUsers = array_slice($users, $offset, $usersPerPage);
-$totalPages = ceil($totalUsers / $usersPerPage);
-
+// Handle POST actions first
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
+        $success = false;
+        $statusMsg = '';
+        
         // Delete user
         if ($_POST['action'] === 'delete_user') {
             $userId = $_POST['user_id'] ?? null;
             if ($userId) {
                 $deleteResult = User::delete((int)$userId, $adminUserId);
                 if ($deleteResult['success']) {
-                    $message = "Gebruiker permanent verwijderd.";
+                    $_SESSION['success_message'] = "Gebruiker permanent verwijderd.";
+                    $success = true;
                 } else {
-                    $error = "Fout bij verwijderen gebruiker: " . $deleteResult['message'];
+                    $_SESSION['error_message'] = "Fout bij verwijderen gebruiker: " . $deleteResult['message'];
                 }
             }
         }
@@ -73,10 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($userId) {
                 $stmt = $pdo->prepare("UPDATE users SET is_active = 0, block_reason = ? WHERE id = ?");
                 if ($stmt->execute([$reason, $userId])) {
-                    $message = "Gebruiker geblokkeerd.";
+                    $_SESSION['success_message'] = "Gebruiker geblokkeerd.";
                     $logger->logUserBlock($adminUserId, (int)$userId, $reason);
+                    $success = true;
                 } else {
-                    $error = "Fout bij blokkeren gebruiker.";
+                    $_SESSION['error_message'] = "Fout bij blokkeren gebruiker.";
                 }
             }
         }
@@ -86,15 +68,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($userId) {
                 $stmt = $pdo->prepare("UPDATE users SET is_active = 1, block_reason = NULL WHERE id = ?");
                 if ($stmt->execute([$userId])) {
-                    $message = "Gebruiker gedeblokkeerd.";
+                    $_SESSION['success_message'] = "Gebruiker gedeblokkeerd.";
                     $logger->logUserUnblock($adminUserId, (int)$userId);
+                    $success = true;
                 } else {
-                    $error = "Fout bij deblokkeren gebruiker.";
+                    $_SESSION['error_message'] = "Fout bij deblokkeren gebruiker.";
                 }
             }
         }
+
+        // Redirect after POST to prevent resubmission and refresh the list
+        $params = [];
+        if (!empty($_GET['search'])) $params['search'] = $_GET['search'];
+        if (!empty($_GET['page'])) $params['page'] = $_GET['page'];
+        $queryString = count($params) > 0 ? '?' . http_build_query($params) : '';
+        
+        header('Location: gebruikers.php' . $queryString);
+        exit;
     }
 }
+
+// Get messages from session
+$message = $_SESSION['success_message'] ?? '';
+$error = $_SESSION['error_message'] ?? '';
+unset($_SESSION['success_message'], $_SESSION['error_message']);
+
+// Fetch data for display AFTER potential actions
+$search = trim($_GET['search'] ?? '');
+$users = User::getAllUsers();
+
+if ($search !== '') {
+    $users = array_filter($users, function ($u) use ($search) {
+        return str_contains(strtolower($u['username']), strtolower($search)) ||
+            str_contains(strtolower($u['display_name'] ?? ''), strtolower($search));
+    });
+}
+
+$totalUsers = count($users);
+$usersPerPage = 6;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$offset = ($page - 1) * $usersPerPage;
+$paginatedUsers = array_slice($users, $offset, $usersPerPage);
+$totalPages = ceil($totalUsers / $usersPerPage);
 ?>
 <!DOCTYPE html>
 <html lang="nl">

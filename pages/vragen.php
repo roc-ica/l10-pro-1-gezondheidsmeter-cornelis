@@ -7,6 +7,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Admins are allowed to visit but not fill out questions
+$isAdmin = !empty($_SESSION['is_admin']);
+
 require_once __DIR__ . '/../src/config/database.php';
 require_once __DIR__ . '/../src/models/HealthScoreCalculator.php';
 require_once __DIR__ . '/../src/services/QuestionnaireService.php';
@@ -39,7 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SERVER['HTTP_X_REQUESTED_W
             $_SESSION['questionnaire_state']['answers'][$qId] = $_POST['answer'];
             
             if ($action === 'answer_main') {
-                if ($_POST['answer'] === 'Nee') {
+                $questionPairs = $questionnaireService->getQuestionPairs();
+                $currentPairIdx = $_SESSION['questionnaire_state']['current_pair_idx'];
+                $currentPair = $questionPairs[$currentPairIdx] ?? null;
+
+                // Move to next if: answer is "Nee" OR no secondary question exists OR main question is numerical
+                if ($_POST['answer'] === 'Nee' || !$currentPair['secondary'] || $currentPair['main']['input_type'] === 'number') {
                     $_SESSION['questionnaire_state']['current_pair_idx']++;
                     $_SESSION['questionnaire_state']['current_step'] = 'main';
                 } else {
@@ -55,8 +63,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SERVER['HTTP_X_REQUESTED_W
         if ($currentStep === 'secondary') {
             $_SESSION['questionnaire_state']['current_step'] = 'main';
         } elseif ($currentStep === 'main' && $_SESSION['questionnaire_state']['current_pair_idx'] > 0) {
+            $questionPairs = $questionnaireService->getQuestionPairs();
             $_SESSION['questionnaire_state']['current_pair_idx']--;
-            $_SESSION['questionnaire_state']['current_step'] = 'secondary';
+            
+            $prevPair = $questionPairs[$_SESSION['questionnaire_state']['current_pair_idx']] ?? null;
+            if ($prevPair && isset($prevPair['secondary']) && $prevPair['secondary'] && $prevPair['main']['input_type'] !== 'number') {
+                $_SESSION['questionnaire_state']['current_step'] = 'secondary';
+            } else {
+                $_SESSION['questionnaire_state']['current_step'] = 'main';
+            }
         }
         $result = ['success' => true];
     } elseif ($action === 'reset') {
@@ -177,7 +192,15 @@ if ($allAnswered) {
                 </div>
             </div>
 
-        <?php elseif ($currentPair && $currentStep === 'main'): ?>
+        <?php endif; ?>
+
+        <?php if ($isAdmin): ?>
+            <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: 600; text-align: center; border: 1px solid #ffeeba;">
+                👀 Bekijk-modus: Als beheerder kun je de vragen zien, maar niet beantwoorden.
+            </div>
+        <?php endif; ?>
+
+        <?php if ($currentPair && $currentStep === 'main'): ?>
             <!-- Main Question -->
             <div class="question-card">
                 <div class="question-badge">
@@ -190,10 +213,22 @@ if ($allAnswered) {
                 </h2>
                 
                 <div class="answer-section">
-                    <div class="button-group">
-                        <button type="button" class="btn-yes <?php echo (isset($answers[$currentPair['main']['id']]) && $answers[$currentPair['main']['id']] === 'Ja') ? 'selected' : ''; ?>" onclick="answerMain('Ja', <?php echo $currentPair['main']['id']; ?>)">Ja</button>
-                        <button type="button" class="btn-no <?php echo (isset($answers[$currentPair['main']['id']]) && $answers[$currentPair['main']['id']] === 'Nee') ? 'selected' : ''; ?>" onclick="answerMain('Nee', <?php echo $currentPair['main']['id']; ?>)">Nee</button>
-                    </div>
+                    <?php if ($currentPair['main']['input_type'] === 'number'): ?>
+                        <input 
+                            type="number" 
+                            id="mainAnswerNumber" 
+                            class="form-input-number" 
+                            placeholder="Voer getal in"
+                            value="<?php echo isset($answers[$currentPair['main']['id']]) ? htmlspecialchars($answers[$currentPair['main']['id']]) : ''; ?>"
+                            min="0"
+                            <?php echo $isAdmin ? 'disabled' : ''; ?>
+                        >
+                    <?php else: ?>
+                        <div class="button-group">
+                            <button type="button" class="btn-yes <?php echo (isset($answers[$currentPair['main']['id']]) && $answers[$currentPair['main']['id']] === 'Ja') ? 'selected' : ''; ?>" onclick="answerMain('Ja', <?php echo $currentPair['main']['id']; ?>)" <?php echo $isAdmin ? 'disabled' : ''; ?>>Ja</button>
+                            <button type="button" class="btn-no <?php echo (isset($answers[$currentPair['main']['id']]) && $answers[$currentPair['main']['id']] === 'Nee') ? 'selected' : ''; ?>" onclick="answerMain('Nee', <?php echo $currentPair['main']['id']; ?>)" <?php echo $isAdmin ? 'disabled' : ''; ?>>Nee</button>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="question-nav">
@@ -202,36 +237,51 @@ if ($allAnswered) {
                     <?php else: ?>
                     <span></span>
                     <?php endif; ?>
-                    <span></span>
+                    
+                    <?php if ($currentPair['main']['input_type'] === 'number'): ?>
+                    <button type="button" class="nav-btn next-btn" onclick="answerMainNumerical(<?php echo $currentPair['main']['id']; ?>)" <?php echo $isAdmin ? 'disabled' : ''; ?>>Volgende →</button>
+                    <?php endif; ?>
                 </div>
             </div>
 
-        <?php elseif ($currentPair && $currentStep === 'secondary'): ?>
+        <?php elseif ($currentPair && $currentStep === 'secondary' && $currentPair['secondary']): ?>
             <!-- Secondary Question -->
             <div class="question-card">
                 <div class="question-badge">
-                    <?php echo htmlspecialchars($currentPair['main']['pillar_name']); ?> - 
+                    <?php echo htmlspecialchars($currentPair['main']['pillar_name'] ?? ''); ?> - 
                     Vraag <?php echo $currentPairIdx + 1; ?> van <?php echo $totalPairs; ?> (deel 2)
                 </div>
                 
                 <h2 class="question-text">
-                    <?php echo htmlspecialchars($currentPair['secondary']['question_text']); ?>
+                    <?php echo htmlspecialchars($currentPair['secondary']['question_text'] ?? ''); ?>
                 </h2>
                 
                 <div class="answer-section">
-                    <input 
-                        type="number" 
-                        id="secondaryAnswer" 
-                        class="form-input-number" 
-                        placeholder="Voer getal in"
-                        value="<?php echo isset($answers['sub_' . $currentPair['secondary']['id']]) ? htmlspecialchars($answers['sub_' . $currentPair['secondary']['id']]) : ''; ?>"
-                        min="0"
-                    >
+                    <?php if (isset($currentPair['secondary']['input_type']) && $currentPair['secondary']['input_type'] === 'number'): ?>
+                        <input 
+                            type="number" 
+                            id="secondaryAnswer" 
+                            class="form-input-number" 
+                            placeholder="Voer getal in"
+                            value="<?php echo isset($answers['sub_' . $currentPair['secondary']['id']]) ? htmlspecialchars($answers['sub_' . $currentPair['secondary']['id']]) : ''; ?>"
+                            min="0"
+                            <?php echo $isAdmin ? 'disabled' : ''; ?>
+                        >
+                    <?php elseif (isset($currentPair['secondary']['input_type']) && $currentPair['secondary']['input_type'] === 'text'): ?>
+                        <input 
+                            type="text" 
+                            id="secondaryAnswerText" 
+                            class="form-input-number" 
+                            placeholder="Type je antwoord..."
+                            value="<?php echo isset($answers['sub_' . $currentPair['secondary']['id']]) ? htmlspecialchars($answers['sub_' . $currentPair['secondary']['id']]) : ''; ?>"
+                            <?php echo $isAdmin ? 'disabled' : ''; ?>
+                        >
+                    <?php endif; ?>
                 </div>
 
                 <div class="question-nav">
                     <button type="button" class="nav-btn prev-btn" onclick="goPrevious('secondary')">← Vorige</button>
-                    <button type="button" class="nav-btn next-btn" onclick="answerSecondary(<?php echo $currentPair['main']['id']; ?>, <?php echo $currentPair['secondary']['id']; ?>)">Volgende →</button>
+                    <button type="button" class="nav-btn next-btn" onclick="answerSecondary(<?php echo $currentPair['main']['id']; ?>, <?php echo $currentPair['secondary']['id']; ?>)" <?php echo $isAdmin ? 'disabled' : ''; ?>>Volgende →</button>
                 </div>
             </div>
 
@@ -293,7 +343,7 @@ if ($allAnswered) {
             }
         }
 
-        // Answer Main Question
+        // Answer Main Question (Choice)
         async function answerMain(answer, questionId) {
             console.log("answerMain called with answer:", answer, "questionId:", questionId);
             const button = event.target;
@@ -316,14 +366,52 @@ if ($allAnswered) {
             }
         }
 
+        // Answer Main Question (Numerical)
+        async function answerMainNumerical(questionId) {
+            const input = document.getElementById('mainAnswerNumber');
+            const answer = input.value.trim();
+
+            if (answer === '' || isNaN(answer)) {
+                showError('Voer een geldig getal in');
+                return;
+            }
+
+            const button = event.target;
+            button.disabled = true;
+
+            const result = await sendAjax({
+                action: 'answer_main',
+                question_id: questionId,
+                answer: answer
+            });
+
+            if (result.success) {
+                setTimeout(() => {
+                    location.reload();
+                }, 300);
+            } else {
+                button.disabled = false;
+                showError('Could not save answer');
+            }
+        }
+
         // Answer Secondary Question
         async function answerSecondary(questionId, subQuestionId) {
-            const input = document.getElementById('secondaryAnswer');
+            let input = document.getElementById('secondaryAnswer');
+            // Check if it's the text input instead
+            if (!input) input = document.getElementById('secondaryAnswerText');
+            
             const answer = input.value.trim();
 
             console.log("answerSecondary called with questionId:", questionId, "subQuestionId:", subQuestionId, "answer:", answer);
 
-            if (answer === '' || isNaN(answer)) {
+            if (answer === '') {
+                showError('Voer een antwoord in');
+                return;
+            }
+
+            // Simple validation for number type only
+            if (input.type === 'number' && isNaN(answer)) {
                 showError('Voer een geldig getal in');
                 return;
             }

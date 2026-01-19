@@ -405,7 +405,7 @@ class User
             if ($adminId !== null) {
                 require_once __DIR__ . '/AdminActionLogger.php';
                 $logger = new AdminActionLogger();
-                $logger->logAdminAction($adminId, 'delete_user', 'users', (string)$userId, "Gebruiker verwijderd");
+                $logger->logAction($adminId, 'delete_user', 'users', (string)$userId, ['remark' => "Gebruiker verwijderd"]);
             }
 
             $pdo->commit();

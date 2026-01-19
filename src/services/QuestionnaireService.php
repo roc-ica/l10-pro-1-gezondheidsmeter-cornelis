@@ -221,8 +221,8 @@ class QuestionnaireService
         $stmt->execute();
         $mainQuestions = $stmt->fetchAll();
 
-        // 2. Build question pairs (main + secondary)
-        $questionPairs = [];
+        // 2. Build question set (main + optional secondary)
+        $questions = [];
         foreach ($mainQuestions as $main) {
             $stmt = $this->pdo->prepare("
                 SELECT * FROM sub_questions 
@@ -232,14 +232,12 @@ class QuestionnaireService
             $stmt->execute([$main['id']]);
             $secondary = $stmt->fetch();
             
-            if ($secondary) {
-                $questionPairs[] = [
-                    'main' => $main,
-                    'secondary' => $secondary
-                ];
-            }
+            $questions[] = [
+                'main' => $main,
+                'secondary' => $secondary ? $secondary : null
+            ];
         }
-        return $questionPairs;
+        return $questions;
     }
 
     /**
@@ -256,6 +254,14 @@ class QuestionnaireService
             
             if (!$questionId || $answer === null) {
                 return ['success' => false, 'message' => 'Ongeldige parameters'];
+            }
+
+            // Server-side check: Prevent admins from submitting answers
+            $stmt = $this->pdo->prepare("SELECT is_admin FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+            if ($user && !empty($user['is_admin'])) {
+                return ['success' => false, 'message' => 'Beheerders mogen geen vragenlijsten invullen.'];
             }
 
             try {
@@ -287,18 +293,24 @@ class QuestionnaireService
                         $stmt->execute([$entryId, $questionId, $answer]);
                     }
                     
-                    // If answer is "Nee", automatically set sub-question to 0 if it exists
+                    // If answer is "Nee", automatically set sub-question to 0/Geen if it exists
                     if ($answer === 'Nee' && $subQuestionId) {
+                        // Check sub-question type to decide on default value
+                        $stmt = $this->pdo->prepare("SELECT input_type FROM sub_questions WHERE id = ?");
+                        $stmt->execute([$subQuestionId]);
+                        $sub = $stmt->fetch();
+                        $defaultValue = ($sub && $sub['input_type'] === 'text') ? 'Geen' : '0';
+
                         $stmt = $this->pdo->prepare("SELECT id FROM answers WHERE entry_id = ? AND sub_question_id = ?");
                         $stmt->execute([$entryId, $subQuestionId]);
                         $existingSubAnswer = $stmt->fetch();
                         
                         if ($existingSubAnswer) {
                             $stmt = $this->pdo->prepare("UPDATE answers SET answer_text = ? WHERE id = ?");
-                            $stmt->execute(['0', $existingSubAnswer['id']]);
+                            $stmt->execute([$defaultValue, $existingSubAnswer['id']]);
                         } else {
                             $stmt = $this->pdo->prepare("INSERT INTO answers (entry_id, question_id, sub_question_id, answer_text) VALUES (?, ?, ?, ?)");
-                            $stmt->execute([$entryId, $questionId, $subQuestionId, '0']);
+                            $stmt->execute([$entryId, $questionId, $subQuestionId, $defaultValue]);
                         }
                     }
                 }

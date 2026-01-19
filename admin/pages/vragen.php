@@ -46,51 +46,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pillar_id = $_POST['pillar_id'] ?? null;
             $main_question = trim($_POST['main_question'] ?? '');
             $secondary_question = trim($_POST['secondary_question'] ?? '');
+            $question_style = $_POST['question_style'] ?? 'pair';
             $is_drugs_question = isset($_POST['is_drugs_question']) ? 1 : 0;
 
-            if ($pillar_id && $main_question && $secondary_question) {
+            if ($pillar_id && $main_question) {
                 $pdo = Database::getConnection();
                 try {
-                    // Add main question (always choice type for ja/nee questions)
+                    $input_type = ($question_style === 'standalone') ? 'number' : 'choice';
+                    
+                    // Add main question
                     $stmt = $pdo->prepare("
                         INSERT INTO questions 
                         (pillar_id, question_text, input_type, active, is_drugs_question)
-                        VALUES (?, ?, 'choice', 1, ?)
+                        VALUES (?, ?, ?, 1, ?)
                     ");
                     $stmt->execute([
                         (int) $pillar_id,
                         $main_question,
+                        $input_type,
                         $is_drugs_question
                     ]);
 
                     $mainQuestionId = (int) $pdo->lastInsertId();
 
-                    // Add sub_question (always number type for follow-up questions)
-                    $stmt = $pdo->prepare("
-                        INSERT INTO sub_questions 
-                        (parent_question_id, question_text, input_type, active, question_type)
-                        VALUES (?, ?, 'number', 1, 'secondary')
-                    ");
-                    $stmt->execute([
-                        $mainQuestionId,
-                        $secondary_question
-                    ]);
-
-                    $secondaryQuestionId = (int) $pdo->lastInsertId();
-
-                    // Log the action for both questions
+                    // Log the action for main question
                     $logger->logQuestionCreate($adminUserId, $mainQuestionId, [
                         'pillar_id' => $pillar_id,
                         'question_text' => $main_question,
                         'is_main' => 1,
-                        'is_drugs_question' => $is_drugs_question
+                        'is_drugs_question' => $is_drugs_question,
+                        'input_type' => $input_type
                     ]);
-                    $logger->logQuestionCreate($adminUserId, $secondaryQuestionId, [
-                        'pillar_id' => $pillar_id,
-                        'question_text' => $secondary_question,
-                        'is_main' => 0,
-                        'is_drugs_question' => 0
-                    ]);
+
+                    // Add sub_question only if it's a pair
+                    if ($question_style === 'pair' && $secondary_question) {
+                        $stmt = $pdo->prepare("
+                            INSERT INTO sub_questions 
+                            (parent_question_id, question_text, input_type, active, question_type)
+                            VALUES (?, ?, 'number', 1, 'secondary')
+                        ");
+                        $stmt->execute([
+                            $mainQuestionId,
+                            $secondary_question
+                        ]);
+
+                        $secondaryQuestionId = (int) $pdo->lastInsertId();
+
+                        $logger->logQuestionCreate($adminUserId, $secondaryQuestionId, [
+                            'pillar_id' => $pillar_id,
+                            'question_text' => $secondary_question,
+                            'is_main' => 0,
+                            'is_drugs_question' => 0
+                        ]);
+                    }
 
                     header('Location: vragen.php?success=1');
                     exit;
@@ -98,9 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = "Fout bij toevoegen vraag: " . $e->getMessage();
                 }
             } else {
-                $error = "Vul alle velden in (categorie, hoofdvraag en vervolgvraag).";
+                $error = "Vul alle verplichte velden in.";
             }
-        } elseif ($_POST['action'] === 'delete_question') {
+        }
+ elseif ($_POST['action'] === 'delete_question') {
             $question_id = $_POST['question_id'] ?? null;
             $secondary_question_id = $_POST['secondary_question_id'] ?? null;
 
@@ -242,7 +251,7 @@ foreach ($mainQuestions as &$mainQ) {
                 <h2 class="card-title">Nieuwe vraag toevoegen?</h2>
                 <form method="POST" action="" id="questionForm" class="add-form">
                     <input type="hidden" name="action" value="add_question">
-
+                    
                     <!-- Category Selection -->
                     <div class="form-group">
                         <label for="pillar_select" class="form-label">Categorie:</label>
@@ -255,18 +264,27 @@ foreach ($mainQuestions as &$mainQ) {
                         </select>
                     </div>
 
+                    <!-- Question Style Selection -->
+                    <div class="form-group">
+                        <label for="question_style" class="form-label">Stijl van de vraag:</label>
+                        <select name="question_style" class="form-select" id="question_style" required>
+                            <option value="pair">Vraagenset (Ja/Nee + Open getal)</option>
+                            <option value="standalone">Enkelvoudige vraag (Direct getal invoeren)</option>
+                        </select>
+                    </div>
+
                     <!-- Main Question Input -->
                     <div class="form-group">
-                        <label for="main_question_input" class="form-label">Hoofdvraag:</label>
+                        <label for="main_question_input" class="form-label" id="main_question_label">Hoofdvraag (Ja/Nee deel):</label>
                         <input type="text" name="main_question" id="main_question_input"
-                            class="form-input form-input-large" placeholder="Voer hier je hoofdvraag in" required>
+                            class="form-input form-input-large" placeholder="Bijv: Heeft u goed geslapen?" required>
                     </div>
 
                     <!-- Secondary Question Input -->
-                    <div class="form-group">
-                        <label for="secondary_question_input" class="form-label">Vervolgvraag:</label>
+                    <div class="form-group" id="secondary_question_group">
+                        <label for="secondary_question_input" class="form-label">Vervolgvraag (Bij "Ja"):</label>
                         <input type="text" name="secondary_question" id="secondary_question_input"
-                            class="form-input form-input-large" placeholder="Voer hier je vervolgvraag in" required>
+                            class="form-input form-input-large" placeholder="Bijv: Hoeveel uur heeft u geslapen?">
                     </div>
 
                     <!-- Drugs Question Checkbox (Only for Verslavingen) -->
@@ -407,6 +425,27 @@ foreach ($mainQuestions as &$mainQ) {
             } else {
                 drugsCheckbox.style.display = 'none';
                 document.querySelector('input[name="is_drugs_question"]').checked = false;
+            }
+        });
+
+        // Toggle question style fields
+        document.getElementById('question_style').addEventListener('change', function() {
+            const style = this.value;
+            const secGroup = document.getElementById('secondary_question_group');
+            const mainLabel = document.getElementById('main_question_label');
+            const mainInput = document.getElementById('main_question_input');
+            const secInput = document.getElementById('secondary_question_input');
+
+            if (style === 'standalone') {
+                secGroup.style.display = 'none';
+                secInput.required = false;
+                mainLabel.textContent = 'Vraag (Directe numerieke invoer):';
+                mainInput.placeholder = 'Bijv: Hoeveel uur heeft u geslapen?';
+            } else {
+                secGroup.style.display = 'block';
+                secInput.required = true;
+                mainLabel.textContent = 'Hoofdvraag (Ja/Nee deel):';
+                mainInput.placeholder = 'Bijv: Heeft u goed geslapen?';
             }
         });
 

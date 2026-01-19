@@ -164,11 +164,18 @@ class HealthScoreCalculator
         if (is_numeric($answerValue)) {
             $numValue = (float) $answerValue;
 
-            // Different scoring based on pillar type
+            $qText = strtolower($question['question_text']);
+            
+            // Different scoring based on pillar type and keywords
             switch ($question['pillar_id']) {
                 case 1: // Voeding (Nutrition)
-                    // Water intake: 8+ glasses = 100
-                    $score = min(100, ($numValue / 8) * 100);
+                    if (strpos($qText, 'water') !== false) {
+                        // Water intake: 8+ glasses = 100
+                        $score = min(100, ($numValue / 8) * 100);
+                    } else {
+                        // General nutrition (e.g. fruit/veg): 5+ portions = 100
+                        $score = min(100, ($numValue / 5) * 100);
+                    }
                     break;
                 case 2: // Beweging (Exercise)
                     // Minutes of exercise: 30+ minutes = 100
@@ -188,13 +195,26 @@ class HealthScoreCalculator
                         $score = 60;
                     }
                     break;
-                case 4: // Verslavingen (Addictions) - should not reach here if numeric
-                    $score = 100; // Default if not drugs
+                case 4: // Verslavingen (Addictions)
+                    // If it reaches here as numeric, it's likely a frequency
+                    // More is worse
+                    $score = max(0, 100 - ($numValue * 20)); // 5+ times = 0
                     break;
                 case 5: // Sociaal (Social)
+                    // Social contact: 2+ hours = 100
+                    $score = min(100, ($numValue / 2) * 100);
+                    break;
                 case 6: // Mentaal (Mental)
-                    // Scale 1-10
-                    $score = min(100, ($numValue / 10) * 100);
+                    if (strpos($qText, 'scherm') !== false || strpos($qText, 'stress') !== false) {
+                        // Inverted: higher is worse
+                        // For screen time: 8+ hours = 0
+                        // For stress: 10 = 0
+                        $maxVal = strpos($qText, 'stress') !== false ? 10 : 8;
+                        $score = max(0, 100 - (($numValue / $maxVal) * 100));
+                    } else {
+                        // General mental: 1-10 (higher is better)
+                        $score = min(100, ($numValue / 10) * 100);
+                    }
                     break;
                 default:
                     $score = min(100, ($numValue / 10) * 100);

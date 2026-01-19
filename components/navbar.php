@@ -49,7 +49,7 @@ if (!function_exists('isActive')) {
             // Better isAdmin check that works for both current and new sessions
             $sessionIsAdmin = $_SESSION['is_admin'] ?? false;
             if ($sessionIsAdmin): ?>
-                <a href="<?= $navBasePath ?>/admin/pages/home.php" class="nav-link" style="color: #16a34a; font-weight: 700;">Admin</a>
+                <a href="<?= $navBasePath ?>/admin/pages/home.php" class="nav-link" style="color: #16a34a; font-weight: 700;">Admin Dashboard</a>
             <?php endif; ?>
             
             <a href="<?= $navBasePath ?>/pages/home.php" class="nav-link <?= isActive('home.php', $currentPage) ?>">Dashboard</a>

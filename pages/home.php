@@ -7,6 +7,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Admins are allowed to visit the home page to view content
+$isAdmin = !empty($_SESSION['is_admin']);
+
 require_once __DIR__ . '/../src/config/database.php';
 require_once __DIR__ . '/../src/models/DashboardStats.php';
 
