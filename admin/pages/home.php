@@ -53,6 +53,54 @@ $username = $_SESSION['username'] ?? 'Admin';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../../assets/css/admin.css">
+    <style>
+        /* Tooltip Styles */
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .chart-tooltip.visible {
+            opacity: 1;
+        }
+        
+        .chart-tooltip-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .chart-tooltip-value {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .chart-tooltip-value:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Make bar groups interactive */
+        .day-bars {
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .day-bars:hover .bar {
+            opacity: 0.85;
+            transition: opacity 0.2s ease;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
@@ -128,7 +176,11 @@ $username = $_SESSION['username'] ?? 'Admin';
                         </div>
                         <div class="bars-container">
                             <?php foreach ($weeklyActivityData['days'] as $dayData): ?>
-                            <div class="day-bars" title="<?= $dayData['day'] ?>: <?= $dayData['submitted'] ?> afgerond, <?= $dayData['incomplete'] ?> incompleet">
+                            <div class="day-bars" 
+                                 data-day="<?= $dayData['day'] ?>" 
+                                 data-date="<?= $dayData['date'] ?>" 
+                                 data-submitted="<?= $dayData['submitted'] ?>" 
+                                 data-incomplete="<?= $dayData['incomplete'] ?>">
                                 <div class="bar green" style="height: <?= $dayData['submitted_height'] ?>px;"></div>
                                 <div class="bar pink" style="height: <?= $dayData['incomplete_height'] ?>px;"></div>
                             </div>
@@ -151,6 +203,7 @@ $username = $_SESSION['username'] ?? 'Admin';
                         </div>
                     </div>
                 </div>
+                <div class="chart-tooltip" id="tooltip-weekly"></div>
             </div>
 
             <!-- Recent Activity -->
@@ -192,5 +245,130 @@ $username = $_SESSION['username'] ?? 'Admin';
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
     <script src="../../assets/js/script.js"></script>
+    <script>
+        // Tooltip functionality for weekly activity chart
+        document.addEventListener('DOMContentLoaded', function() {
+            const dayBars = document.querySelectorAll('.day-bars');
+            const tooltip = document.getElementById('tooltip-weekly');
+            
+            if (tooltip) {
+                dayBars.forEach(bar => {
+                    bar.addEventListener('mouseenter', function(e) {
+                        const day = this.getAttribute('data-day');
+                        const date = this.getAttribute('data-date');
+                        const submitted = this.getAttribute('data-submitted');
+                        const incomplete = this.getAttribute('data-incomplete');
+                        const total = parseInt(submitted) + parseInt(incomplete);
+                        
+                        // Format date
+                        const dateObj = new Date(date + 'T00:00:00');
+                        const formattedDate = dateObj.toLocaleDateString('nl-NL', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric' 
+                        });
+                        
+                        tooltip.innerHTML = 
+                            '<div class="chart-tooltip-label">' + day + ' - ' + formattedDate + '</div>' +
+                            '<div class="chart-tooltip-value" style="color: #22c55e;">✓ Afgerond: ' + submitted + '</div>' +
+                            '<div class="chart-tooltip-value" style="color: #ff6c6c;">○ Incompleet: ' + incomplete + '</div>' +
+                            '<div class="chart-tooltip-value" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px; margin-top: 4px;">Totaal: ' + total + '</div>';
+                        tooltip.classList.add('visible');
+                    });
+                    
+                    bar.addEventListener('mousemove', function(e) {
+                        // Get tooltip dimensions
+                        const tooltipRect = tooltip.getBoundingClientRect();
+                        const tooltipWidth = tooltipRect.width;
+                        const tooltipHeight = tooltipRect.height;
+                        
+                        // Get viewport dimensions
+                        const viewportWidth = window.innerWidth;
+                        const viewportHeight = window.innerHeight;
+                        
+                        // Calculate initial position
+                        let left = e.pageX + 15;
+                        let top = e.pageY - 10;
+                        
+                        // Adjust if tooltip goes off right edge
+                        if (left + tooltipWidth > viewportWidth) {
+                            left = e.pageX - tooltipWidth - 15;
+                        }
+                        
+                        // Adjust if tooltip goes off bottom edge
+                        if (top + tooltipHeight > viewportHeight + window.scrollY) {
+                            top = e.pageY - tooltipHeight - 10;
+                        }
+                        
+                        // Adjust if tooltip goes off left edge
+                        if (left < 0) {
+                            left = 10;
+                        }
+                        
+                        // Adjust if tooltip goes off top edge
+                        if (top < window.scrollY) {
+                            top = window.scrollY + 10;
+                        }
+                        
+                        tooltip.style.left = left + 'px';
+                        tooltip.style.top = top + 'px';
+                    });
+                    
+                    bar.addEventListener('mouseleave', function() {
+                        tooltip.classList.remove('visible');
+                    });
+                    
+                    // Add touch support for mobile
+                    bar.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        const day = this.getAttribute('data-day');
+                        const date = this.getAttribute('data-date');
+                        const submitted = this.getAttribute('data-submitted');
+                        const incomplete = this.getAttribute('data-incomplete');
+                        const total = parseInt(submitted) + parseInt(incomplete);
+                        
+                        const dateObj = new Date(date + 'T00:00:00');
+                        const formattedDate = dateObj.toLocaleDateString('nl-NL', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric' 
+                        });
+                        
+                        tooltip.innerHTML = 
+                            '<div class="chart-tooltip-label">' + day + ' - ' + formattedDate + '</div>' +
+                            '<div class="chart-tooltip-value" style="color: #22c55e;">✓ Afgerond: ' + submitted + '</div>' +
+                            '<div class="chart-tooltip-value" style="color: #ff6c6c;">○ Incompleet: ' + incomplete + '</div>' +
+                            '<div class="chart-tooltip-value" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px; margin-top: 4px;">Totaal: ' + total + '</div>';
+                        
+                        // Position tooltip centered above the bar on mobile
+                        const barRect = this.getBoundingClientRect();
+                        const tooltipRect = tooltip.getBoundingClientRect();
+                        
+                        let left = barRect.left + (barRect.width / 2) - (tooltipRect.width / 2);
+                        let top = barRect.top + window.scrollY - tooltipRect.height - 10;
+                        
+                        // Keep within viewport
+                        if (left < 10) left = 10;
+                        if (left + tooltipRect.width > window.innerWidth - 10) {
+                            left = window.innerWidth - tooltipRect.width - 10;
+                        }
+                        if (top < window.scrollY + 10) {
+                            top = barRect.bottom + window.scrollY + 10;
+                        }
+                        
+                        tooltip.style.left = left + 'px';
+                        tooltip.style.top = top + 'px';
+                        tooltip.classList.add('visible');
+                    });
+                    
+                    bar.addEventListener('touchend', function() {
+                        setTimeout(() => {
+                            tooltip.classList.remove('visible');
+                        }, 2000); // Hide after 2 seconds on mobile
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -170,6 +170,61 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 250, 100); /
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Analytics - Gezondheidsmeter</title>
     <link rel="stylesheet" href="../../assets/css/admin.css?v=6">
+    <style>
+        /* Tooltip Styles */
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .chart-tooltip.visible {
+            opacity: 1;
+        }
+        
+        .chart-tooltip-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .chart-tooltip-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        
+        /* Make SVG elements interactive */
+        .area-chart-svg circle,
+        .line-chart-svg circle {
+            cursor: pointer;
+            transition: r 0.2s ease;
+        }
+        
+        .area-chart-svg circle:hover,
+        .line-chart-svg circle:hover {
+            r: 5;
+        }
+        
+        .bar-group {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .bar-group:hover .bar {
+            opacity: 0.8;
+            transform: scaleY(1.02);
+            transition: all 0.2s ease;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <?php include __DIR__ . '/../../components/navbar-admin.php'; ?>
@@ -236,7 +291,32 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 250, 100); /
                                   fill="none" 
                                   stroke="#22c55e" 
                                   stroke-width="1"/>
+                        
+                        <!-- Interactive dots for engagement -->
+                        <?php
+                        $engagementPointsArr = explode(" ", $engagementPoints);
+                        foreach ($engagementPointsArr as $i => $point) {
+                            if (empty($point)) continue;
+                            $coords = explode(",", $point);
+                            $value = $engagementData[$i]['daily_entries'] ?? 0;
+                            $date = $engagementData[$i]['date'] ?? '';
+                            echo '<circle cx="' . $coords[0] . '" cy="' . $coords[1] . '" r="3" fill="#ff6c6c" class="data-point" data-value="' . $value . '" data-label="Engagement: ' . date('d-m-Y', strtotime($date)) . '" data-type="entries"/>';
+                        }
+                        ?>
+                        
+                        <!-- Interactive dots for growth -->
+                        <?php
+                        $growthPointsArr = explode(" ", $growthPoints);
+                        foreach ($growthPointsArr as $i => $point) {
+                            if (empty($point)) continue;
+                            $coords = explode(",", $point);
+                            $value = $growthData[$i]['cumulative_users'] ?? 0;
+                            $date = $growthData[$i]['date'] ?? '';
+                            echo '<circle cx="' . $coords[0] . '" cy="' . $coords[1] . '" r="3" fill="#22c55e" class="data-point" data-value="' . $value . '" data-label="Gebruikers: ' . date('d-m-Y', strtotime($date)) . '" data-type="users"/>';
+                        }
+                        ?>
                     </svg>
+                    <div class="chart-tooltip" id="tooltip-growth"></div>
                 </div>
                 <div class="chart-legend">
                     <div class="legend-item">
@@ -272,16 +352,19 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 250, 100); /
                                   stroke="#22c55e" 
                                   stroke-width="1.2"/>
                         
-                        <!-- Smaller dots -->
+                        <!-- Interactive dots with data -->
                         <?php
                         $points = explode(" ", $scoreTrendPoints);
-                        foreach ($points as $point) {
+                        foreach ($points as $i => $point) {
                             if (empty($point)) continue;
                             $coords = explode(",", $point);
-                            echo '<circle cx="' . $coords[0] . '" cy="' . $coords[1] . '" r="2" fill="#22c55e"/>';
+                            $score = $scoreData[$i]['avg_score'] ?? 0;
+                            $date = $scoreData[$i]['date'] ?? '';
+                            echo '<circle cx="' . $coords[0] . '" cy="' . $coords[1] . '" r="3" fill="#22c55e" class="data-point" data-value="' . number_format($score, 1) . '" data-label="Score: ' . date('d-m-Y', strtotime($date)) . '"/>';
                         }
                         ?>
                     </svg>
+                    <div class="chart-tooltip" id="tooltip-score"></div>
                 </div>
                 <div class="chart-legend">
                     <div class="legend-item">
@@ -308,9 +391,9 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 250, 100); /
                         <div class="bars-container">
                             <?php foreach ($pillarScores as $pillar): 
                                 $score = $pillar['avg_score'] ?? 0;
-                                $height = ($score / 100) * 120; // Max height 120px
+                                $height = ($score / 100) * 240; // Max height 240px to match chart area
                             ?>
-                            <div class="bar-group" title="<?= htmlspecialchars($pillar['pillar_name']) ?>: <?= number_format($score, 1) ?>">
+                            <div class="bar-group" data-value="<?= number_format($score, 1) ?>" data-label="<?= htmlspecialchars($pillar['pillar_name']) ?>">
                                 <div class="day-bars">
                                     <div class="bar green" style="height: <?= $height ?>px;"></div>
                                 </div>
@@ -332,8 +415,198 @@ $scoreTrendPoints = generateSvgPoints($scoreData, 'avg_score', 500, 250, 100); /
                 </div>
             </div>
         </div>
+        <div class="chart-tooltip" id="tooltip-bars"></div>
     </div>
 
     <?php include __DIR__ . '/../../components/footer.php'; ?>
+    
+    <script>
+        // Tooltip functionality with mobile support
+        document.addEventListener('DOMContentLoaded', function() {
+            // Helper function to position tooltip within viewport
+            function positionTooltip(tooltip, e, isMobile = false, targetElement = null) {
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const tooltipWidth = tooltipRect.width;
+                const tooltipHeight = tooltipRect.height;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                let left, top;
+                
+                if (isMobile && targetElement) {
+                    // Center tooltip above element on mobile
+                    const targetRect = targetElement.getBoundingClientRect();
+                    left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
+                    top = targetRect.top + window.scrollY - tooltipHeight - 10;
+                    
+                    // If doesn't fit above, show below
+                    if (top < window.scrollY + 10) {
+                        top = targetRect.bottom + window.scrollY + 10;
+                    }
+                } else {
+                    // Desktop: follow cursor
+                    left = e.pageX + 15;
+                    top = e.pageY - 10;
+                    
+                    // Adjust if goes off right edge
+                    if (left + tooltipWidth > viewportWidth) {
+                        left = e.pageX - tooltipWidth - 15;
+                    }
+                    
+                    // Adjust if goes off bottom edge
+                    if (top + tooltipHeight > viewportHeight + window.scrollY) {
+                        top = e.pageY - tooltipHeight - 10;
+                    }
+                }
+                
+                // Keep within left edge
+                if (left < 10) left = 10;
+                
+                // Keep within right edge
+                if (left + tooltipWidth > viewportWidth - 10) {
+                    left = viewportWidth - tooltipWidth - 10;
+                }
+                
+                // Keep within top edge
+                if (top < window.scrollY + 10) {
+                    top = window.scrollY + 10;
+                }
+                
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            }
+            
+            // Handle SVG data points (circles)
+            const dataPoints = document.querySelectorAll('.data-point');
+            const tooltipGrowth = document.getElementById('tooltip-growth');
+            const tooltipScore = document.getElementById('tooltip-score');
+            
+            dataPoints.forEach(point => {
+                point.addEventListener('mouseenter', function(e) {
+                    const value = this.getAttribute('data-value');
+                    const label = this.getAttribute('data-label');
+                    const type = this.getAttribute('data-type');
+                    
+                    let tooltip;
+                    if (this.closest('.area-chart-svg')) {
+                        tooltip = tooltipGrowth;
+                    } else if (this.closest('.line-chart-svg')) {
+                        tooltip = tooltipScore;
+                    }
+                    
+                    if (tooltip) {
+                        let displayValue = value;
+                        if (type === 'entries') {
+                            displayValue = value + ' entries';
+                        } else if (type === 'users') {
+                            displayValue = value + ' gebruikers';
+                        } else {
+                            displayValue = value + ' punten';
+                        }
+                        
+                        tooltip.innerHTML = '<div class="chart-tooltip-label">' + label + '</div><div class="chart-tooltip-value">' + displayValue + '</div>';
+                        tooltip.classList.add('visible');
+                    }
+                });
+                
+                point.addEventListener('mousemove', function(e) {
+                    let tooltip;
+                    if (this.closest('.area-chart-svg')) {
+                        tooltip = tooltipGrowth;
+                    } else if (this.closest('.line-chart-svg')) {
+                        tooltip = tooltipScore;
+                    }
+                    
+                    if (tooltip) {
+                        positionTooltip(tooltip, e);
+                    }
+                });
+                
+                point.addEventListener('mouseleave', function() {
+                    let tooltip;
+                    if (this.closest('.area-chart-svg')) {
+                        tooltip = tooltipGrowth;
+                    } else if (this.closest('.line-chart-svg')) {
+                        tooltip = tooltipScore;
+                    }
+                    
+                    if (tooltip) {
+                        tooltip.classList.remove('visible');
+                    }
+                });
+                
+                // Touch support for mobile
+                point.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    const value = this.getAttribute('data-value');
+                    const label = this.getAttribute('data-label');
+                    const type = this.getAttribute('data-type');
+                    
+                    let tooltip;
+                    if (this.closest('.area-chart-svg')) {
+                        tooltip = tooltipGrowth;
+                    } else if (this.closest('.line-chart-svg')) {
+                        tooltip = tooltipScore;
+                    }
+                    
+                    if (tooltip) {
+                        let displayValue = value;
+                        if (type === 'entries') {
+                            displayValue = value + ' entries';
+                        } else if (type === 'users') {
+                            displayValue = value + ' gebruikers';
+                        } else {
+                            displayValue = value + ' punten';
+                        }
+                        
+                        tooltip.innerHTML = '<div class="chart-tooltip-label">' + label + '</div><div class="chart-tooltip-value">' + displayValue + '</div>';
+                        positionTooltip(tooltip, e.touches[0], true, this);
+                        tooltip.classList.add('visible');
+                        
+                        setTimeout(() => {
+                            tooltip.classList.remove('visible');
+                        }, 2000);
+                    }
+                });
+            });
+            
+            // Handle bar groups
+            const barGroups = document.querySelectorAll('.bar-group');
+            const tooltipBars = document.getElementById('tooltip-bars');
+            
+            barGroups.forEach(bar => {
+                bar.addEventListener('mouseenter', function(e) {
+                    const value = this.getAttribute('data-value');
+                    const label = this.getAttribute('data-label');
+                    
+                    tooltipBars.innerHTML = '<div class="chart-tooltip-label">' + label + '</div><div class="chart-tooltip-value">' + value + ' punten</div>';
+                    tooltipBars.classList.add('visible');
+                });
+                
+                bar.addEventListener('mousemove', function(e) {
+                    positionTooltip(tooltipBars, e);
+                });
+                
+                bar.addEventListener('mouseleave', function() {
+                    tooltipBars.classList.remove('visible');
+                });
+                
+                // Touch support for mobile
+                bar.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    const value = this.getAttribute('data-value');
+                    const label = this.getAttribute('data-label');
+                    
+                    tooltipBars.innerHTML = '<div class="chart-tooltip-label">' + label + '</div><div class="chart-tooltip-value">' + value + ' punten</div>';
+                    positionTooltip(tooltipBars, e.touches[0], true, this);
+                    tooltipBars.classList.add('visible');
+                    
+                    setTimeout(() => {
+                        tooltipBars.classList.remove('visible');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
