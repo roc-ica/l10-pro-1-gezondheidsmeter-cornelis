@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo = Database::getConnection();
                 try {
                     $input_type = ($question_style === 'standalone') ? 'number' : 'choice';
-                    
+
                     // Add main question
                     $stmt = $pdo->prepare("
                         INSERT INTO questions 
@@ -108,8 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = "Vul alle verplichte velden in.";
             }
-        }
- elseif ($_POST['action'] === 'delete_question') {
+        } elseif ($_POST['action'] === 'delete_question') {
             $question_id = $_POST['question_id'] ?? null;
             $secondary_question_id = $_POST['secondary_question_id'] ?? null;
 
@@ -232,6 +231,8 @@ foreach ($mainQuestions as &$mainQ) {
                     <p>Beheer de dagelijkse gezondheids vragen</p>
                 </div>
                 <div class="dashboard-header-right">
+                    <a href="categorieen.php" class="btn-naar-app"
+                        style="margin-right: 10px; background-color: #4b5563;">Categorieën</a>
                     <a href="../../pages/home.php" class="btn-naar-app">Naar App</a>
                 </div>
             </div>
@@ -251,10 +252,16 @@ foreach ($mainQuestions as &$mainQ) {
                 <h2 class="card-title">Nieuwe vraag toevoegen?</h2>
                 <form method="POST" action="" id="questionForm" class="add-form">
                     <input type="hidden" name="action" value="add_question">
-                    
+
                     <!-- Category Selection -->
                     <div class="form-group">
-                        <label for="pillar_select" class="form-label">Categorie:</label>
+                        <label for="pillar_select" class="form-label"
+                            style="display: flex; justify-content: space-between;">
+                            Categorie:
+                            <a href="categorieen.php"
+                                style="font-size: 0.8em; color: var(--primary-color); text-decoration: none;">+
+                                Nieuw</a>
+                        </label>
                         <select name="pillar_id" class="form-select" id="pillar_select" required>
                             <option value="" disabled selected>Categorie selecteren</option>
                             <?php foreach ($pillars as $pillar): ?>
@@ -275,7 +282,8 @@ foreach ($mainQuestions as &$mainQ) {
 
                     <!-- Main Question Input -->
                     <div class="form-group">
-                        <label for="main_question_input" class="form-label" id="main_question_label">Hoofdvraag (Ja/Nee deel):</label>
+                        <label for="main_question_input" class="form-label" id="main_question_label">Hoofdvraag (Ja/Nee
+                            deel):</label>
                         <input type="text" name="main_question" id="main_question_input"
                             class="form-input form-input-large" placeholder="Bijv: Heeft u goed geslapen?" required>
                     </div>
@@ -429,7 +437,7 @@ foreach ($mainQuestions as &$mainQ) {
         });
 
         // Toggle question style fields
-        document.getElementById('question_style').addEventListener('change', function() {
+        document.getElementById('question_style').addEventListener('change', function () {
             const style = this.value;
             const secGroup = document.getElementById('secondary_question_group');
             const mainLabel = document.getElementById('main_question_label');
