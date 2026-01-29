@@ -223,8 +223,8 @@ class AdminDashboardStats
         elseif ($maxValue <= 20) $maxValue = 20;
         else $maxValue = ceil($maxValue / 10) * 10;
         
-        // Scale to pixels (max 220px to fit in 260px container)
-        $maxPixels = 220;
+        // Scale to pixels (max 240px to fit in 260px container with padding)
+        $maxPixels = 240;
         foreach ($weeklyData as &$day) {
             $day['submitted_height'] = (int) round(($day['submitted'] / $maxValue) * $maxPixels);
             $day['incomplete_height'] = (int) round(($day['incomplete'] / $maxValue) * $maxPixels);
