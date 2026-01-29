@@ -182,9 +182,9 @@ $totalPages = ceil($totalUsers / $usersPerPage);
                     </div>
                 </div>
                 <div class="user-actions-wrapper">
-                    <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER');
-                                                echo (' ');
-                                                echo htmlspecialchars($user['id']) ?></div>
+                    <!-- <div class="score-display"><?php echo htmlspecialchars($user['is_admin'] ? 'ADMIN' : 'USER');
+                                                echo (' '); 
+                                                echo htmlspecialchars($user['id']) ?></div> -->
                     <button class="btn-action btn-danger" onclick="openDeleteUserModal(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')">
                         <i data-lucide="trash-2"></i> Verwijderen
                     </button>
